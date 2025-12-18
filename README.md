@@ -1,7 +1,25 @@
 
-# inheritance-tax-on-pensions
+# Inheritance Tax on Pensions
 
-This is a placeholder README.md for a new repository
+Backend microservice for IHTP
+
+Description of the API TBC
+
+Running the service TBC
+
+### Unit tests
+
+> `sbt test`
+
+### Integration tests
+
+> `sbt it/test`
+
+You can also execute the [runtests.sh](runtests.sh) file to run both unit and integration tests and generate coverage report easily.
+
+```bash
+/bin/bash ./runtests.sh
+```
 
 ### License
 
