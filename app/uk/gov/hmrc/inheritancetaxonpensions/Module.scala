@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.inheritancetaxonpensions
 
-import play.api.{Configuration, Environment}
 import play.api.inject.{Binding, Module => AppModule}
+import play.api.{Configuration, Environment}
 
 import java.time.Clock
 

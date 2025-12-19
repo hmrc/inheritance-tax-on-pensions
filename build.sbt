@@ -4,12 +4,22 @@ ThisBuild / majorVersion := 0
 ThisBuild / scalaVersion := "3.5.2"
 ThisBuild / scalacOptions += "-Wconf:msg=Flag.*repeatedly:s"
 
+inThisBuild(
+  List(
+    scalaVersion := "3.5.2",
+    majorVersion := 0,
+    semanticdbEnabled := true,
+    semanticdbVersion := scalafixSemanticdb.revision
+  )
+)
+
 lazy val microservice = Project("inheritance-tax-on-pensions", file("."))
   .enablePlugins(play.sbt.PlayScala, SbtDistributablesPlugin)
   .disablePlugins(JUnitXmlReportPlugin) //Required to prevent https://github.com/scalatest/scalatest/issues/1427
   .settings(
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
     scalafmtOnCompile := true,
+    scalafixOnCompile := true,
     // https://www.scala-lang.org/2021/01/12/configuring-and-suppressing-warnings.html
     // suppress warnings in generated routes files
     scalacOptions += "-Wconf:src=routes/.*:s",
