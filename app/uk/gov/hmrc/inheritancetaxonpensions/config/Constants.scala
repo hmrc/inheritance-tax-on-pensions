@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,18 @@
 
 package uk.gov.hmrc.inheritancetaxonpensions.config
 
-import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
-import play.api.Configuration
+object Constants {
 
-import scala.concurrent.duration.Duration
+  val psaEnrolmentKey = "HMRC-PODS-ORG"
+  val pspEnrolmentKey = "HMRC-PODSPP-ORG"
 
-import javax.inject.{Inject, Singleton}
+  val psaId = "psaId"
+  val pspId = "pspId"
 
-@Singleton
-class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig) {
-
-  private val pensionsSchemeURL: String = servicesConfig.baseUrl(serviceName = "pensionsScheme")
-
-  val isPsaAssociatedUrl: String = s"$pensionsSchemeURL${config.get[String](path = "serviceUrls.is-psa-associated")}"
-  val ifsTimeout: Duration = config.get[Duration]("ifs.timeout")
+  val HEADER_KEY_USER_NAME = "userName"
+  val HEADER_KEY_SCHEME_NAME = "schemeName"
+  val HEADER_KEY_SRN = "srn"
+  val HEADER_KEY_REQUEST_ROLE = "requestRole"
+  val HEADER_VALUE_PSA = "PSA"
+  val HEADER_VALUE_PSP = "PSP"
 }

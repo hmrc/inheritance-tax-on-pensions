@@ -17,6 +17,8 @@
 package uk.gov.hmrc.inheritancetaxonpensions
 
 import play.api.inject.{Binding, Module => AppModule}
+import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.play.bootstrap.auth.DefaultAuthConnector
 import play.api.{Configuration, Environment}
 
 import java.time.Clock
@@ -27,5 +29,7 @@ class Module extends AppModule:
     environment: Environment,
     configuration: Configuration
   ): Seq[Binding[?]] =
-    bind[Clock].toInstance(Clock.systemDefaultZone) :: // inject if current time needs to be controlled in unit tests
-      Nil
+    Seq(
+      bind[Clock].toInstance(Clock.systemDefaultZone), // inject if current time needs to be controlled in unit tests
+      bind[AuthConnector].to(classOf[DefaultAuthConnector]).eagerly()
+    )

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,18 +14,13 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.inheritancetaxonpensions.controllers
+package uk.gov.hmrc.inheritancetaxonpensions.models
 
-import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
+case class Srn(value: String)
 
-import javax.inject.{Inject, Singleton}
+object Srn {
+  private val srnRegex = "^S[0-9]{10}$"
 
-@Singleton()
-class MicroserviceHelloWorldController @Inject() (
-  cc: ControllerComponents
-) extends BackendController(cc):
-
-  val hello: Action[AnyContent] =
-    Action:
-      implicit request => Ok("Hello world")
+  def apply(value: String): Option[Srn] =
+    if (value.matches(srnRegex)) Some(new Srn(value)) else None
+}

@@ -1,0 +1,28 @@
+meta {
+  name: Submission List before Login - Unauthorised
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{ihtp_url}}/24000001IN/submission-list
+  body: none
+  auth: bearer
+}
+
+headers {
+  srn: S0000000042
+  userName: TestUser
+  schemeName: TestScheme
+  requestRole: PSA
+}
+
+auth:bearer {
+  token: {{bearer_token}}
+}
+
+tests {
+  test("Status code is 401", function () {
+      expect(res.getStatus()).to.equal(401);
+  });
+}
