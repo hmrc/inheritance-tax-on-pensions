@@ -25,10 +25,25 @@ lazy val microservice = Project("inheritance-tax-on-pensions", file("."))
     scalacOptions += "-Wconf:src=routes/.*:s",
     PlayKeys.playDefaultPort := 10710
   )
+  .settings(inConfig(Test)(testSettings) *)
   .settings(CodeCoverageSettings.settings: _*)
+
+lazy val testSettings: Seq[Def.Setting[?]] = Seq(
+  fork := true,
+  Test / scalafmtOnCompile := true,
+  Test / scalafixOnCompile := true,
+  unmanagedSourceDirectories += baseDirectory.value / "test-utils"
+)
 
 lazy val it = project
   .enablePlugins(PlayScala)
   .dependsOn(microservice % "test->test")
   .settings(DefaultBuildSettings.itSettings())
   .settings(libraryDependencies ++= AppDependencies.it)
+  .settings(
+    libraryDependencies ++= AppDependencies.test,
+    Test / fork := true,
+    Test / scalafmtOnCompile := true,
+    Test / unmanagedResourceDirectories += baseDirectory.value / "it" / "test" / "resources"
+  )
+

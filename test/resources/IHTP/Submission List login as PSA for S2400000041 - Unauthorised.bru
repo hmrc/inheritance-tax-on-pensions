@@ -1,0 +1,28 @@
+meta {
+  name: Submission List login as PSA for S2400000041 - Unauthorised 
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{ihtp_url}}/24000001IN/submission-list
+  body: none
+  auth: bearer
+}
+
+headers {
+  srn: S2400000041
+  userName: TestUser
+  schemeName: TestScheme
+  requestRole: PSA
+}
+
+auth:bearer {
+  token: {{bearer_token}}
+}
+
+tests {
+  test("Status code is 401", function () {
+      expect(res.getStatus()).to.equal(401);
+  });
+}

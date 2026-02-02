@@ -1,5 +1,5 @@
 /*
- * Copyright 2025 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,21 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.inheritancetaxonpensions.controllers
+package utils
 
-import play.api.test.{FakeRequest, Helpers}
-import play.api.test.Helpers._
-import play.api.http.Status
-import org.scalatest.matchers.should.Matchers
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.matchers.must.Matchers
+import generators.Generators
+import org.scalatest.{BeforeAndAfterEach, OptionValues}
 import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.mockito.MockitoSugar
 
-class MicroserviceHelloWorldControllerSpec extends AnyWordSpec with Matchers:
-
-  private val fakeRequest = FakeRequest("GET", "/")
-  private val controller = new MicroserviceHelloWorldController(Helpers.stubControllerComponents())
-
-  "GET /" should:
-    "return 200" in:
-      val result = controller.hello()(fakeRequest)
-      status(result) shouldBe Status.OK
+abstract class BaseSpec
+    extends AnyWordSpec
+    with Matchers
+    with ScalaFutures
+    with MockitoSugar
+    with BeforeAndAfterEach
+    with OptionValues
+    with Generators
+    with TestValues
