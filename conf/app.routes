@@ -1,3 +1,7 @@
 # microservice specific routes
 
 GET        /:pstr/submission-list         uk.gov.hmrc.inheritancetaxonpensions.controllers.GetSubmissionListController.getSubmissionList(pstr: String)
+
+# User answers
+PUT          /user-answers                uk.gov.hmrc.inheritancetaxonpensions.controllers.UserAnswersController.set()
+GET          /user-answers/:id        uk.gov.hmrc.inheritancetaxonpensions.controllers.UserAnswersController.fetch(id: String)
