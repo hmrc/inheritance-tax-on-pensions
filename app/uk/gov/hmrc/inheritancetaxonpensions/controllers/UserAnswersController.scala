@@ -21,15 +21,16 @@ import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.inheritancetaxonpensions.auth.IhtpAuth
 import uk.gov.hmrc.auth.core.AuthConnector
-import play.api.Logging
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
+import play.api.Logging
+import play.api.libs.json.Json
 
 import scala.concurrent.{ExecutionContext, Future}
 
 import javax.inject.{Inject, Singleton}
 
 @Singleton()
-class UserAnswersController @Inject()(
+class UserAnswersController @Inject() (
   cc: ControllerComponents,
   override val authConnector: AuthConnector,
   override protected val schemeDetailsConnector: SchemeDetailsConnector
@@ -39,24 +40,28 @@ class UserAnswersController @Inject()(
     with BaseController
     with Logging {
 
-  // TODO - get this working with auth
   def fetch(id: String): Action[AnyContent] = Action.async { implicit request =>
-    val Seq(srnS) =
-      requiredHeaders(HEADER_KEY_SRN)
+    val Seq(userName, schemeName, srnS, requestRole) =
+      requiredHeaders(HEADER_KEY_USER_NAME, HEADER_KEY_SCHEME_NAME, HEADER_KEY_SRN, HEADER_KEY_REQUEST_ROLE)
     authorisedAsIhtpUser(srnS) { _ =>
       logger.info(s"Fetching user answers for id: $id and srn: $srnS")
-      // TODO play ticket IHTP-166 to implement the persistence (repository and models)
+      // TODO - play ticket IHTP-166 to implement the persistence (repository and models)
       Future.successful(NotFound)
     }
   }
 
   def set(): Action[AnyContent] = Action.async { implicit request =>
-    val Seq(srnS) =
-      requiredHeaders(HEADER_KEY_SRN)
+    val Seq(userName, schemeName, srnS, requestRole) =
+      requiredHeaders(HEADER_KEY_USER_NAME, HEADER_KEY_SCHEME_NAME, HEADER_KEY_SRN, HEADER_KEY_REQUEST_ROLE)
     authorisedAsIhtpUser(srnS) { _ =>
-      // TODO play ticket IHTP-166 to implement the persistence (repository and models)
+      // TODO - play ticket IHTP-166 to implement the persistence (repository and models)
       logger.info(s"Setting user answers: ${request.body} and srn$srnS")
-      Future.successful(Ok)
+      Future.successful(Ok(Json.parse("""
+          |[{
+          |  "result": "true"
+          |}]
+          |""".stripMargin)))
+
     }
   }
 }
