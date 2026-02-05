@@ -13,7 +13,8 @@ object CodeCoverageSettings {
     "testOnly.*",
     "testOnlyDoNotUseInAppConf.*",
     "uk.gov.hmrc.inheritancetaxonpensions.config.AppConfig",
-    "uk.gov.hmrc.inheritancetaxonpensions.models.models.*"
+    "uk.gov.hmrc.inheritancetaxonpensions.models.*",
+    "uk.gov.hmrc.inheritancetaxonpensions.queries.*"
   )
 
   val settings: Seq[Setting[_]] = Seq(
