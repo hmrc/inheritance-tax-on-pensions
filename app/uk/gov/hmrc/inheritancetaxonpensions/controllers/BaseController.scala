@@ -17,9 +17,14 @@
 package uk.gov.hmrc.inheritancetaxonpensions.controllers
 
 import play.api.mvc.{AnyContent, Request}
+import play.api.libs.json.JsValue
 import uk.gov.hmrc.http.BadRequestException
 
 trait BaseController {
+
+  def requiredBody(implicit request: Request[AnyContent]): JsValue =
+    request.body.asJson.getOrElse(throw new BadRequestException("Request does not contain Json body"))
+
   protected def requiredHeaders(headers: String*)(implicit request: Request[AnyContent]): Seq[String] = {
     val headerData: Seq[Option[String]] = headers.map(request.headers.get)
     val allHeadersDefined = headerData.forall(_.isDefined)

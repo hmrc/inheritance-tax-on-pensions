@@ -33,10 +33,10 @@ import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 
 @Singleton
-class UserAnswersRepository @Inject()(
-                                       mongoComponent: MongoComponent,
-                                       appConfig: AppConfig,
-                                       clock: Clock
+class UserAnswersRepository @Inject() (
+  mongoComponent: MongoComponent,
+  appConfig: AppConfig,
+  clock: Clock
 )(implicit ec: ExecutionContext)
     extends PlayMongoRepository[UserAnswers](
       collectionName = "user-answers",

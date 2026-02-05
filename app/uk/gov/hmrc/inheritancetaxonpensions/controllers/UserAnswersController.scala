@@ -21,16 +21,19 @@ import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.inheritancetaxonpensions.auth.IhtpAuth
 import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.inheritancetaxonpensions.repositories.UserAnswersRepository
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
+import uk.gov.hmrc.inheritancetaxonpensions.models.UserAnswers
 import play.api.Logging
 import play.api.libs.json.Json
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 import javax.inject.{Inject, Singleton}
 
 @Singleton()
 class UserAnswersController @Inject() (
+  val userAnswersRepository: UserAnswersRepository,
   cc: ControllerComponents,
   override val authConnector: AuthConnector,
   override protected val schemeDetailsConnector: SchemeDetailsConnector
@@ -44,24 +47,27 @@ class UserAnswersController @Inject() (
     val Seq(userName, schemeName, srnS, requestRole) =
       requiredHeaders(HEADER_KEY_USER_NAME, HEADER_KEY_SCHEME_NAME, HEADER_KEY_SRN, HEADER_KEY_REQUEST_ROLE)
     authorisedAsIhtpUser(srnS) { _ =>
-      logger.info(s"Fetching user answers for id: $id and srn: $srnS")
-      // TODO - play ticket IHTP-166 to implement the persistence (repository and models)
-      Future.successful(NotFound)
+      logger.info(s"[UserAnswersController][fetch] - Fetching user answers for id: $id and srn: $srnS")
+
+      userAnswersRepository.get(id).map {
+        case Some(ua) => Ok(Json.toJson(ua))
+        case None => NotFound
+      }
     }
   }
 
   def set(): Action[AnyContent] = Action.async { implicit request =>
     val Seq(userName, schemeName, srnS, requestRole) =
       requiredHeaders(HEADER_KEY_USER_NAME, HEADER_KEY_SCHEME_NAME, HEADER_KEY_SRN, HEADER_KEY_REQUEST_ROLE)
-    authorisedAsIhtpUser(srnS) { _ =>
-      // TODO - play ticket IHTP-166 to implement the persistence (repository and models)
-      logger.info(s"Setting user answers: ${request.body} and srn$srnS")
-      Future.successful(Ok(Json.parse("""
-          |[{
-          |  "result": "true"
-          |}]
-          |""".stripMargin)))
+    val userAnswers = requiredBody.as[UserAnswers]
 
+    authorisedAsIhtpUser(srnS) { _ =>
+      logger.info(s"[UserAnswersController][set] - Setting user answers for srn: $srnS")
+
+      userAnswersRepository.set(userAnswers).map {
+        case true => Ok(Json.toJson(userAnswers))
+        case _ => InternalServerError("Failed to save the user answers")
+      }
     }
   }
 }
