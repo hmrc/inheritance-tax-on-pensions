@@ -47,8 +47,6 @@ class UserAnswersController @Inject() (
     val Seq(userName, schemeName, srnS, requestRole) =
       requiredHeaders(HEADER_KEY_USER_NAME, HEADER_KEY_SCHEME_NAME, HEADER_KEY_SRN, HEADER_KEY_REQUEST_ROLE)
     authorisedAsIhtpUser(srnS) { _ =>
-      logger.info(s"[UserAnswersController][fetch] - Fetching user answers for id: $id and srn: $srnS")
-
       userAnswersRepository.get(id).map {
         case Some(ua) => Ok(Json.toJson(ua))
         case None => NotFound
@@ -62,8 +60,6 @@ class UserAnswersController @Inject() (
     val userAnswers = requiredBody.as[UserAnswers]
 
     authorisedAsIhtpUser(srnS) { _ =>
-      logger.info(s"[UserAnswersController][set] - Setting user answers for srn: $srnS")
-
       userAnswersRepository.set(userAnswers).map {
         case true => Ok(Json.toJson(userAnswers))
         case _ => InternalServerError("Failed to save the user answers")

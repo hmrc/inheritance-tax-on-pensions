@@ -16,12 +16,9 @@
 
 package uk.gov.hmrc.inheritancetaxonpensions.models
 
-import uk.gov.hmrc.inheritancetaxonpensions.queries._
 import play.api.libs.json._
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import play.api.libs.functional.syntax.toFunctionalBuilderOps
-
-import scala.util.{Failure, Success, Try}
 
 import java.time.Instant
 
@@ -29,41 +26,7 @@ final case class UserAnswers(
   id: String,
   data: JsObject = Json.obj(),
   lastUpdated: Instant = Instant.now
-) {
-
-  def get[A](page: Gettable[A])(implicit rds: Reads[A]): Option[A] =
-    Reads.optionNoError(using Reads.at(page.path)).reads(data).getOrElse(None)
-
-  def set[A](page: Settable[A], value: A)(implicit writes: Writes[A]): Try[UserAnswers] = {
-
-    val updatedData = data.setObject(page.path, Json.toJson(value)) match {
-      case JsSuccess(jsValue, _) =>
-        Success(jsValue)
-      case JsError(errors) =>
-        Failure(JsResultException(errors))
-    }
-
-    updatedData.flatMap { d =>
-      val updatedAnswers = copy(data = d)
-      page.cleanup(Some(value), updatedAnswers)
-    }
-  }
-
-  def remove[A](page: Settable[A]): Try[UserAnswers] = {
-
-    val updatedData = data.removeObject(page.path) match {
-      case JsSuccess(jsValue, _) =>
-        Success(jsValue)
-      case JsError(_) =>
-        Success(data)
-    }
-
-    updatedData.flatMap { d =>
-      val updatedAnswers = copy(data = d)
-      page.cleanup(None, updatedAnswers)
-    }
-  }
-}
+)
 
 object UserAnswers {
 

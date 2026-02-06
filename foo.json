@@ -1,0 +1,11 @@
+{
+  "_id": "id",
+  "data": {
+    "someDataItem": "someDataItemValue"
+  },
+  "lastUpdated": {
+    "$date": {
+      "$numberLong": "1770374414350"
+    }
+  }
+}
