@@ -30,4 +30,6 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
 
   val isPsaAssociatedUrl: String = s"$pensionsSchemeURL${config.get[String](path = "serviceUrls.is-psa-associated")}"
   val ifsTimeout: Duration = config.get[Duration]("ifs.timeout")
+
+  val userAnswersTtl: Long = config.get[Int]("mongodb.userAnswersTtl")
 }
