@@ -20,9 +20,10 @@ import uk.gov.hmrc.inheritancetaxonpensions.connectors.SchemeDetailsConnector
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.inheritancetaxonpensions.auth.IhtpAuth
-import uk.gov.hmrc.auth.core.AuthConnector
 import play.api.libs.json.Json
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
+import uk.gov.hmrc.inheritancetaxonpensions.services.SessionService
+import uk.gov.hmrc.auth.core.AuthConnector
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -32,7 +33,8 @@ import javax.inject.{Inject, Singleton}
 class GetSubmissionListController @Inject() (
   cc: ControllerComponents,
   override val authConnector: AuthConnector,
-  override protected val schemeDetailsConnector: SchemeDetailsConnector
+  override protected val schemeDetailsConnector: SchemeDetailsConnector,
+  override protected val sessionService: SessionService
 )(implicit
   ec: ExecutionContext
 ) extends BackendController(cc)

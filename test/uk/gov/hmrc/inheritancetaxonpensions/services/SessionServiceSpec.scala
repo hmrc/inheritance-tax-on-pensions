@@ -55,7 +55,7 @@ class SessionServiceSpec extends AnyFreeSpec with Matchers with MockitoSugar wit
       when(mockSessionSchemeDetailsRepository.get(any())).thenReturn(Future.successful(Some(sessionSchemeDetails)))
 
       val result = Await.result(
-        sessionService.trySchemeDetails("id", "idType", "srn01", callbackFunctionSchemeDetails),
+        sessionService.checkAssociation("id", "idType", "srn01", callbackFunctionSchemeDetails),
         patienceConfig.timeout
       )
 
@@ -66,26 +66,12 @@ class SessionServiceSpec extends AnyFreeSpec with Matchers with MockitoSugar wit
       when(mockSessionSchemeDetailsRepository.get(any())).thenReturn(Future.successful(None))
 
       val result = Await.result(
-        sessionService.trySchemeDetails("id", "idType", "srn01", callbackFunctionSchemeDetails),
+        sessionService.checkAssociation("id", "idType", "srn01", callbackFunctionSchemeDetails),
         patienceConfig.timeout
       )
 
       result mustBe true
       verify(mockSessionSchemeDetailsRepository, times(1)).set(any())
-    }
-
-    "throw an exception when the session srn differs from the request srn" in {
-      when(mockSessionSchemeDetailsRepository.get(any())).thenReturn(Future.successful(Some(sessionSchemeDetails)))
-
-      val result = intercept[IllegalArgumentException] {
-        Await.result(
-          sessionService.trySchemeDetails("id", "idType", "srn02", callbackFunctionSchemeDetails),
-          patienceConfig.timeout
-        )
-      }
-
-      result.isInstanceOf[IllegalArgumentException] mustBe true
-      result.getMessage mustBe "The SRN provided does not match that of the cached session authorisation"
     }
   }
 }

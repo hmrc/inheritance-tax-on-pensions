@@ -21,20 +21,22 @@ import uk.gov.hmrc.inheritancetaxonpensions.connectors.SchemeDetailsConnector
 import play.api.mvc.{AnyContentAsEmpty, Result}
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants
 import play.api.http.Status
-import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, UnauthorizedException}
+import uk.gov.hmrc.inheritancetaxonpensions.repositories.SessionSchemeDetailsRepository
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
 import org.mockito.ArgumentMatchers.any
 import utils.BaseSpec
 import play.api.test.Helpers.{contentAsString, defaultAwaitTimeout, status}
 import org.mockito.Mockito._
+import uk.gov.hmrc.inheritancetaxonpensions.services.SessionService
+import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.play.http.HeaderCarrierConverter
 import uk.gov.hmrc.inheritancetaxonpensions.models.Srn
 import org.mockito.ArgumentMatchers
 import play.api.mvc.Results.Ok
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 
@@ -42,11 +44,24 @@ class IhtpAuthSpec extends BaseSpec {
 
   private val mockAuthConnector = mock[AuthConnector]
   private val mockSchemeDetailsConnector = mock[SchemeDetailsConnector]
+  private val mockSessionSchemeDetailsRepository: SessionSchemeDetailsRepository = mock[SessionSchemeDetailsRepository]
 
-  override protected def beforeEach(): Unit = {
-    reset(mockAuthConnector)
-    reset(mockSchemeDetailsConnector)
+  private val stubSessionService: SessionService = new SessionService(mockSessionSchemeDetailsRepository) {
+    override def checkAssociation(
+      id: String,
+      idType: String,
+      srn: String,
+      callBackFunction: => Future[Boolean]
+    )(implicit ec: ExecutionContext): Future[Boolean] =
+      callBackFunction
   }
+
+  override protected def beforeEach(): Unit =
+    reset(
+      mockAuthConnector,
+      mockSchemeDetailsConnector,
+      mockSessionSchemeDetailsRepository
+    )
 
   private val psaEnrolment = Enrolments(
     Set(
@@ -95,6 +110,7 @@ class IhtpAuthSpec extends BaseSpec {
   val auth: IhtpAuth = new IhtpAuth {
     override val authConnector: AuthConnector = mockAuthConnector
     override protected val schemeDetailsConnector: SchemeDetailsConnector = mockSchemeDetailsConnector
+    override protected val sessionService: SessionService = stubSessionService
   }
 
   "authorisedAsIhtpUser" should {

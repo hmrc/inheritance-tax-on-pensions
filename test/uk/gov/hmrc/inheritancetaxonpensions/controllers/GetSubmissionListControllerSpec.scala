@@ -24,6 +24,7 @@ import uk.gov.hmrc.auth.core.{AuthConnector, Enrolments}
 import uk.gov.hmrc.auth.core.retrieve.~
 import play.api.Application
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
+import uk.gov.hmrc.inheritancetaxonpensions.repositories.SessionSchemeDetailsRepository
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
 import org.mockito.ArgumentMatchers.any
 import play.api.test.Helpers._
@@ -40,15 +41,22 @@ class GetSubmissionListControllerSpec extends BaseSpec:
   private val fakeRequest = FakeRequest("GET", "/")
   private val mockAuthConnector: AuthConnector = mock[AuthConnector]
   private val mockSchemeDetailsConnector: SchemeDetailsConnector = mock[SchemeDetailsConnector]
+  private val mockSessionSchemeDetailsRepository: SessionSchemeDetailsRepository = mock[SessionSchemeDetailsRepository]
 
   override def beforeEach(): Unit = {
-    reset(mockAuthConnector)
-    reset(mockSchemeDetailsConnector)
+    reset(
+      mockAuthConnector,
+      mockSchemeDetailsConnector,
+      mockSessionSchemeDetailsRepository
+    )
+
+    when(mockSessionSchemeDetailsRepository.get(any())).thenReturn(Future.successful(None))
   }
   private val modules: Seq[GuiceableModule] =
     Seq(
       bind[AuthConnector].toInstance(mockAuthConnector),
-      bind[SchemeDetailsConnector].toInstance(mockSchemeDetailsConnector)
+      bind[SchemeDetailsConnector].toInstance(mockSchemeDetailsConnector),
+      bind[SessionSchemeDetailsRepository].toInstance(mockSessionSchemeDetailsRepository)
     )
 
   private val application: Application = new GuiceApplicationBuilder()

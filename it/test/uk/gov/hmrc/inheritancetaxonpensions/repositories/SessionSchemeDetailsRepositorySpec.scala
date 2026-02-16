@@ -35,7 +35,7 @@ import java.time.{Clock, Instant, ZoneId}
 import scala.concurrent.{ExecutionContext, Future}
 
 class SessionSchemeDetailsRepositorySpec
-  extends AnyFreeSpec
+    extends AnyFreeSpec
     with Matchers
     with DefaultPlayMongoRepositorySupport[SessionSchemeDetails]
     with ScalaFutures
@@ -45,19 +45,19 @@ class SessionSchemeDetailsRepositorySpec
 
   private val instant = Instant.now.truncatedTo(ChronoUnit.MILLIS)
   private val stubClock: Clock = Clock.fixed(instant, ZoneId.systemDefault)
-    
+
   private val sessionSchemeDetails: SessionSchemeDetails =
     SessionSchemeDetails("id", "psp", "srn01", true, Instant.ofEpochSecond(1))
 
   private val mockAppConfig = mock[AppConfig]
-  when(mockAppConfig.authSessionTtl) `thenReturn` 1L
+  when(mockAppConfig.authSessionTtl).`thenReturn`(1L)
 
   implicit val productionLikeTestMdcExecutionContext: ExecutionContext = MdcExecutionContext()
 
-  protected override val repository: SessionSchemeDetailsRepository = new SessionSchemeDetailsRepository(
+  override protected val repository: SessionSchemeDetailsRepository = new SessionSchemeDetailsRepository(
     mongoComponent = mongoComponent,
-    appConfig      = mockAppConfig,
-    clock          = stubClock
+    appConfig = mockAppConfig,
+    clock = stubClock
   )
 
   ".set" - {
@@ -83,7 +83,7 @@ class SessionSchemeDetailsRepositorySpec
 
         insert(sessionSchemeDetails).futureValue
 
-        val result         = repository.get(sessionSchemeDetails.id).futureValue
+        val result = repository.get(sessionSchemeDetails.id).futureValue
         val expectedResult = sessionSchemeDetails.copy(lastUpdated = instant)
 
         result.value.mustEqual(expectedResult)

@@ -23,27 +23,32 @@ import uk.gov.hmrc.inheritancetaxonpensions.models.SessionSchemeDetails
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class SessionService @Inject()(
+class SessionService @Inject() (
   sessionSchemeDetailsRepository: SessionSchemeDetailsRepository
 ) extends Logging {
 
-  def trySchemeDetails(
+  private def sessionCacheKey(
+    id: String,
+    idType: String,
+    srn: String
+  ): String =
+    s"$id-$idType-$srn"
+
+  def checkAssociation(
     id: String,
     idType: String,
     srn: String,
     callBackFunction: => Future[Boolean]
-  )(implicit ec: ExecutionContext): Future[Boolean] =
-    sessionSchemeDetailsRepository.get(id).flatMap {
+  )(implicit ec: ExecutionContext): Future[Boolean] = {
+    val sessionKey = sessionCacheKey(id, idType, srn)
+    sessionSchemeDetailsRepository.get(sessionKey).flatMap {
       case Some(sessionSchemeDetails) =>
-        if (sessionSchemeDetails.srn != srn) {
-          logger.warn(s"[SessionService] - The SRN provided does not match that of the cached session authorisation")
-          throw new IllegalArgumentException("The SRN provided does not match that of the cached session authorisation")
-        }
         Future.successful(sessionSchemeDetails.isAssociated)
       case None =>
         callBackFunction.map { result =>
-          sessionSchemeDetailsRepository.set(SessionSchemeDetails(id, idType, srn, result))
+          sessionSchemeDetailsRepository.set(SessionSchemeDetails(sessionKey, idType, srn, result))
           result
         }
     }
+  }
 }

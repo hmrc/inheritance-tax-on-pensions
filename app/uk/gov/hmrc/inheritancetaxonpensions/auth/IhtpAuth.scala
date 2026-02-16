@@ -18,7 +18,6 @@ package uk.gov.hmrc.inheritancetaxonpensions.auth
 
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.SchemeDetailsConnector
 import play.api.mvc.{Request, Result}
-import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.auth.core.retrieve.{~, Retrieval}
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import play.api.Logging
@@ -26,6 +25,8 @@ import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, UnauthorizedExcepti
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
 import uk.gov.hmrc.inheritancetaxonpensions.models.Srn
 import play.api.mvc.Results.BadRequest
+import uk.gov.hmrc.inheritancetaxonpensions.services.SessionService
+import uk.gov.hmrc.auth.core._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -42,6 +43,7 @@ trait IhtpAuth extends AuthorisedFunctions with Logging {
   private val predicate = Enrolment(psaEnrolmentKey).or(Enrolment(pspEnrolmentKey))
   private val retrievals: Retrieval[Option[String] ~ Enrolments] =
     Retrievals.externalId.and(Retrievals.allEnrolments)
+  protected val sessionService: SessionService
 
   private type IhtpAction[A] = IhtpAuthContext[A] => Future[Result]
 
@@ -83,14 +85,21 @@ trait IhtpAuth extends AuthorisedFunctions with Logging {
   )(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[A]): Future[Result] =
     getPsaId(enrolments) match {
       case Some(id) =>
-        schemeDetailsConnector.checkAssociation(id, psaId, srn).flatMap {
-          case true => block(IhtpAuthContext(externalId, id, psaId, request))
-          case false =>
-            Future
-              .failed(
-                new UnauthorizedException("Not Authorised - scheme is not associated with the PSA")
-              )
-        }
+        sessionService
+          .checkAssociation(
+            id = id,
+            idType = psaId,
+            srn = srn.value,
+            callBackFunction = schemeDetailsConnector.checkAssociation(id, psaId, srn)
+          )
+          .flatMap {
+            case true => block(IhtpAuthContext(externalId, id, psaId, request))
+            case false =>
+              Future
+                .failed(
+                  new UnauthorizedException("Not Authorised - scheme is not associated with the PSA")
+                )
+          }
       case psa =>
         Future.failed(new BadRequestException("Bad Request - no PsaId in the enrolment"))
     }
@@ -100,14 +109,21 @@ trait IhtpAuth extends AuthorisedFunctions with Logging {
   )(implicit ec: ExecutionContext, hc: HeaderCarrier, request: Request[A]): Future[Result] =
     getPspId(enrolments) match {
       case Some(id) =>
-        schemeDetailsConnector.checkAssociation(id, pspId, srn).flatMap {
-          case true => block(IhtpAuthContext(externalId, id, pspId, request))
-          case false =>
-            Future
-              .failed(
-                new UnauthorizedException("Not Authorised - scheme is not associated with the PSP")
-              )
-        }
+        sessionService
+          .checkAssociation(
+            id = id,
+            idType = pspId,
+            srn = srn.value,
+            callBackFunction = schemeDetailsConnector.checkAssociation(id, pspId, srn)
+          )
+          .flatMap {
+            case true => block(IhtpAuthContext(externalId, id, pspId, request))
+            case false =>
+              Future
+                .failed(
+                  new UnauthorizedException("Not Authorised - scheme is not associated with the PSP")
+                )
+          }
       case psp =>
         Future.failed(new BadRequestException("Bad Request - no PspId in the enrolment"))
     }

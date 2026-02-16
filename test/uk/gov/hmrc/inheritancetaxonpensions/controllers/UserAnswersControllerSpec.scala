@@ -23,7 +23,7 @@ import play.api.inject.bind
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolments}
 import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
-import uk.gov.hmrc.inheritancetaxonpensions.repositories.UserAnswersRepository
+import uk.gov.hmrc.inheritancetaxonpensions.repositories.{SessionSchemeDetailsRepository, UserAnswersRepository}
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
 import uk.gov.hmrc.inheritancetaxonpensions.models.UserAnswers
 import org.mockito.ArgumentMatchers.any
@@ -44,15 +44,27 @@ class UserAnswersControllerSpec extends BaseSpec:
   private val mockAuthConnector: AuthConnector = mock[AuthConnector]
   private val mockSchemeDetailsConnector: SchemeDetailsConnector = mock[SchemeDetailsConnector]
   private val mockUserAnswersRepository: UserAnswersRepository = mock[UserAnswersRepository]
+  private val mockSessionSchemeDetailsRepository: SessionSchemeDetailsRepository = mock[SessionSchemeDetailsRepository]
+
   val emptyUserAnswers: UserAnswers = UserAnswers("id")
 
-  override def beforeEach(): Unit =
-    reset(mockAuthConnector, mockSchemeDetailsConnector, mockUserAnswersRepository)
+  override def beforeEach(): Unit = {
+    reset(
+      mockAuthConnector,
+      mockSchemeDetailsConnector,
+      mockUserAnswersRepository,
+      mockSessionSchemeDetailsRepository
+    )
+
+    when(mockSessionSchemeDetailsRepository.get(any())).thenReturn(Future.successful(None))
+  }
+
   private val modules: Seq[GuiceableModule] =
     Seq(
       bind[AuthConnector].toInstance(mockAuthConnector),
       bind[SchemeDetailsConnector].toInstance(mockSchemeDetailsConnector),
-      bind[UserAnswersRepository].toInstance(mockUserAnswersRepository)
+      bind[UserAnswersRepository].toInstance(mockUserAnswersRepository),
+      bind[SessionSchemeDetailsRepository].toInstance(mockSessionSchemeDetailsRepository)
     )
 
   private val application: Application = new GuiceApplicationBuilder()

@@ -16,18 +16,18 @@
 
 package uk.gov.hmrc.inheritancetaxonpensions.models
 
-import play.api.libs.json.{Format, OFormat, __}
+import play.api.libs.json.{__, Format, OFormat}
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import play.api.libs.functional.syntax._
 
 import java.time.Instant
 
 case class SessionSchemeDetails(
-                                 id: String,
-                                 idType: String,
-                                 srn: String,
-                                 isAssociated: Boolean = false,
-                                 lastUpdated: Instant = Instant.now
+  id: String,
+  idType: String,
+  srn: String,
+  isAssociated: Boolean = false,
+  lastUpdated: Instant = Instant.now
 )
 
 object SessionSchemeDetails {
