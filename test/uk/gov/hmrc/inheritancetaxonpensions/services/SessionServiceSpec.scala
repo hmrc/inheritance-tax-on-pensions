@@ -49,7 +49,7 @@ class SessionServiceSpec extends AnyFreeSpec with Matchers with MockitoSugar wit
 
   val sessionService = SessionService(mockSessionSchemeDetailsRepository)
 
-  "trySchemeDetails" - {
+  "checkAssociation" - {
 
     "return scheme details from the session when session data is present" in {
       when(mockSessionSchemeDetailsRepository.get(any())).thenReturn(Future.successful(Some(sessionSchemeDetails)))
