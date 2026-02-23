@@ -47,7 +47,7 @@ class SessionSchemeDetailsRepositorySpec
   private val stubClock: Clock = Clock.fixed(instant, ZoneId.systemDefault)
 
   private val sessionSchemeDetails: SessionSchemeDetails =
-    SessionSchemeDetails("id", "psp", "srn01", true, Instant.ofEpochSecond(1))
+    SessionSchemeDetails("id", true, Instant.ofEpochSecond(1))
 
   private val mockAppConfig = mock[AppConfig]
   when(mockAppConfig.authSessionTtl).`thenReturn`(1L)

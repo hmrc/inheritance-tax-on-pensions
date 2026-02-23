@@ -41,7 +41,7 @@ class SessionServiceSpec extends AnyFreeSpec with Matchers with MockitoSugar wit
   implicit val hc: HeaderCarrier = HeaderCarrier()
 
   private val sessionSchemeDetails: SessionSchemeDetails =
-    SessionSchemeDetails("id", "idType", "srn01", false, Instant.ofEpochSecond(1))
+    SessionSchemeDetails("id", false, Instant.ofEpochSecond(1))
 
   val callbackFunctionSchemeDetails: Future[Boolean] = Future.successful(true)
 

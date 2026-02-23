@@ -46,7 +46,7 @@ class SessionService @Inject() (
         Future.successful(sessionSchemeDetails.isAssociated)
       case None =>
         callBackFunction.map { result =>
-          sessionSchemeDetailsRepository.set(SessionSchemeDetails(sessionKey, idType, srn, result))
+          sessionSchemeDetailsRepository.set(SessionSchemeDetails(sessionKey, result))
           result
         }
     }

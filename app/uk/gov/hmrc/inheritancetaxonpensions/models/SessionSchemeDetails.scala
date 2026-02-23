@@ -24,8 +24,6 @@ import java.time.Instant
 
 case class SessionSchemeDetails(
   id: String,
-  idType: String,
-  srn: String,
   isAssociated: Boolean = false,
   lastUpdated: Instant = Instant.now
 )
@@ -34,8 +32,6 @@ object SessionSchemeDetails {
   implicit val format: OFormat[SessionSchemeDetails] =
     (__ \ "_id")
       .format[String]
-      .and((__ \ "idType").format[String])
-      .and((__ \ "srn").format[String])
       .and((__ \ "isAssociated").format[Boolean])
       .and((__ \ "lastUpdated").format(using MongoJavatimeFormats.instantFormat))(
         SessionSchemeDetails.apply,
