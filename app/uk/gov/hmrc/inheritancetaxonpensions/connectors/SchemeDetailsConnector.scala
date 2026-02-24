@@ -38,7 +38,6 @@ class SchemeDetailsConnector @Inject() (appConfig: AppConfig, http: HttpClientV2
     ec: ExecutionContext
   ): Future[Boolean] = {
     val url = appConfig.isPsaAssociatedUrl
-    logger.info(s"[SchemeDetailsConnector][checkAssociation] - calling api: $url")
     http
       .get(url"$url")
       .transform(
