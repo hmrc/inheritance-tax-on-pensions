@@ -32,4 +32,5 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
   val ifsTimeout: Duration = config.get[Duration]("ifs.timeout")
 
   val userAnswersTtl: Long = config.get[Int]("mongodb.userAnswersTtl")
+  val authSessionTtl: Long = config.get[Int]("mongodb.authSessionTtl")
 }
