@@ -19,7 +19,7 @@ package uk.gov.hmrc.inheritancetaxonpensions.controllers
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.SchemeDetailsConnector
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
-import uk.gov.hmrc.inheritancetaxonpensions.auth.IhtpAuth
+import uk.gov.hmrc.inheritancetaxonpensions.auth.IhtpAuthWithSessionCache
 import play.api.libs.json.Json
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
 import uk.gov.hmrc.inheritancetaxonpensions.services.SessionService
@@ -39,7 +39,7 @@ class GetSubmissionListController @Inject() (
   ec: ExecutionContext
 ) extends BackendController(cc)
     with BaseController
-    with IhtpAuth {
+    with IhtpAuthWithSessionCache {
 
   def getSubmissionList(pstr: String): Action[AnyContent] = Action.async { implicit request =>
     val Seq(userName, schemeName, srnS, requestRole) =

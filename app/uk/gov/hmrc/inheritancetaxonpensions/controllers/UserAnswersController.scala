@@ -19,7 +19,7 @@ package uk.gov.hmrc.inheritancetaxonpensions.controllers
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.SchemeDetailsConnector
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
-import uk.gov.hmrc.inheritancetaxonpensions.auth.IhtpAuth
+import uk.gov.hmrc.inheritancetaxonpensions.auth.IhtpAuthWithSessionCache
 import uk.gov.hmrc.inheritancetaxonpensions.repositories.UserAnswersRepository
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
 import uk.gov.hmrc.inheritancetaxonpensions.models.UserAnswers
@@ -41,7 +41,7 @@ class UserAnswersController @Inject() (
   override protected val sessionService: SessionService
 )(implicit ec: ExecutionContext)
     extends BackendController(cc)
-    with IhtpAuth
+    with IhtpAuthWithSessionCache
     with BaseController
     with Logging {
 
