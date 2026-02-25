@@ -18,7 +18,7 @@ package uk.gov.hmrc.inheritancetaxonpensions.auth
 
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.SchemeDetailsConnector
 import play.api.mvc.{Request, Result}
-import uk.gov.hmrc.auth.core.retrieve.{Retrieval, ~}
+import uk.gov.hmrc.auth.core.retrieve.{~, Retrieval}
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
 import play.api.Logging
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, UnauthorizedException}

@@ -19,8 +19,8 @@ package uk.gov.hmrc.inheritancetaxonpensions.auth
 import play.api.mvc.Request
 
 final case class IhtpAuthContext[A](
-                                     externalId: String,
-                                     psaPspId: String,
-                                     credentialRole: String,
-                                     request: Request[A]
-                                   )
+  externalId: String,
+  psaPspId: String,
+  credentialRole: String,
+  request: Request[A]
+)
