@@ -18,6 +18,7 @@ package uk.gov.hmrc.inheritancetaxonpensions.config
 
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import play.api.Configuration
+import uk.gov.hmrc.inheritancetaxonpensions.models.Srn
 
 import scala.concurrent.duration.Duration
 
@@ -26,11 +27,26 @@ import javax.inject.{Inject, Singleton}
 @Singleton
 class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig) {
 
+  private[config] def getConfStringAndThrowIfNotFound(key: String) =
+    servicesConfig.getConfString(key, throw new RuntimeException(s"Could not find services config key '$key'"))
+
   private val pensionsSchemeURL: String = servicesConfig.baseUrl(serviceName = "pensionsScheme")
-
   val isPsaAssociatedUrl: String = s"$pensionsSchemeURL${config.get[String](path = "serviceUrls.is-psa-associated")}"
-  val ifsTimeout: Duration = config.get[Duration]("ifs.timeout")
 
+  // IHTP Report
+  def submitIhtpReportUrl(srn: Srn): String =
+    s"$submitIhtpReportHost$submitIhtpReportUrlPrefix${srn.value}"
+
+  private val submitIhtpReportHost: String = servicesConfig.baseUrl("ihtp-report")
+  lazy val submitIhtpReportClientId: String = getConfStringAndThrowIfNotFound("ihtp-report.clientId")
+  lazy val submitIhtpReportSecret: String = getConfStringAndThrowIfNotFound("ihtp-report.secret")
+
+  private lazy val submitIhtpReportUrlPrefix: String = getConfStringAndThrowIfNotFound(
+    "ihtp-report.url.submitReport"
+  )
+  // IHTP Report End
+
+  val ifsTimeout: Duration = config.get[Duration]("ifs.timeout")
   val userAnswersTtl: Long = config.get[Int]("mongodb.userAnswersTtl")
   val authSessionTtl: Long = config.get[Int]("mongodb.authSessionTtl")
 }
