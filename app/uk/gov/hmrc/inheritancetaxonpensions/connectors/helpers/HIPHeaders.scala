@@ -24,14 +24,14 @@ import java.time.{Clock, Instant}
 import java.util.Base64
 import javax.inject.Inject
 
-class HIPHeaders @Inject()(randomUUIDGenerator: RandomUUIDGenerator, appConfig: AppConfig, clock: Clock) {
-  private val correlationIdHeader: String       = "correlationId"
-  private val xOriginatingSystemHeader: String  = "X-Originating-System"
-  private val xReceiptDateHeader: String        = "X-Receipt-Date"
+class HIPHeaders @Inject() (randomUUIDGenerator: RandomUUIDGenerator, appConfig: AppConfig, clock: Clock) {
+  private val correlationIdHeader: String = "correlationId"
+  private val xOriginatingSystemHeader: String = "X-Originating-System"
+  private val xReceiptDateHeader: String = "X-Receipt-Date"
   private val xTransmittingSystemHeader: String = "X-Transmitting-System"
 
   private val mdtp = "MDTP"
-  private val hip  = "HIP"
+  private val hip = "HIP"
 
   // TODO check these headers against the EPIDs when we get them!
   def ihtpReportSubmissionHeaders(): Seq[(String, String)] =
@@ -44,8 +44,8 @@ class HIPHeaders @Inject()(randomUUIDGenerator: RandomUUIDGenerator, appConfig: 
     )
 
   private def authorizationForIhtpReportSubmission(): String = {
-    val clientId = appConfig.submitIhtpReportClientId
-    val secret   = appConfig.submitIhtpReportSecret
+    val clientId = appConfig.ihtpReportClientId
+    val secret = appConfig.ihtpReportSecret
 
     val encoded = Base64.getEncoder.encodeToString(s"$clientId:$secret".getBytes("UTF-8"))
     s"Basic $encoded"

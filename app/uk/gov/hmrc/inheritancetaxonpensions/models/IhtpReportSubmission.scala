@@ -29,9 +29,7 @@ object IhtpReportSubmission {
     Json.format[IhtpReportSubmission]
 }
 
-case class IhtpReportSubmissionResponse(processingDateTime: Instant,
-                                        formBundleNumber: String,
-                                        paymentReference: String)
+case class IhtpReportSubmissionResponse(processingDateTime: Instant, formBundleNumber: String, paymentReference: String)
 
 object IhtpReportSubmissionResponse {
   implicit val ihtpReportSubmissionResponseFormat: OFormat[IhtpReportSubmissionResponse] =

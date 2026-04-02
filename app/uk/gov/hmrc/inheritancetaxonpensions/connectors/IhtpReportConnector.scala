@@ -32,18 +32,19 @@ import scala.util.{Failure, Success, Try}
 
 import javax.inject.Inject
 
-class IhtpReportConnector @Inject()(
-                                     headers: HIPHeaders,
-                                     config: AppConfig,
-                                     implicit val httpClient: HttpClientV2
+class IhtpReportConnector @Inject() (
+  headers: HIPHeaders,
+  config: AppConfig,
+  implicit val httpClient: HttpClientV2
 )(implicit ec: ExecutionContext)
     extends HttpReadsInstances
     with Logging {
 
-  def submitReport(srn :Srn, ihtpReportSubmission: IhtpReportSubmission)
-                  (implicit hc: HeaderCarrier): Future[Either[ErrorResponse, IhtpReportSubmissionResponse]] = {
+  def submitReport(srn: Srn, ihtpReportSubmission: IhtpReportSubmission)(implicit
+    hc: HeaderCarrier
+  ): Future[Either[ErrorResponse, IhtpReportSubmissionResponse]] = {
     val url: String = config.submitIhtpReportUrl(srn)
-    
+
     httpClient
       .post(url"$url")
       .setHeader(headers.ihtpReportSubmissionHeaders()*)

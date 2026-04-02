@@ -20,10 +20,9 @@ import play.api.http.Status._
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 
 object ErrorCodes {
-  val badRequest: ErrorResponse          = ErrorResponse(BAD_REQUEST, "Bad request made")
-  val entityNotFound: ErrorResponse      = ErrorResponse(NOT_FOUND, "Entity not found")
-  val unprocessableEntity: ErrorResponse = ErrorResponse(UNPROCESSABLE_ENTITY, "The request was received but could not be processed")
-  val unauthorisedRequest: ErrorResponse = ErrorResponse(UNAUTHORIZED, "Unauthorised request")
-  val serviceUnavailable: ErrorResponse  = ErrorResponse(SERVICE_UNAVAILABLE, "Service unavailable")
-  val unexpectedResponse: ErrorResponse  = ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response")
+  val badRequest: ErrorResponse = ErrorResponse(BAD_REQUEST, "Bad request made")
+  val entityNotFound: ErrorResponse = ErrorResponse(NOT_FOUND, "Entity not found")
+  val unprocessableEntity: ErrorResponse =
+    ErrorResponse(UNPROCESSABLE_ENTITY, "The request was received but could not be processed")
+  val unexpectedResponse: ErrorResponse = ErrorResponse(INTERNAL_SERVER_ERROR, "Unexpected Response")
 }

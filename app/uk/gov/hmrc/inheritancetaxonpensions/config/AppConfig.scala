@@ -35,11 +35,11 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
 
   // IHTP Report
   def submitIhtpReportUrl(srn: Srn): String =
-    s"$submitIhtpReportHost$submitIhtpReportUrlPrefix${srn.value}"
+    s"$ihtpReportHost$submitIhtpReportUrlPrefix${srn.value}"
 
-  private val submitIhtpReportHost: String = servicesConfig.baseUrl("ihtp-report")
-  lazy val submitIhtpReportClientId: String = getConfStringAndThrowIfNotFound("ihtp-report.clientId")
-  lazy val submitIhtpReportSecret: String = getConfStringAndThrowIfNotFound("ihtp-report.secret")
+  private val ihtpReportHost: String = servicesConfig.baseUrl("ihtp-report")
+  lazy val ihtpReportClientId: String = getConfStringAndThrowIfNotFound("ihtp-report.clientId")
+  lazy val ihtpReportSecret: String = getConfStringAndThrowIfNotFound("ihtp-report.secret")
 
   private lazy val submitIhtpReportUrlPrefix: String = getConfStringAndThrowIfNotFound(
     "ihtp-report.url.submitReport"
