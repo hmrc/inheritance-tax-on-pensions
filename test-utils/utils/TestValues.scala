@@ -53,8 +53,11 @@ trait TestValues {
   val pspId = "21000005"
 
   val testReportSubmissionRequestBody = IhtpReportSubmission(
-    pstr = "S2400000001",
-    inheritanceTaxReferenceNumber = "A123456/25A"
+    ReportDetails(
+      pstr = "S2400000001",
+      inheritanceTaxReference = "A123456/25A"
+    )
   )
+
   val testReportSubmissionResponse = IhtpReportSubmissionResponse(Instant.now(clock), "910000000000", "123456789")
 }
