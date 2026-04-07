@@ -40,10 +40,10 @@ class IhtpReportConnector @Inject() (
     extends HttpReadsInstances
     with Logging {
 
-  def submitReport(srn: Srn, ihtpReportSubmission: IhtpReportSubmission)(implicit
+  def submitReport(ihtpReportSubmission: IhtpReportSubmission)(implicit
     hc: HeaderCarrier
   ): Future[Either[ErrorResponse, IhtpReportSubmissionResponse]] = {
-    val url: String = config.submitIhtpReportUrl(srn)
+    val url: String = config.submitReportUrl
 
     httpClient
       .post(url"$url")
@@ -55,33 +55,33 @@ class IhtpReportConnector @Inject() (
           Try(response.json.as[IhtpReportSubmissionResponse]) match {
             case Success(submissionResponse) =>
               logger.info(
-                s"[IhtpReportConnector][submitReport] IHTP Report submitted successfully for srn ${srn.value}"
+                "[IhtpReportConnector][submitReport] IHTP Report submitted successfully"
               )
               Future.successful(Right(submissionResponse))
             case Failure(_) =>
               logger.warn(
-                s"[IhtpReportConnector][submitReport] Parsing failed for submission response for srn ${srn.value}"
+                "[IhtpReportConnector][submitReport] Parsing failed for submission response"
               )
               Future.successful(Left(ErrorCodes.unexpectedResponse))
           }
         case response if response.status == BAD_REQUEST =>
           logger.warn(
-            s"[IhtpReportConnector][submitReport] Bad request returned for submission for srn ${srn.value}"
+            "[IhtpReportConnector][submitReport] Bad request returned for submission"
           )
           Future.successful(Left(ErrorCodes.badRequest))
         case response if response.status == NOT_FOUND =>
           logger.warn(
-            s"[IhtpReportConnector][submitReport] Not found returned for submission for srn ${srn.value}"
+            "[IhtpReportConnector][submitReport] Not found returned for submission"
           )
           Future.successful(Left(ErrorCodes.entityNotFound))
         case response if response.status == UNPROCESSABLE_ENTITY =>
           logger.warn(
-            s"[IhtpReportConnector][submitReport] Unprocessable entity returned for submission for srn ${srn.value}"
+            "[IhtpReportConnector][submitReport] Unprocessable entity returned for submission"
           )
           Future.successful(Left(ErrorCodes.unprocessableEntity))
         case response => // All transient (502, 503 ....)
           logger.warn(
-            s"[IhtpReportConnector][submitReport] Received unexpected response for submission for srn ${srn.value}"
+            "[IhtpReportConnector][submitReport] Received unexpected response for submission"
           )
           Future.successful(Left(ErrorCodes.unexpectedResponse))
       }

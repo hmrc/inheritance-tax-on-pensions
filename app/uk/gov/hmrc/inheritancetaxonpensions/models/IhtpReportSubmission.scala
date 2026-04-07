@@ -22,7 +22,7 @@ import java.time.Instant
 
 // TODO - build out as the journey matures
 // TODO - Review this model against the IHTP EPIDs when we get them!
-case class IhtpReportSubmission(inheritanceTaxReferenceNumber: String)
+case class IhtpReportSubmission(pstr: String, inheritanceTaxReferenceNumber: String)
 
 object IhtpReportSubmission {
   implicit val ihtpReportSubmissionFormat: OFormat[IhtpReportSubmission] =

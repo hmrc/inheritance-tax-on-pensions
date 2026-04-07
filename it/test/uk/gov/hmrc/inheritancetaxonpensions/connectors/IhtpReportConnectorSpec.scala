@@ -43,7 +43,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
 
   private lazy val connector: IhtpReportConnector = app.injector.instanceOf[IhtpReportConnector]
 
-  val submitReturnUrl: String = s"/pension-online/scheme-inheritance-tax-report/$srn"
+  val submitReturnUrl: String = "/etmp/RESTAdapter/pods/reports/ihtp"
 
   "submitReport" should {
 
@@ -54,7 +54,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
         ok(s"${Json.toJson(testReportSubmissionResponse)}")
       )
 
-      whenReady(connector.submitReport(srnObj, testReportSubmissionRequestBody)) { result =>
+      whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
         WireMock.verify(
           postRequestedFor(
             urlEqualTo(submitReturnUrl)
@@ -72,7 +72,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
         ok(s"${Json.toJson("foo")}")
       )
 
-      whenReady(connector.submitReport(srnObj, testReportSubmissionRequestBody)) { result =>
+      whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
         WireMock.verify(
           postRequestedFor(
             urlEqualTo(submitReturnUrl)
@@ -90,7 +90,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
         badRequest()
       )
 
-      whenReady(connector.submitReport(srnObj, testReportSubmissionRequestBody)) { result =>
+      whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
         WireMock.verify(
           postRequestedFor(
             urlEqualTo(submitReturnUrl)
@@ -108,7 +108,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
         notFound()
       )
 
-      whenReady(connector.submitReport(srnObj, testReportSubmissionRequestBody)) { result =>
+      whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
         WireMock.verify(
           postRequestedFor(
             urlEqualTo(submitReturnUrl)
@@ -126,7 +126,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
         badRequestEntity()
       )
 
-      whenReady(connector.submitReport(srnObj, testReportSubmissionRequestBody)) { result =>
+      whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
         WireMock.verify(
           postRequestedFor(
             urlEqualTo(submitReturnUrl)
@@ -144,7 +144,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
         serverError()
       )
 
-      whenReady(connector.submitReport(srnObj, testReportSubmissionRequestBody)) { result =>
+      whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
         WireMock.verify(
           postRequestedFor(
             urlEqualTo(submitReturnUrl)
@@ -162,7 +162,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
         serviceUnavailable()
       )
 
-      whenReady(connector.submitReport(srnObj, testReportSubmissionRequestBody)) { result =>
+      whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
         WireMock.verify(
           postRequestedFor(
             urlEqualTo(submitReturnUrl)
