@@ -18,10 +18,13 @@ package utils
 
 import uk.gov.hmrc.auth.core.{Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants.psaEnrolmentKey
+import uk.gov.hmrc.inheritancetaxonpensions.models._
 
-import java.time.LocalDate
+import java.time._
 
 trait TestValues {
+  val clockMillis: Long = 1718118467838L
+  val clock: Clock = Clock.fixed(Instant.ofEpochMilli(clockMillis), ZoneId.of("UTC"))
 
   val externalId: String = "externalId"
   val enrolments: Enrolments = Enrolments(
@@ -38,6 +41,7 @@ trait TestValues {
   )
   val pstr = "testPstr"
   val srn = "S2400000001"
+  val srnObj: Srn = new Srn("S2400000001")
   val psrVersion = "001"
   val psrFormBundleNumber = "1234567890"
   val schemeName = "SchemeName"
@@ -48,4 +52,7 @@ trait TestValues {
   val sampleToday: LocalDate = LocalDate.of(2023, 10, 19)
   val psaId = "A0000000"
   val pspId = "21000005"
+
+  val testReportSubmissionRequestBody = IhtpReportSubmission("A123456/25A")
+  val testReportSubmissionResponse = IhtpReportSubmissionResponse(Instant.now(clock), "910000000000", "123456789")
 }
