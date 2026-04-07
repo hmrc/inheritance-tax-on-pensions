@@ -41,7 +41,6 @@ trait TestValues {
   )
   val pstr = "testPstr"
   val srn = "S2400000001"
-  val srnObj: Srn = new Srn("S2400000001")
   val psrVersion = "001"
   val psrFormBundleNumber = "1234567890"
   val schemeName = "SchemeName"
@@ -53,6 +52,12 @@ trait TestValues {
   val psaId = "A0000000"
   val pspId = "21000005"
 
-  val testReportSubmissionRequestBody = IhtpReportSubmission("A123456/25A")
+  val testReportSubmissionRequestBody = IhtpReportSubmission(
+    ReportDetails(
+      pstr = "S2400000001",
+      inheritanceTaxReference = "A123456/25A"
+    )
+  )
+
   val testReportSubmissionResponse = IhtpReportSubmissionResponse(Instant.now(clock), "910000000000", "123456789")
 }

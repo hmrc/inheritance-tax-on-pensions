@@ -18,7 +18,6 @@ package uk.gov.hmrc.inheritancetaxonpensions.config
 
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 import play.api.Configuration
-import uk.gov.hmrc.inheritancetaxonpensions.models.Srn
 
 import scala.concurrent.duration.Duration
 
@@ -34,14 +33,14 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
   val isPsaAssociatedUrl: String = s"$pensionsSchemeURL${config.get[String](path = "serviceUrls.is-psa-associated")}"
 
   // IHTP Report
-  def submitIhtpReportUrl(srn: Srn): String =
-    s"$ihtpReportHost$submitIhtpReportUrlPrefix${srn.value}"
+  lazy val submitReportUrl: String =
+    s"$ihtpReportHost$submitIhtpReportUrl"
 
   private val ihtpReportHost: String = servicesConfig.baseUrl("ihtp-report")
   lazy val ihtpReportClientId: String = getConfStringAndThrowIfNotFound("ihtp-report.clientId")
   lazy val ihtpReportSecret: String = getConfStringAndThrowIfNotFound("ihtp-report.secret")
 
-  private lazy val submitIhtpReportUrlPrefix: String = getConfStringAndThrowIfNotFound(
+  private lazy val submitIhtpReportUrl: String = getConfStringAndThrowIfNotFound(
     "ihtp-report.url.submitReport"
   )
   // IHTP Report End
