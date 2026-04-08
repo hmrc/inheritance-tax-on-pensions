@@ -5,3 +5,6 @@ GET        /:pstr/submission-list         uk.gov.hmrc.inheritancetaxonpensions.c
 # User answers
 PUT          /user-answers                uk.gov.hmrc.inheritancetaxonpensions.controllers.UserAnswersController.set()
 GET          /user-answers/:id            uk.gov.hmrc.inheritancetaxonpensions.controllers.UserAnswersController.fetch(id: String)
+
+# Report submission
+POST         /submit-report               uk.gov.hmrc.inheritancetaxonpensions.controllers.ReportSubmissionController.submitReport()
