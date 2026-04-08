@@ -33,14 +33,14 @@ class ReportSubmissionService @Inject() (
 )(implicit ec: ExecutionContext)
     extends Logging {
 
-  def submitReport(userAnswersId: String, srn: Srn)(implicit
+  def submitReport(userAnswersId: String, pstr: String)(implicit
     hc: HeaderCarrier
   ): Future[Either[ErrorResponse, IhtpReportSubmissionResponse]] =
     for {
       userAnswersOpt <- userAnswersRepository.get(userAnswersId)
       result <- userAnswersOpt match {
         case Some(userAnswers) =>
-          val submissionPayLoad = buildSubmissionPayload(userAnswers, srn.value)
+          val submissionPayLoad = buildSubmissionPayload(userAnswers, pstr)
           ihtpReportConnector.submitReport(submissionPayLoad)
 
         case None =>

@@ -7,4 +7,4 @@ PUT          /user-answers                uk.gov.hmrc.inheritancetaxonpensions.c
 GET          /user-answers/:id            uk.gov.hmrc.inheritancetaxonpensions.controllers.UserAnswersController.fetch(id: String)
 
 # Report submission
-POST         /submit-report               uk.gov.hmrc.inheritancetaxonpensions.controllers.ReportSubmissionController.submitReport()
+POST         /:pstr/submit-report/:userAnswersId         uk.gov.hmrc.inheritancetaxonpensions.controllers.ReportSubmissionController.submitReport(pstr: String, userAnswersId: String)

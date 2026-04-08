@@ -21,13 +21,12 @@ import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.inheritancetaxonpensions.auth.IhtpAuthWithSessionCache
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
-import uk.gov.hmrc.inheritancetaxonpensions.models.Srn
 import uk.gov.hmrc.inheritancetaxonpensions.services.{ReportSubmissionService, SessionService}
 import uk.gov.hmrc.auth.core.AuthConnector
 import play.api.Logging
 import play.api.libs.json.Json
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 import javax.inject.{Inject, Singleton}
 
@@ -44,31 +43,20 @@ class ReportSubmissionController @Inject() (
     with BaseController
     with Logging {
 
-  def submitReport(): Action[AnyContent] = Action.async { implicit request =>
-    val Seq(userName, schemeName, srnS, requestRole) =
-      requiredHeaders(HEADER_KEY_USER_NAME, HEADER_KEY_SCHEME_NAME, HEADER_KEY_SRN, HEADER_KEY_REQUEST_ROLE)
+  def submitReport(pstr: String, userAnswersId: String): Action[AnyContent] = Action.async { implicit request =>
+    val Seq(userName, schemeName, requestRole) =
+      requiredHeaders(HEADER_KEY_USER_NAME, HEADER_KEY_SCHEME_NAME, HEADER_KEY_REQUEST_ROLE)
 
-    authorisedAsIhtpUser(srnS) { _ =>
-      val userAnswersId =
-        request.body.asJson.flatMap(json => (json \ "userAnswersId").asOpt[String]).getOrElse("default")
+    reportSubmissionService.submitReport(userAnswersId, pstr).map {
+      case Right(submissionResponse) =>
+        logger.info(s"[ReportSubmissionController][submitReport] Report submitted successfully for pstr $pstr")
+        Ok(Json.toJson(submissionResponse))
 
-      Srn(srnS) match {
-        case Some(srn) =>
-          reportSubmissionService.submitReport(userAnswersId, srn).map {
-            case Right(submissionResponse) =>
-              logger.info(s"[ReportSubmissionController][submitReport] Report submitted successfully for srn $srnS")
-              Ok(Json.toJson(submissionResponse))
-
-            case Left(errorResponse) =>
-              logger.warn(
-                s"[ReportSubmissionController][submitReport] Report submission failed for srn $srnS: ${errorResponse.message}"
-              )
-              Status(errorResponse.statusCode)(Json.toJson(errorResponse))
-          }
-        case None =>
-          logger.warn(s"[ReportSubmissionController][submitReport] Invalid SRN format: $srnS")
-          Future.successful(BadRequest(Json.obj("message" -> "Invalid SRN format")))
-      }
+      case Left(errorResponse) =>
+        logger.warn(
+          s"[ReportSubmissionController][submitReport] Report submission failed for pstr $pstr: ${errorResponse.message}"
+        )
+        Status(errorResponse.statusCode)(Json.toJson(errorResponse))
     }
   }
 }

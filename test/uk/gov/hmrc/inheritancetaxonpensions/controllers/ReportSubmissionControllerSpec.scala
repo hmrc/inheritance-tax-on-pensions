@@ -19,112 +19,52 @@ package uk.gov.hmrc.inheritancetaxonpensions.controllers
 import play.api.test.{FakeRequest, Helpers}
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.SchemeDetailsConnector
 import play.api.http.Status
-import play.api.inject.bind
-import uk.gov.hmrc.auth.core.retrieve.~
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
-import uk.gov.hmrc.inheritancetaxonpensions.repositories.{SessionSchemeDetailsRepository, UserAnswersRepository}
+import play.api.libs.json.Json
+import uk.gov.hmrc.http.BadRequestException
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
 import uk.gov.hmrc.inheritancetaxonpensions.models._
 import org.mockito.ArgumentMatchers.any
+import utils.BaseSpec
 import play.api.test.Helpers._
 import org.mockito.Mockito._
-import utils.BaseSpec
-import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
-import uk.gov.hmrc.inheritancetaxonpensions.services.ReportSubmissionService
-import uk.gov.hmrc.auth.core.{AuthConnector, Enrolments}
-import play.api.Application
-import play.api.libs.json.Json
+import uk.gov.hmrc.inheritancetaxonpensions.services.{ReportSubmissionService, SessionService}
+import uk.gov.hmrc.auth.core.AuthConnector
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 import java.time.Instant
 
 class ReportSubmissionControllerSpec extends BaseSpec:
 
-  implicit val hc: HeaderCarrier = HeaderCarrier()
+  implicit val ec: ExecutionContext = ExecutionContext.global
 
   private val fakeRequest = FakeRequest("POST", "/")
-  private val mockAuthConnector: AuthConnector = mock[AuthConnector]
-  private val mockSchemeDetailsConnector: SchemeDetailsConnector = mock[SchemeDetailsConnector]
-  private val mockUserAnswersRepository: UserAnswersRepository = mock[UserAnswersRepository]
-  private val mockSessionSchemeDetailsRepository: SessionSchemeDetailsRepository = mock[SessionSchemeDetailsRepository]
   private val mockReportSubmissionService: ReportSubmissionService = mock[ReportSubmissionService]
-
+  private val testPstr = "24682468"
   private val testSubmissionResponse = IhtpReportSubmissionResponse(
     processingDateTime = Instant.now(),
     formBundleNumber = "910000000000",
-    paymentReference = "123456789"
+    paymentReference = "123456781"
   )
 
-  override def beforeEach(): Unit = {
-    reset(
-      mockAuthConnector,
-      mockSchemeDetailsConnector,
-      mockUserAnswersRepository,
-      mockSessionSchemeDetailsRepository,
-      mockReportSubmissionService
-    )
+  private val controller = new ReportSubmissionController(
+    reportSubmissionService = mockReportSubmissionService,
+    cc = stubControllerComponents(),
+    authConnector = mock[AuthConnector],
+    schemeDetailsConnector = mock[SchemeDetailsConnector],
+    sessionService = mock[SessionService]
+  )
 
-    when(mockSessionSchemeDetailsRepository.get(any())).thenReturn(Future.successful(None))
-  }
-
-  private val modules: Seq[GuiceableModule] =
-    Seq(
-      bind[AuthConnector].toInstance(mockAuthConnector),
-      bind[SchemeDetailsConnector].toInstance(mockSchemeDetailsConnector),
-      bind[UserAnswersRepository].toInstance(mockUserAnswersRepository),
-      bind[SessionSchemeDetailsRepository].toInstance(mockSessionSchemeDetailsRepository),
-      bind[ReportSubmissionService].toInstance(mockReportSubmissionService)
-    )
-
-  private val application: Application = new GuiceApplicationBuilder()
-    .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false)
-    .overrides(modules*)
-    .build()
-
-  private val controller = application.injector.instanceOf[ReportSubmissionController]
+  override def beforeEach(): Unit =
+    reset(mockReportSubmissionService)
 
   "submitReport" must {
-
     "return OK (200) when report submission is successful" in {
-      when(mockAuthConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any()))
-        .thenReturn(
-          Future.successful(new ~(Some(externalId), enrolments))
-        )
-      when(mockSchemeDetailsConnector.checkAssociation(any(), any(), any())(any(), any()))
-        .thenReturn(Future.successful(true))
       when(mockReportSubmissionService.submitReport(any(), any())(any()))
         .thenReturn(Future.successful(Right(testSubmissionResponse)))
 
-      val result = controller.submitReport()(
-        fakeRequest
-          .withJsonBody(Json.obj("userAnswersId" -> "testUserAnswersId"))
-          .withHeaders(
-            newHeaders = HEADER_KEY_SRN -> srn,
-            HEADER_KEY_SCHEME_NAME -> schemeName,
-            HEADER_KEY_USER_NAME -> userName,
-            HEADER_KEY_REQUEST_ROLE -> HEADER_VALUE_PSA
-          )
-      )
-
-      status(result) mustEqual Status.OK
-      contentAsJson(result) mustBe Json.toJson(testSubmissionResponse)
-      verify(mockReportSubmissionService, times(1)).submitReport(any(), any())(any())
-    }
-
-    "return OK (200) when request body is missing (uses a default userAnswersId)" in {
-      when(mockAuthConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any()))
-        .thenReturn(
-          Future.successful(new ~(Some(externalId), enrolments))
-        )
-      when(mockSchemeDetailsConnector.checkAssociation(any(), any(), any())(any(), any()))
-        .thenReturn(Future.successful(true))
-      when(mockReportSubmissionService.submitReport(any(), any())(any()))
-        .thenReturn(Future.successful(Right(testSubmissionResponse)))
-
-      val result = controller.submitReport()(
+      val result = controller.submitReport(testPstr, "testUserAnswersId")(
         fakeRequest.withHeaders(
-          newHeaders = HEADER_KEY_SRN -> srn,
           HEADER_KEY_SCHEME_NAME -> schemeName,
           HEADER_KEY_USER_NAME -> userName,
           HEADER_KEY_REQUEST_ROLE -> HEADER_VALUE_PSA
@@ -132,15 +72,30 @@ class ReportSubmissionControllerSpec extends BaseSpec:
       )
 
       status(result) mustEqual Status.OK
+      contentAsJson(result) mustBe Json.toJson(testSubmissionResponse)
       verify(mockReportSubmissionService, times(1)).submitReport(any(), any())(any())
     }
 
-    "return BAD_REQUEST (400) when none of the required headers exist" in {
+    "return error response when service returns Left" in {
+      when(mockReportSubmissionService.submitReport(any(), any())(any()))
+        .thenReturn(Future.successful(Left(ErrorCodes.badRequest)))
+
+      val result = controller.submitReport(testPstr, "testUserAnswersId")(
+        fakeRequest.withHeaders(
+          HEADER_KEY_SCHEME_NAME -> schemeName,
+          HEADER_KEY_USER_NAME -> userName,
+          HEADER_KEY_REQUEST_ROLE -> HEADER_VALUE_PSA
+        )
+      )
+
+      status(result) mustEqual Status.BAD_REQUEST
+      verify(mockReportSubmissionService, times(1)).submitReport(any(), any())(any())
+    }
+
+    "return BAD_REQUEST (400) when none of the headers exist" in {
       intercept[BadRequestException] {
-        await(controller.submitReport()(fakeRequest))
+        await(controller.submitReport(testPstr, "testUserAnswersId")(fakeRequest))
       }
-      verify(mockAuthConnector, never).authorise(any(), any())(any(), any())
-      verify(mockSchemeDetailsConnector, never).checkAssociation(any(), any(), any())(any(), any())
       verify(mockReportSubmissionService, never).submitReport(any(), any())(any())
     }
   }
