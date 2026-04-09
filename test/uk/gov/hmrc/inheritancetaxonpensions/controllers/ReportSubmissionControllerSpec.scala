@@ -67,6 +67,7 @@ class ReportSubmissionControllerSpec extends BaseSpec:
         fakeRequest.withHeaders(
           HEADER_KEY_SCHEME_NAME -> schemeName,
           HEADER_KEY_USER_NAME -> userName,
+          HEADER_KEY_SRN -> "24000086IN",
           HEADER_KEY_REQUEST_ROLE -> HEADER_VALUE_PSA
         )
       )
@@ -84,6 +85,7 @@ class ReportSubmissionControllerSpec extends BaseSpec:
         fakeRequest.withHeaders(
           HEADER_KEY_SCHEME_NAME -> schemeName,
           HEADER_KEY_USER_NAME -> userName,
+          HEADER_KEY_SRN -> "24000086IN",
           HEADER_KEY_REQUEST_ROLE -> HEADER_VALUE_PSA
         )
       )

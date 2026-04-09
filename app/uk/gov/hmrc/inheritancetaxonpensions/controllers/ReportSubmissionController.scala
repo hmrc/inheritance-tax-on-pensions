@@ -44,8 +44,8 @@ class ReportSubmissionController @Inject() (
     with Logging {
 
   def submitReport(pstr: String, userAnswersId: String): Action[AnyContent] = Action.async { implicit request =>
-    val Seq(userName, schemeName, requestRole) =
-      requiredHeaders(HEADER_KEY_USER_NAME, HEADER_KEY_SCHEME_NAME, HEADER_KEY_REQUEST_ROLE)
+    val Seq(userName, schemeName, srn, requestRole) =
+      requiredHeaders(HEADER_KEY_USER_NAME, HEADER_KEY_SCHEME_NAME, HEADER_KEY_SRN, HEADER_KEY_REQUEST_ROLE)
 
     reportSubmissionService.submitReport(userAnswersId, pstr).map {
       case Right(submissionResponse) =>
