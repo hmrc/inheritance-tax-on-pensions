@@ -14,22 +14,19 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.inheritancetaxonpensions.config
+package uk.gov.hmrc.inheritancetaxonpensions.utils
 
-object Constants {
+import uk.gov.hmrc.inheritancetaxonpensions.models.UserAnswers
 
-  val psaEnrolmentKey = "HMRC-PODS-ORG"
-  val pspEnrolmentKey = "HMRC-PODSPP-ORG"
+object UserAnswersHelper {
 
-  val psaId = "psaId"
-  val pspId = "pspId"
+  def getMandatory(userAnswers: UserAnswers, path: String): String =
+    (userAnswers.data \ path)
+      .asOpt[String]
+      .getOrElse(
+        throw new RuntimeException(s"A mandatory field: '$path' was not found in user answers")
+      )
 
-  val HEADER_KEY_USER_NAME = "userName"
-  val HEADER_KEY_SCHEME_NAME = "schemeName"
-  val HEADER_KEY_SRN = "srn"
-  val HEADER_KEY_REQUEST_ROLE = "requestRole"
-  val HEADER_VALUE_PSA = "PSA"
-  val HEADER_VALUE_PSP = "PSP"
-
-  val inheritanceTaxReferenceNumberPath = "inheritanceTaxReferenceNumber"
+  def getOptional(userAnswers: UserAnswers, path: String): Option[String] =
+    (userAnswers.data \ path).asOpt[String]
 }

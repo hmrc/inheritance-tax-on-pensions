@@ -80,15 +80,13 @@ class ReportSubmissionServiceSpec extends AnyFreeSpec with Matchers with Mockito
       verify(mockIhtpReportConnector).submitReport(any())(any())
     }
 
-    "handle empty tax reference" in {
+    "throw an exception when mandatory tax reference is missing" in {
       val testUserAnswers = UserAnswers(testUserAnswersId, Json.obj())
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
-      when(mockIhtpReportConnector.submitReport(any())(any()))
-        .thenReturn(Future.successful(Right(testSubmissionResponse)))
 
-      service.submitReport(testUserAnswersId, testPstr).futureValue
+      an[RuntimeException] must be thrownBy service.submitReport(testUserAnswersId, testPstr).futureValue
 
-      verify(mockIhtpReportConnector).submitReport(any())(any())
+      verify(mockIhtpReportConnector, never).submitReport(any())(any())
     }
   }
 }

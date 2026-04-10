@@ -17,12 +17,14 @@
 package uk.gov.hmrc.inheritancetaxonpensions.services
 
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.IhtpReportConnector
-import com.google.inject.{Inject, Singleton}
 import play.api.Logging
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 import uk.gov.hmrc.inheritancetaxonpensions.repositories.UserAnswersRepository
+import uk.gov.hmrc.inheritancetaxonpensions.utils.UserAnswersHelper
 import uk.gov.hmrc.inheritancetaxonpensions.models._
+import uk.gov.hmrc.inheritancetaxonpensions.config.Constants
+import com.google.inject.{Inject, Singleton}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -50,9 +52,10 @@ class ReportSubmissionService @Inject() (
     } yield result
 
   private def buildSubmissionPayload(userAnswers: UserAnswers, pstr: String): IhtpReportSubmission = {
-    val inheritanceTaxReferenceNumber = (userAnswers.data \ "inheritanceTaxReferenceNumber")
-      .asOpt[String]
-      .getOrElse("")
+    val inheritanceTaxReferenceNumber = UserAnswersHelper.getMandatory(
+      userAnswers,
+      Constants.inheritanceTaxReferenceNumberPath
+    )
 
     val reportDetails = ReportDetails(
       pstr = pstr,
