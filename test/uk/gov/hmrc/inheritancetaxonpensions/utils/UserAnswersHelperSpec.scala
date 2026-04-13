@@ -43,8 +43,11 @@ class UserAnswersHelperSpec extends AnyFreeSpec with Matchers {
         result mustBe "mandatoryValue"
       }
 
-      "Throw a RuntimeException when the mandatory field is not present" - {
-        an[RuntimeException] must be thrownBy UserAnswersHelper.getMandatory(userAnswersWithoutFields, "mandatoryField")
+      "Throw an IllegalArgumentException when the mandatory field is not present" - {
+        an[IllegalArgumentException] must be thrownBy UserAnswersHelper.getMandatory(
+          userAnswersWithoutFields,
+          "mandatoryField"
+        )
       }
     }
 

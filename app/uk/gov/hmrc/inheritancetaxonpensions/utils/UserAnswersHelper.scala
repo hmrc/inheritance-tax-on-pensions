@@ -24,7 +24,7 @@ object UserAnswersHelper {
     (userAnswers.data \ path)
       .asOpt[String]
       .getOrElse(
-        throw new RuntimeException(s"A mandatory field: '$path' was not found in user answers")
+        throw new IllegalArgumentException(s"A mandatory field: '$path' was not found in user answers")
       )
 
   def getOptional(userAnswers: UserAnswers, path: String): Option[String] =
