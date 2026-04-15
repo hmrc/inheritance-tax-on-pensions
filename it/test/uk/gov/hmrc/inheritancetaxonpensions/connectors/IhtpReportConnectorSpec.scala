@@ -39,6 +39,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
 
   val app: Application = new GuiceApplicationBuilder()
     .configure("microservice.services.ihtp-report.port" -> wireMockPort)
+    .configure("http-verbs.retries.intervals" -> Seq("10.millis", "20.millis", "30.millis", "40.millis", "50.millis"))
     .build()
 
   private lazy val connector: IhtpReportConnector = app.injector.instanceOf[IhtpReportConnector]
@@ -91,7 +92,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
       )
 
       whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
-        WireMock.verify(
+        WireMock.verify(1,
           postRequestedFor(
             urlEqualTo(submitReturnUrl)
           )
@@ -109,7 +110,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
       )
 
       whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
-        WireMock.verify(
+        WireMock.verify(1,
           postRequestedFor(
             urlEqualTo(submitReturnUrl)
           )
@@ -127,7 +128,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
       )
 
       whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
-        WireMock.verify(
+        WireMock.verify(1,
           postRequestedFor(
             urlEqualTo(submitReturnUrl)
           )
@@ -137,7 +138,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
       }
     }
 
-    "return an unexpected response when the response from the server is a 500" in {
+    "retry 5 times when the response from the server is a 500" in {
       stubPost(
         submitReturnUrl,
         Json.toJson(testReportSubmissionRequestBody).toString,
@@ -145,7 +146,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
       )
 
       whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
-        WireMock.verify(
+        WireMock.verify(6,
           postRequestedFor(
             urlEqualTo(submitReturnUrl)
           )
@@ -155,7 +156,25 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
       }
     }
 
-    "return an unexpected response when the response from the server is a 503 (gateway timeout)" in {
+    "retry 5 times when the response from the server is a 502 (BAD_GATEWAY)" in {
+      stubPost(
+        submitReturnUrl,
+        Json.toJson(testReportSubmissionRequestBody).toString,
+        aResponse().withStatus(502)
+      )
+
+      whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
+        WireMock.verify(6,
+          postRequestedFor(
+            urlEqualTo(submitReturnUrl)
+          )
+        )
+
+        result mustBe Left(ErrorCodes.unexpectedResponse)
+      }
+    }
+
+    "retry 5 times when the response from the server is a 503 (SERVICE_UNAVAILABLE)" in {
       stubPost(
         submitReturnUrl,
         Json.toJson(testReportSubmissionRequestBody).toString,
@@ -163,7 +182,25 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
       )
 
       whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
-        WireMock.verify(
+        WireMock.verify(6,
+          postRequestedFor(
+            urlEqualTo(submitReturnUrl)
+          )
+        )
+
+        result mustBe Left(ErrorCodes.unexpectedResponse)
+      }
+    }
+
+    "retry 5 times when the response from the server is a 504 (GATEWAY_TIMEOUT)" in {
+      stubPost(
+        submitReturnUrl,
+        Json.toJson(testReportSubmissionRequestBody).toString,
+        aResponse().withStatus(504)
+      )
+
+      whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
+        WireMock.verify(6,
           postRequestedFor(
             urlEqualTo(submitReturnUrl)
           )
