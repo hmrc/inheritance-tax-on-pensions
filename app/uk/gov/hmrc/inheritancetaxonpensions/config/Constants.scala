@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.inheritancetaxonpensions.config
 
+import play.api.http.Status._
+
 object Constants {
 
   val psaEnrolmentKey = "HMRC-PODS-ORG"
@@ -32,4 +34,11 @@ object Constants {
   val HEADER_VALUE_PSP = "PSP"
 
   val inheritanceTaxReferenceNumberPath = "inheritanceTaxReferenceNumber"
+
+  val TransientErrorStatusCodes: Set[Int] = Set(
+    INTERNAL_SERVER_ERROR,
+    BAD_GATEWAY,
+    SERVICE_UNAVAILABLE,
+    GATEWAY_TIMEOUT
+  )
 }
