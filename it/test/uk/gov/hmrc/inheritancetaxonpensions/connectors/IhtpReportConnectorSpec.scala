@@ -92,7 +92,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
       )
 
       whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
-        WireMock.verify(
+        WireMock.verify(1,
           postRequestedFor(
             urlEqualTo(submitReturnUrl)
           )
@@ -110,7 +110,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
       )
 
       whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
-        WireMock.verify(
+        WireMock.verify(1,
           postRequestedFor(
             urlEqualTo(submitReturnUrl)
           )
@@ -128,7 +128,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
       )
 
       whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
-        WireMock.verify(
+        WireMock.verify(1,
           postRequestedFor(
             urlEqualTo(submitReturnUrl)
           )
@@ -146,7 +146,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
       )
 
       whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
-        WireMock.verify( 6,
+        WireMock.verify(6,
           postRequestedFor(
             urlEqualTo(submitReturnUrl)
           )
@@ -182,7 +182,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
       )
 
       whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
-        WireMock.verify( 6,
+        WireMock.verify(6,
           postRequestedFor(
             urlEqualTo(submitReturnUrl)
           )

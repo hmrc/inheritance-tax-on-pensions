@@ -22,15 +22,16 @@ import uk.gov.hmrc.inheritancetaxonpensions.connectors.helpers.HIPHeaders
 import org.apache.pekko.actor.ActorSystem
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.inheritancetaxonpensions.models.*
+import uk.gov.hmrc.inheritancetaxonpensions.models._
 import play.api.Logging
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
 import play.api.libs.json.Json
-import play.api.http.Status.*
-import uk.gov.hmrc.http.{StringContextOps, *}
+import play.api.http.Status._
+import uk.gov.hmrc.http.{StringContextOps, _}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
+
 import java.time.Instant
 import javax.inject.Inject
 
@@ -105,7 +106,8 @@ class IhtpReportConnector @Inject() (
             Future.failed(errorResponse)
         }
     }.recover {
-      case UpstreamErrorResponse.WithStatusCode(statusCode) if Constants.TransientErrorStatusCodes.contains(statusCode) =>
+      case UpstreamErrorResponse.WithStatusCode(statusCode)
+          if Constants.TransientErrorStatusCodes.contains(statusCode) =>
         Left(ErrorCodes.unexpectedResponse)
     }
   }
