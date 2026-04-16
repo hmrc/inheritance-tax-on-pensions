@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.inheritancetaxonpensions.utils
 
+import play.api.libs.json.Reads
 import uk.gov.hmrc.inheritancetaxonpensions.models.UserAnswers
 
 object UserAnswersHelper {
@@ -29,4 +30,11 @@ object UserAnswersHelper {
 
   def getOptional(userAnswers: UserAnswers, path: String): Option[String] =
     (userAnswers.data \ path).asOpt[String]
+
+  def getMandatoryAs[A: Reads](userAnswers: UserAnswers, path: String): A =
+    (userAnswers.data \ path)
+      .asOpt[A]
+      .getOrElse(
+        throw new IllegalArgumentException(s"A mandatory field: '$path' was not found in user answers")
+      )
 }
