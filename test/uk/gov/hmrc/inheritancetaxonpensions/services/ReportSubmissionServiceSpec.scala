@@ -51,7 +51,7 @@ class ReportSubmissionServiceSpec extends AnyFreeSpec with Matchers with Mockito
 
   "submitReport" - {
     "return Right when submission is successful" in {
-      val testUserAnswers = UserAnswers(testUserAnswersId, Json.obj("inheritanceTaxReferenceNumber" -> "A123459/25A"))
+      val testUserAnswers = UserAnswers(testUserAnswersId, Json.obj("inheritanceTaxReference" -> "A123459/25A"))
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
       when(mockIhtpReportConnector.submitReport(any())(any()))
         .thenReturn(Future.successful(Right(testSubmissionResponse)))
@@ -70,7 +70,7 @@ class ReportSubmissionServiceSpec extends AnyFreeSpec with Matchers with Mockito
     }
 
     "return Left when connector returns an error" in {
-      val testUserAnswers = UserAnswers(testUserAnswersId, Json.obj("inheritanceTaxReferenceNumber" -> "A123459/25A"))
+      val testUserAnswers = UserAnswers(testUserAnswersId, Json.obj("inheritanceTaxReference" -> "A123459/25A"))
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
       when(mockIhtpReportConnector.submitReport(any())(any()))
         .thenReturn(Future.successful(Left(ErrorCodes.badRequest)))
