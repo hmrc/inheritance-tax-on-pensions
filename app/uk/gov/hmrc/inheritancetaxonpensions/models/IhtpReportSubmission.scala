@@ -22,18 +22,38 @@ import java.time.Instant
 
 // TODO - build out as the journey matures
 // TODO - Review this model against the IHTP EPIDs when we get them!
-case class IhtpReportSubmission(reportDetails: ReportDetails)
+case class IhtpReportSubmission(reportDetails: ReportDetails, deceasedDetails: DeceasedDetails)
 
 object IhtpReportSubmission {
   implicit val ihtpReportSubmissionFormat: OFormat[IhtpReportSubmission] =
     Json.format[IhtpReportSubmission]
 }
 
-case class ReportDetails(pstr: String, inheritanceTaxReference: String)
+case class ReportDetails(
+  pstr: String
+)
 
 object ReportDetails {
   implicit val ihtpReportDetailsFormat: OFormat[ReportDetails] =
     Json.format[ReportDetails]
+}
+
+case class DeceasedDetails(
+  inheritanceTaxReference: String,
+  nino: Option[String],
+  reasonForNoNino: Option[String]
+)
+
+object DeceasedDetails {
+  implicit val deceasedDetailsFormat: OFormat[DeceasedDetails] =
+    Json.format[DeceasedDetails]
+}
+
+case class NinoOrReasonAnswers(nino: Option[String], reasonForNoNino: Option[String])
+
+object NinoOrReasonAnswers {
+  implicit val ninoOrReasonAnswersFormat: OFormat[NinoOrReasonAnswers] =
+    Json.format[NinoOrReasonAnswers]
 }
 
 case class IhtpReportSubmissionResponse(processingDateTime: Instant, formBundleNumber: String, paymentReference: String)

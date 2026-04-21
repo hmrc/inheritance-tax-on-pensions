@@ -20,8 +20,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 import uk.gov.hmrc.inheritancetaxonpensions.repositories.UserAnswersRepository
 import org.scalatest.concurrent.ScalaFutures.convertScalaFuture
-import uk.gov.hmrc.inheritancetaxonpensions.models.{ErrorCodes, IhtpReportSubmissionResponse, UserAnswers}
-import org.scalatestplus.mockito.MockitoSugar
+import uk.gov.hmrc.inheritancetaxonpensions.models._
 import org.mockito.ArgumentMatchers._
 import org.scalatest.freespec.AnyFreeSpec
 import org.mockito.Mockito._
@@ -29,6 +28,8 @@ import uk.gov.hmrc.inheritancetaxonpensions.connectors.IhtpReportConnector
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.BeforeAndAfterEach
 import play.api.libs.json.Json
+import org.mockito.ArgumentCaptor
+import org.scalatestplus.mockito.MockitoSugar
 
 import scala.concurrent.Future
 
@@ -50,15 +51,34 @@ class ReportSubmissionServiceSpec extends AnyFreeSpec with Matchers with Mockito
   private val service = new ReportSubmissionService(mockUserAnswersRepository, mockIhtpReportConnector)
 
   "submitReport" - {
-    "return Right when submission is successful" in {
-      val testUserAnswers = UserAnswers(testUserAnswersId, Json.obj("inheritanceTaxReference" -> "A123459/25A"))
+    "return Right when submission is successful with a nino in the payload" in {
+      val testUserAnswers = UserAnswers(
+        testUserAnswersId,
+        Json.obj(
+          "inheritanceTaxReference" -> "A123459/25A",
+          "ninoOrReason" -> Json.obj(
+            "nino" -> "NW123456C"
+          )
+        )
+      )
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
-      when(mockIhtpReportConnector.submitReport(any())(any()))
+      when(mockIhtpReportConnector.submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]()))
         .thenReturn(Future.successful(Right(testSubmissionResponse)))
 
       val result = service.submitReport(testUserAnswersId, testPstr).futureValue
       result.isRight mustBe true
-      verify(mockIhtpReportConnector).submitReport(any())(any())
+      val payloadCaptor: ArgumentCaptor[IhtpReportSubmission] = ArgumentCaptor.forClass(classOf[IhtpReportSubmission])
+      verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
+      payloadCaptor.getValue mustBe IhtpReportSubmission(
+        ReportDetails(
+          pstr = testPstr
+        ),
+        DeceasedDetails(
+          inheritanceTaxReference = "A123459/25A",
+          nino = Some("NW123456C"),
+          reasonForNoNino = None
+        )
+      )
     }
 
     "return Left when the user answers are not found" in {
@@ -66,18 +86,37 @@ class ReportSubmissionServiceSpec extends AnyFreeSpec with Matchers with Mockito
 
       val result = service.submitReport(testUserAnswersId, testPstr).futureValue
       result mustBe Left(ErrorCodes.entityNotFound)
-      verify(mockIhtpReportConnector, never).submitReport(any())(any())
+      verify(mockIhtpReportConnector, never).submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]())
     }
 
-    "return Left when connector returns an error" in {
-      val testUserAnswers = UserAnswers(testUserAnswersId, Json.obj("inheritanceTaxReference" -> "A123459/25A"))
+    "return Left when connector returns an error and send the no nino reason in the payload" in {
+      val testUserAnswers = UserAnswers(
+        testUserAnswersId,
+        Json.obj(
+          "inheritanceTaxReference" -> "A123459/25A",
+          "ninoOrReason" -> Json.obj(
+            "reasonForNoNino" -> "The deceased was not a UK citizen"
+          )
+        )
+      )
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
-      when(mockIhtpReportConnector.submitReport(any())(any()))
+      when(mockIhtpReportConnector.submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]()))
         .thenReturn(Future.successful(Left(ErrorCodes.badRequest)))
 
       val result = service.submitReport(testUserAnswersId, testPstr).futureValue
       result.isLeft mustBe true
-      verify(mockIhtpReportConnector).submitReport(any())(any())
+      val payloadCaptor: ArgumentCaptor[IhtpReportSubmission] = ArgumentCaptor.forClass(classOf[IhtpReportSubmission])
+      verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
+      payloadCaptor.getValue mustBe IhtpReportSubmission(
+        ReportDetails(
+          pstr = testPstr
+        ),
+        DeceasedDetails(
+          inheritanceTaxReference = "A123459/25A",
+          nino = None,
+          reasonForNoNino = Some("The deceased was not a UK citizen")
+        )
+      )
     }
   }
 }

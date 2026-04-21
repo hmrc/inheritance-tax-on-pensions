@@ -56,12 +56,21 @@ class ReportSubmissionService @Inject() (
       userAnswers,
       Constants.inheritanceTaxReferenceNumberPath
     )
-
-    val reportDetails = ReportDetails(
-      pstr = pstr,
-      inheritanceTaxReference = inheritanceTaxReferenceNumber
+    val ninoOrReasonAnswers = UserAnswersHelper.getMandatoryAs[NinoOrReasonAnswers](
+      userAnswers,
+      Constants.ninoOrReasonPath
     )
 
-    IhtpReportSubmission(reportDetails)
+    val reportDetails = ReportDetails(
+      pstr = pstr
+    )
+
+    val deceasedDetails = DeceasedDetails(
+      inheritanceTaxReference = inheritanceTaxReferenceNumber,
+      nino = ninoOrReasonAnswers.nino,
+      reasonForNoNino = ninoOrReasonAnswers.reasonForNoNino
+    )
+
+    IhtpReportSubmission(reportDetails, deceasedDetails)
   }
 }

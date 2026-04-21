@@ -54,8 +54,12 @@ trait TestValues {
 
   val testReportSubmissionRequestBody = IhtpReportSubmission(
     ReportDetails(
-      pstr = "S2400000001",
-      inheritanceTaxReference = "A123456/25A"
+      pstr = "S2400000001"
+    ),
+    DeceasedDetails(
+      inheritanceTaxReference = "A123456/25A",
+      nino = Some("NW123456C"),
+      reasonForNoNino = None
     )
   )
 

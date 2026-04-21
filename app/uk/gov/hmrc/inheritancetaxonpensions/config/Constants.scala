@@ -34,6 +34,7 @@ object Constants {
   val HEADER_VALUE_PSP = "PSP"
 
   val inheritanceTaxReferenceNumberPath = "inheritanceTaxReference"
+  val ninoOrReasonPath = "ninoOrReason"
 
   val TransientErrorStatusCodes: Set[Int] = Set(
     INTERNAL_SERVER_ERROR,
