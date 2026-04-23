@@ -36,6 +36,12 @@ object Constants {
   val inheritanceTaxReferenceNumberPath = "inheritanceTaxReference"
   val ninoOrReasonPath = "ninoOrReason"
 
+  val deceasedDetailsPath = "nameOfDeceased"
+  val deceasedTitle = "title"
+  val deceasedFirstForename = "firstForename"
+  val deceasedSecondForename = "secondForename"
+  val deceasedSurname = "surname"
+
   val TransientErrorStatusCodes: Set[Int] = Set(
     INTERNAL_SERVER_ERROR,
     BAD_GATEWAY,

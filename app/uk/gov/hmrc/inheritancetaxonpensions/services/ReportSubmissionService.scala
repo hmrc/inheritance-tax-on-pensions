@@ -56,6 +56,25 @@ class ReportSubmissionService @Inject() (
       userAnswers,
       Constants.inheritanceTaxReferenceNumberPath
     )
+
+    val deceasedDetailsPath = Constants.deceasedDetailsPath
+
+    val deceasedTitle = UserAnswersHelper.getOptional(
+      userAnswers,
+      s"$deceasedDetailsPath.${Constants.deceasedTitle}"
+    )
+    val deceasedFirstForename = UserAnswersHelper.getMandatory(
+      userAnswers,
+      s"$deceasedDetailsPath.${Constants.deceasedFirstForename}"
+    )
+    val deceasedSecondForename = UserAnswersHelper.getOptional(
+      userAnswers,
+      s"$deceasedDetailsPath.${Constants.deceasedSecondForename}"
+    )
+    val deceasedSurname = UserAnswersHelper.getMandatory(
+      userAnswers,
+      s"$deceasedDetailsPath.${Constants.deceasedSurname}"
+    )
     val ninoOrReasonAnswers = UserAnswersHelper.getMandatoryAs[NinoOrReasonAnswers](
       userAnswers,
       Constants.ninoOrReasonPath
@@ -67,6 +86,10 @@ class ReportSubmissionService @Inject() (
 
     val deceasedDetails = DeceasedDetails(
       inheritanceTaxReference = inheritanceTaxReferenceNumber,
+      title = deceasedTitle,
+      firstForename = deceasedFirstForename,
+      secondForename = deceasedSecondForename,
+      surname = deceasedSurname,
       nino = ninoOrReasonAnswers.nino,
       reasonForNoNino = ninoOrReasonAnswers.reasonForNoNino
     )
