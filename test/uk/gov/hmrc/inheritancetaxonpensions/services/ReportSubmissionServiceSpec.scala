@@ -22,6 +22,7 @@ import uk.gov.hmrc.inheritancetaxonpensions.repositories.UserAnswersRepository
 import org.scalatest.concurrent.ScalaFutures.convertScalaFuture
 import uk.gov.hmrc.inheritancetaxonpensions.models._
 import org.mockito.ArgumentMatchers._
+import utils.TestValues
 import org.scalatest.freespec.AnyFreeSpec
 import org.mockito.Mockito._
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.IhtpReportConnector
@@ -35,7 +36,12 @@ import scala.concurrent.Future
 
 import java.time.Instant
 
-class ReportSubmissionServiceSpec extends AnyFreeSpec with Matchers with MockitoSugar with BeforeAndAfterEach {
+class ReportSubmissionServiceSpec
+    extends AnyFreeSpec
+    with Matchers
+    with MockitoSugar
+    with BeforeAndAfterEach
+    with TestValues {
 
   override def beforeEach(): Unit = reset(mockUserAnswersRepository, mockIhtpReportConnector)
 
@@ -62,8 +68,12 @@ class ReportSubmissionServiceSpec extends AnyFreeSpec with Matchers with Mockito
             "secondForename" -> "William",
             "surname" -> "Doe"
           ),
+          "birthDeathDates" -> Json.obj(
+            "dateOfBirth" -> testDateOfBirth,
+            "dateOfDeath" -> testDateOfDeath
+          ),
           "ninoOrReason" -> Json.obj(
-            "nino" -> "NW123456C"
+            "nino" -> testNino
           )
         )
       )
@@ -85,7 +95,9 @@ class ReportSubmissionServiceSpec extends AnyFreeSpec with Matchers with Mockito
           firstForename = "John",
           secondForename = Some("William"),
           surname = "Doe",
-          nino = Some("NW123456C"),
+          dateOfBirth = testDateOfBirth,
+          dateOfDeath = testDateOfDeath,
+          nino = Some(testNino),
           reasonForNoNino = None
         )
       )
@@ -110,6 +122,10 @@ class ReportSubmissionServiceSpec extends AnyFreeSpec with Matchers with Mockito
             "secondForename" -> None,
             "surname" -> "Doe"
           ),
+          "birthDeathDates" -> Json.obj(
+            "dateOfBirth" -> testDateOfBirth,
+            "dateOfDeath" -> testDateOfDeath
+          ),
           "ninoOrReason" -> Json.obj(
             "reasonForNoNino" -> "The deceased was not a UK citizen"
           )
@@ -133,6 +149,8 @@ class ReportSubmissionServiceSpec extends AnyFreeSpec with Matchers with Mockito
           firstForename = "Jane",
           secondForename = None,
           surname = "Doe",
+          dateOfBirth = testDateOfBirth,
+          dateOfDeath = testDateOfDeath,
           nino = None,
           reasonForNoNino = Some("The deceased was not a UK citizen")
         )

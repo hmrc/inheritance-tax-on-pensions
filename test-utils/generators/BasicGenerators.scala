@@ -82,6 +82,23 @@ trait BasicGenerators {
       s <- alphaNumStr
     } yield s"$c$s"
 
+  val ninoGen: Gen[String] = {
+    val firstLetters = "ABCEGHJKLMNOPRSTWXYZ"
+    val secondLetters = "ABCEGHJKLMNPRSTWXYZ"
+    val suffixGen = Gen.oneOf("ABCD".toSeq)
+    val forbiddenPrefixes = Set("BG", "GB", "KN", "NK", "NT", "TN", "ZZ")
+    val validPrefixes =
+      firstLetters.toSeq
+        .flatMap(first => secondLetters.toSeq.map(second => s"$first$second"))
+        .filterNot(forbiddenPrefixes.contains)
+
+    for {
+      prefix <- Gen.oneOf(validPrefixes)
+      digits <- Gen.listOfN(6, numChar).map(_.mkString)
+      suffix <- suffixGen
+    } yield s"$prefix$digits$suffix"
+  }
+
   def stringsWithMaxLength(maxLength: Int): Gen[String] =
     for {
       length <- choose(1, maxLength)

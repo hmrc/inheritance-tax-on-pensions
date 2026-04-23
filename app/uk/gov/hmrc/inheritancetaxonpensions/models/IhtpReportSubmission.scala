@@ -44,6 +44,8 @@ case class DeceasedDetails(
   firstForename: String,
   secondForename: Option[String],
   surname: String,
+  dateOfBirth: String,
+  dateOfDeath: String,
   nino: Option[String],
   reasonForNoNino: Option[String]
 )
@@ -58,6 +60,13 @@ case class NinoOrReasonAnswers(nino: Option[String], reasonForNoNino: Option[Str
 object NinoOrReasonAnswers {
   implicit val ninoOrReasonAnswersFormat: OFormat[NinoOrReasonAnswers] =
     Json.format[NinoOrReasonAnswers]
+}
+
+case class BirthDeathDates(dateOfBirth: String, dateOfDeath: String)
+
+object BirthDeathDates {
+  implicit val birthDeathDatesFormat: OFormat[BirthDeathDates] =
+    Json.format[BirthDeathDates]
 }
 
 case class IhtpReportSubmissionResponse(processingDateTime: Instant, formBundleNumber: String, paymentReference: String)
