@@ -56,6 +56,12 @@ class ReportSubmissionServiceSpec extends AnyFreeSpec with Matchers with Mockito
         testUserAnswersId,
         Json.obj(
           "inheritanceTaxReference" -> "A123459/25A",
+          "nameOfDeceased" -> Json.obj(
+            "title" -> "Mr",
+            "firstForename" -> "John",
+            "secondForename" -> "William",
+            "surname" -> "Doe"
+          ),
           "ninoOrReason" -> Json.obj(
             "nino" -> "NW123456C"
           )
@@ -75,6 +81,10 @@ class ReportSubmissionServiceSpec extends AnyFreeSpec with Matchers with Mockito
         ),
         DeceasedDetails(
           inheritanceTaxReference = "A123459/25A",
+          title = Some("Mr"),
+          firstForename = "John",
+          secondForename = Some("William"),
+          surname = "Doe",
           nino = Some("NW123456C"),
           reasonForNoNino = None
         )
@@ -94,6 +104,12 @@ class ReportSubmissionServiceSpec extends AnyFreeSpec with Matchers with Mockito
         testUserAnswersId,
         Json.obj(
           "inheritanceTaxReference" -> "A123459/25A",
+          "nameOfDeceased" -> Json.obj(
+            "title" -> "Mrs",
+            "firstForename" -> "Jane",
+            "secondForename" -> None,
+            "surname" -> "Doe"
+          ),
           "ninoOrReason" -> Json.obj(
             "reasonForNoNino" -> "The deceased was not a UK citizen"
           )
@@ -113,6 +129,10 @@ class ReportSubmissionServiceSpec extends AnyFreeSpec with Matchers with Mockito
         ),
         DeceasedDetails(
           inheritanceTaxReference = "A123459/25A",
+          title = Some("Mrs"),
+          firstForename = "Jane",
+          secondForename = None,
+          surname = "Doe",
           nino = None,
           reasonForNoNino = Some("The deceased was not a UK citizen")
         )

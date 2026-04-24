@@ -21,15 +21,27 @@ import uk.gov.hmrc.inheritancetaxonpensions.models.UserAnswers
 
 object UserAnswersHelper {
 
-  def getMandatory(userAnswers: UserAnswers, path: String): String =
-    (userAnswers.data \ path)
+  def getMandatory(userAnswers: UserAnswers, path: String): String = {
+    val parts = path.split("\\.")
+    val result = parts.foldLeft(userAnswers.data: play.api.libs.json.JsValue) { (json, part) =>
+      (json \ part).getOrElse(
+        throw new IllegalArgumentException(s"A mandatory field: '$path' was not found in user answers")
+      )
+    }
+    result
       .asOpt[String]
       .getOrElse(
         throw new IllegalArgumentException(s"A mandatory field: '$path' was not found in user answers")
       )
+  }
 
-  def getOptional(userAnswers: UserAnswers, path: String): Option[String] =
-    (userAnswers.data \ path).asOpt[String]
+  def getOptional(userAnswers: UserAnswers, path: String): Option[String] = {
+    val parts = path.split("\\.")
+    val result = parts.foldLeft(Option(userAnswers.data: play.api.libs.json.JsValue)) { (optJson, part) =>
+      optJson.flatMap(json => (json \ part).asOpt[play.api.libs.json.JsValue])
+    }
+    result.flatMap(_.asOpt[String])
+  }
 
   def getMandatoryAs[A: Reads](userAnswers: UserAnswers, path: String): A =
     (userAnswers.data \ path)

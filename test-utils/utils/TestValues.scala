@@ -58,6 +58,10 @@ trait TestValues {
     ),
     DeceasedDetails(
       inheritanceTaxReference = "A123456/25A",
+      title = Some("Mr"),
+      firstForename = "John",
+      secondForename = Some("William"),
+      surname = "Doe",
       nino = Some("NW123456C"),
       reasonForNoNino = None
     )
