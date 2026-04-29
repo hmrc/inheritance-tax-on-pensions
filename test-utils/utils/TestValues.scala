@@ -16,13 +16,14 @@
 
 package utils
 
+import generators.Generators
 import uk.gov.hmrc.auth.core.{Enrolment, EnrolmentIdentifier, Enrolments}
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants.psaEnrolmentKey
 import uk.gov.hmrc.inheritancetaxonpensions.models._
 
 import java.time._
 
-trait TestValues {
+trait TestValues extends Generators {
   val clockMillis: Long = 1718118467838L
   val clock: Clock = Clock.fixed(Instant.ofEpochMilli(clockMillis), ZoneId.of("UTC"))
 
@@ -51,6 +52,9 @@ trait TestValues {
   val sampleToday: LocalDate = LocalDate.of(2023, 10, 19)
   val psaId = "A0000000"
   val pspId = "21000005"
+  val testNino: String = ninoGen.sample.get
+  val testDateOfBirth = "1950-01-01"
+  val testDateOfDeath = "2026-01-01"
 
   val testReportSubmissionRequestBody = IhtpReportSubmission(
     ReportDetails(
@@ -62,7 +66,9 @@ trait TestValues {
       firstForename = "John",
       secondForename = Some("William"),
       surname = "Doe",
-      nino = Some("NW123456C"),
+      dateOfBirth = testDateOfBirth,
+      dateOfDeath = testDateOfDeath,
+      nino = Some(testNino),
       reasonForNoNino = None
     )
   )

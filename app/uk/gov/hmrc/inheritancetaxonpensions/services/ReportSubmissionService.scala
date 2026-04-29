@@ -79,6 +79,10 @@ class ReportSubmissionService @Inject() (
       userAnswers,
       Constants.ninoOrReasonPath
     )
+    val birthDeathDates = UserAnswersHelper.getMandatoryAs[BirthDeathDates](
+      userAnswers,
+      Constants.birthDeathDatesPath
+    )
 
     val reportDetails = ReportDetails(
       pstr = pstr
@@ -90,6 +94,8 @@ class ReportSubmissionService @Inject() (
       firstForename = deceasedFirstForename,
       secondForename = deceasedSecondForename,
       surname = deceasedSurname,
+      dateOfBirth = birthDeathDates.dateOfBirth,
+      dateOfDeath = birthDeathDates.dateOfDeath,
       nino = ninoOrReasonAnswers.nino,
       reasonForNoNino = ninoOrReasonAnswers.reasonForNoNino
     )
