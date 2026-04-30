@@ -72,6 +72,14 @@ class ReportSubmissionServiceSpec
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
           ),
+          "lprDetails" -> Json.obj(
+            "individual" -> Json.obj(
+              "title" -> "Mr",
+              "firstForename" -> "John",
+              "secondForename" -> "William",
+              "surname" -> "Doe"
+            )
+          ),
           "ninoOrReason" -> Json.obj(
             "nino" -> testNino
           )
@@ -99,6 +107,14 @@ class ReportSubmissionServiceSpec
           dateOfDeath = testDateOfDeath,
           nino = Some(testNino),
           reasonForNoNino = None
+        ),
+        LprDetails(
+          individual = IndividualName(
+            title = Some("Mr"),
+            firstForename = "John",
+            secondForename = Some("William"),
+            surname = "Doe"
+          )
         )
       )
     }
@@ -125,6 +141,14 @@ class ReportSubmissionServiceSpec
           "birthDeathDates" -> Json.obj(
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
+          ),
+          "lprDetails" -> Json.obj(
+            "individual" -> Json.obj(
+              "title" -> "Mr",
+              "firstForename" -> "John",
+              "secondForename" -> "William",
+              "surname" -> "Doe"
+            )
           ),
           "ninoOrReason" -> Json.obj(
             "reasonForNoNino" -> "The deceased was not a UK citizen"
@@ -153,6 +177,14 @@ class ReportSubmissionServiceSpec
           dateOfDeath = testDateOfDeath,
           nino = None,
           reasonForNoNino = Some("The deceased was not a UK citizen")
+        ),
+        LprDetails(
+          individual = IndividualName(
+            title = Some("Mr"),
+            firstForename = "John",
+            secondForename = Some("William"),
+            surname = "Doe"
+          )
         )
       )
     }

@@ -22,7 +22,7 @@ import java.time.Instant
 
 // TODO - build out as the journey matures
 // TODO - Review this model against the IHTP EPIDs when we get them!
-case class IhtpReportSubmission(reportDetails: ReportDetails, deceasedDetails: DeceasedDetails)
+case class IhtpReportSubmission(reportDetails: ReportDetails, deceasedDetails: DeceasedDetails, lprDetails: LprDetails)
 
 object IhtpReportSubmission {
   implicit val ihtpReportSubmissionFormat: OFormat[IhtpReportSubmission] =
@@ -53,6 +53,25 @@ case class DeceasedDetails(
 object DeceasedDetails {
   implicit val deceasedDetailsFormat: OFormat[DeceasedDetails] =
     Json.format[DeceasedDetails]
+}
+
+case class LprDetails(individual: IndividualName)
+
+object LprDetails {
+  implicit val lprDetailsFormat: OFormat[LprDetails] =
+    Json.format[LprDetails]
+}
+
+case class IndividualName(
+  title: Option[String],
+  firstForename: String,
+  secondForename: Option[String],
+  surname: String
+)
+
+object IndividualName {
+  implicit val individualNameFormat: OFormat[IndividualName] =
+    Json.format[IndividualName]
 }
 
 case class NinoOrReasonAnswers(nino: Option[String], reasonForNoNino: Option[String])
