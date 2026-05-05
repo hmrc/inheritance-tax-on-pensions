@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.inheritancetaxonpensions.models
 
+import uk.gov.hmrc.inheritancetaxonpensions.services.EncryptionService
 import play.api.libs.json._
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 import play.api.libs.functional.syntax.toFunctionalBuilderOps
@@ -30,17 +31,61 @@ final case class UserAnswers(
 
 object UserAnswers {
 
-  val reads: Reads[UserAnswers] =
+  private val reads: Reads[UserAnswers] =
     (__ \ "_id")
       .read[String]
       .and((__ \ "data").read[JsObject])
       .and((__ \ "lastUpdated").read(using MongoJavatimeFormats.instantFormat))(UserAnswers.apply)
 
-  val writes: OWrites[UserAnswers] =
+  private val writes: OWrites[UserAnswers] =
     (__ \ "_id")
       .write[String]
       .and((__ \ "data").write[JsObject])
       .and((__ \ "lastUpdated").write(using MongoJavatimeFormats.instantFormat))(ua => (ua.id, ua.data, ua.lastUpdated))
 
   implicit val format: OFormat[UserAnswers] = OFormat(reads, writes)
+
+  def encryptedFormat(encryptionService: EncryptionService): OFormat[UserAnswers] = {
+    def encryptObject(obj: JsObject, path: String = ""): JsObject =
+      JsObject(obj.fields.map { case (key, value) =>
+        val fullPath = if (path.isEmpty) key else s"$path.$key"
+        value match {
+          case JsString(str) if PiiFields.isPiiField(fullPath) =>
+            key -> encryptionService.encryptField(fullPath, JsString(str))
+          case JsObject(nested) =>
+            key -> encryptObject(JsObject(nested), fullPath)
+          case _ =>
+            key -> value
+        }
+      })
+
+    def decryptObject(obj: JsObject, path: String = ""): JsObject =
+      JsObject(obj.fields.map { case (key, value) =>
+        val fullPath = if (path.isEmpty) key else s"$path.$key"
+        value match {
+          case JsString(str) if PiiFields.isPiiField(fullPath) =>
+            key -> encryptionService.decryptField(fullPath, JsString(str))
+          case JsObject(nested) =>
+            key -> decryptObject(JsObject(nested), fullPath)
+          case _ =>
+            key -> value
+        }
+      })
+
+    val reads: Reads[UserAnswers] =
+      (__ \ "_id")
+        .read[String]
+        .and((__ \ "data").read[JsObject].map(decryptObject(_)))
+        .and((__ \ "lastUpdated").read(MongoJavatimeFormats.instantFormat))(UserAnswers.apply)
+
+    val writes: OWrites[UserAnswers] = OWrites { ua =>
+      Json.obj(
+        "_id" -> ua.id,
+        "data" -> encryptObject(ua.data),
+        "lastUpdated" -> MongoJavatimeFormats.instantFormat.writes(ua.lastUpdated)
+      )
+    }
+
+    OFormat(reads, writes)
+  }
 }

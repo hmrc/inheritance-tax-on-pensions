@@ -36,6 +36,7 @@ class HealthEndpointIntegrationSpec
 
   override def fakeApplication(): Application =
     GuiceApplicationBuilder()
+      .configure("mongodb.encryption.key" -> "test-key-for-integration-tests-only")
       .build()
 
   "service health endpoint" - {

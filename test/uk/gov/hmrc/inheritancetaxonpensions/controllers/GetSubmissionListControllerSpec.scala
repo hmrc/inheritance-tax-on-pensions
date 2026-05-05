@@ -60,7 +60,12 @@ class GetSubmissionListControllerSpec extends BaseSpec:
     )
 
   private val application: Application = new GuiceApplicationBuilder()
-    .configure(conf = "auditing.enabled" -> false, "metrics.enabled" -> false, "metrics.jvm" -> false)
+    .configure(
+      conf = "auditing.enabled" -> false,
+      "metrics.enabled" -> false,
+      "metrics.jvm" -> false,
+      "mongodb.encryption.key" -> "test-key-for-local-development-only"
+    )
     .overrides(modules*)
     .build()
 

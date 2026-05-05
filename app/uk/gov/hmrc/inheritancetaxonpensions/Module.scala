@@ -16,10 +16,12 @@
 
 package uk.gov.hmrc.inheritancetaxonpensions
 
+import com.google.inject.{Inject, Provider, Singleton}
 import play.api.inject.{Binding, Module => AppModule}
-import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.play.bootstrap.auth.DefaultAuthConnector
 import play.api.{Configuration, Environment}
+import uk.gov.hmrc.inheritancetaxonpensions.services.EncryptionService
+import uk.gov.hmrc.auth.core.AuthConnector
 
 import java.time.Clock
 
@@ -31,5 +33,18 @@ class Module extends AppModule:
   ): Seq[Binding[?]] =
     Seq(
       bind[Clock].toInstance(Clock.systemDefaultZone), // inject if current time needs to be controlled in unit tests
-      bind[AuthConnector].to(classOf[DefaultAuthConnector]).eagerly()
+      bind[AuthConnector].to(classOf[DefaultAuthConnector]).eagerly(),
+      bind[EncryptionService].toProvider(classOf[EncryptionServiceProvider])
     )
+
+@Singleton
+class EncryptionServiceProvider @Inject() (configuration: Configuration) extends Provider[EncryptionService] {
+  def get(): EncryptionService = {
+    val masterKey = configuration
+      .getOptional[String]("mongodb.encryption.key")
+      .getOrElse(throw new IllegalStateException("Encryption master key not configured"))
+    val enabled = configuration.getOptional[Boolean]("encryption.enabled").getOrElse(false)
+
+    new EncryptionService(masterKey, enabled)
+  }
+}

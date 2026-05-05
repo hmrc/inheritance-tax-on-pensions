@@ -28,6 +28,7 @@ import org.slf4j.MDC
 import play.api.libs.json.Json
 import uk.gov.hmrc.inheritancetaxonpensions.config.AppConfig
 import uk.gov.hmrc.inheritancetaxonpensions.models.UserAnswers
+import uk.gov.hmrc.inheritancetaxonpensions.services.EncryptionService
 import uk.gov.hmrc.mdc.MdcExecutionContext
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 
@@ -50,14 +51,16 @@ class UserAnswersRepositorySpec
   private val userAnswers = UserAnswers("id", Json.obj("foo" -> "bar"), Instant.ofEpochSecond(1))
 
   private val mockAppConfig = mock[AppConfig]
-  when(mockAppConfig.userAnswersTtl).`thenReturn`(1L)
+  private val mockEncryptionService = mock[EncryptionService]
+  when(mockAppConfig.userAnswersTtl).`thenReturn`(100L)
 
   implicit val productionLikeTestMdcExecutionContext: ExecutionContext = MdcExecutionContext()
 
   override protected val repository: UserAnswersRepository = new UserAnswersRepository(
     mongoComponent = mongoComponent,
     appConfig = mockAppConfig,
-    clock = stubClock
+    clock = stubClock,
+    encryptionService = mockEncryptionService
   )
 
   ".set" - {
@@ -154,8 +157,8 @@ class UserAnswersRepositorySpec
 
       MDC.put("test", "foo")
 
-      (f.map { _ =>
+      f.map { _ =>
         Option(MDC.get("test"))
-      }.futureValue) mustEqual Some("foo")
+      }.futureValue mustBe Some("foo")
     }
 }

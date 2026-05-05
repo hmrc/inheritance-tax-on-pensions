@@ -18,6 +18,7 @@ package uk.gov.hmrc.inheritancetaxonpensions.models
 
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
+import uk.gov.hmrc.inheritancetaxonpensions.services.EncryptionService
 import play.api.libs.json.{JsValue, Json}
 
 import java.time.{Clock, Instant, ZoneId}
@@ -75,6 +76,96 @@ class UserAnswersSpec extends AnyFreeSpec with Matchers {
 
       val result: JsValue = Json.toJson(userAnswers)
       result mustBe expectedJson
+    }
+
+    "UserAnswers encryptedFormat" - {
+
+      "must encrypt PII fields and decrypt back to original" in {
+        val service = new EncryptionService("test-key", true)
+
+        val format = UserAnswers.encryptedFormat(service)
+
+        val originalData = Json.obj(
+          "nameOfDeceased.firstForename" -> "Joe",
+          "ninoOrReason.nino" -> "AB123456C",
+          "someOtherField" -> "non-PII data"
+        )
+
+        val userAnswers = UserAnswers("test-id", originalData, Instant.now())
+        val json = format.writes(userAnswers)
+        val result = format.reads(json)
+
+        result.isSuccess mustBe true
+
+        val firstNameInJson = (json \ "data" \ "nameOfDeceased.firstForename").get.asOpt[String]
+        firstNameInJson must not be Some("Joe")
+
+        val nonPiiInJson = (json \ "data" \ "someOtherField").get.asOpt[String]
+        nonPiiInJson mustBe Some("non-PII data")
+
+        val decryptedFirstName = (result.get.data \ "nameOfDeceased.firstForename").get.asOpt[String]
+        decryptedFirstName mustBe Some("Joe")
+      }
+
+      "must not encrypt non-PII fields" in {
+        val service = new EncryptionService("test-key", true)
+
+        val format = UserAnswers.encryptedFormat(service)
+
+        val originalData = Json.obj(
+          "someOtherField" -> "non-PII data",
+          "anotherField" -> "also non-PII"
+        )
+
+        val userAnswers = UserAnswers("test-id", originalData, Instant.now())
+        val json = format.writes(userAnswers)
+
+        (json \ "data" \ "someOtherField").get.asOpt[String] mustBe Some("non-PII data")
+        (json \ "data" \ "anotherField").get.asOpt[String] mustBe Some("also non-PII")
+      }
+
+      "must handle nested objects correctly" in {
+        val service = new EncryptionService("test-key", true)
+
+        val format = UserAnswers.encryptedFormat(service)
+
+        val originalData = Json.obj(
+          "nameOfDeceased" -> Json.obj(
+            "firstForename" -> "Joe",
+            "surname" -> "Bloggs"
+          ),
+          "nonPiiSection" -> Json.obj(
+            "someField" -> "data"
+          )
+        )
+
+        val userAnswers = UserAnswers("test-id", originalData, Instant.now())
+        val json = format.writes(userAnswers)
+        val result = format.reads(json).get
+
+        val encryptedName = (json \ "data" \ "nameOfDeceased" \ "firstForename").get.asOpt[String]
+        encryptedName must not be Some("Joe")
+
+        val nonPiiField = (json \ "data" \ "nonPiiSection" \ "someField").get.asOpt[String]
+        nonPiiField mustBe Some("data")
+        val decryptedName = (result.data \ "nameOfDeceased" \ "firstForename").get.asOpt[String]
+        decryptedName mustBe Some("Joe")
+      }
+
+      "must work with encryption disabled" in {
+        val service = new EncryptionService("test-key", false)
+        val format = UserAnswers.encryptedFormat(service)
+
+        val originalData = Json.obj(
+          "ninoOrReason.nino" -> "AB123456C"
+        )
+
+        val userAnswers = UserAnswers("test-id", originalData, Instant.now())
+        val json = format.writes(userAnswers)
+        val result = format.reads(json).get
+
+        result.data mustBe originalData
+      }
     }
   }
 }
