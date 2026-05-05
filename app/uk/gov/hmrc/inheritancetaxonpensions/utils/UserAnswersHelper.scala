@@ -44,7 +44,13 @@ object UserAnswersHelper {
   }
 
   def getMandatoryAs[A: Reads](userAnswers: UserAnswers, path: String): A =
-    (userAnswers.data \ path)
+    path
+      .split("\\.")
+      .foldLeft(userAnswers.data: play.api.libs.json.JsValue) { (json, part) =>
+        (json \ part).getOrElse(
+          throw new IllegalArgumentException(s"A mandatory field: '$path' was not found in user answers")
+        )
+      }
       .asOpt[A]
       .getOrElse(
         throw new IllegalArgumentException(s"A mandatory field: '$path' was not found in user answers")

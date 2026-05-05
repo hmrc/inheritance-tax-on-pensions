@@ -83,6 +83,10 @@ class ReportSubmissionService @Inject() (
       userAnswers,
       Constants.birthDeathDatesPath
     )
+    val lprDetails = UserAnswersHelper.getMandatoryAs[LprDetails](
+      userAnswers,
+      Constants.lprDetailsPath
+    )
 
     val reportDetails = ReportDetails(
       pstr = pstr
@@ -100,6 +104,6 @@ class ReportSubmissionService @Inject() (
       reasonForNoNino = ninoOrReasonAnswers.reasonForNoNino
     )
 
-    IhtpReportSubmission(reportDetails, deceasedDetails)
+    IhtpReportSubmission(reportDetails, deceasedDetails, lprDetails)
   }
 }

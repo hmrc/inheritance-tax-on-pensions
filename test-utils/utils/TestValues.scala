@@ -70,6 +70,14 @@ trait TestValues extends Generators {
       dateOfDeath = testDateOfDeath,
       nino = Some(testNino),
       reasonForNoNino = None
+    ),
+    LprDetails(
+      individual = IndividualName(
+        title = Some("Mr"),
+        firstForename = "John",
+        secondForename = Some("William"),
+        surname = "Doe"
+      )
     )
   )
 
