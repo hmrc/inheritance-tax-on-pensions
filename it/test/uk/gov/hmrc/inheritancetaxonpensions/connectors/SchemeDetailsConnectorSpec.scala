@@ -43,6 +43,7 @@ class SchemeDetailsConnectorSpec extends BaseConnectorSpec with TestValues {
 
   val app: Application = new GuiceApplicationBuilder()
     .configure("microservice.services.pensionsScheme.port" -> wireMockPort)
+    .configure("mongodb.encryption.key" -> "test-key-for-integration-tests-only")
     .build()
 
   private lazy val connector: SchemeDetailsConnector = app.injector.instanceOf[SchemeDetailsConnector]

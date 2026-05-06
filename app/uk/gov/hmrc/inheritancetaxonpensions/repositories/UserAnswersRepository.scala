@@ -21,6 +21,7 @@ import uk.gov.hmrc.inheritancetaxonpensions.config.AppConfig
 import org.mongodb.scala.model._
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mdc.Mdc
+import uk.gov.hmrc.inheritancetaxonpensions.services.EncryptionService
 import org.mongodb.scala.bson.conversions.Bson
 import play.api.libs.json.Format
 import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
@@ -36,12 +37,13 @@ import javax.inject.{Inject, Singleton}
 class UserAnswersRepository @Inject() (
   mongoComponent: MongoComponent,
   appConfig: AppConfig,
-  clock: Clock
+  clock: Clock,
+  encryptionService: EncryptionService
 )(implicit ec: ExecutionContext)
     extends PlayMongoRepository[UserAnswers](
       collectionName = "user-answers",
       mongoComponent = mongoComponent,
-      domainFormat = UserAnswers.format,
+      domainFormat = UserAnswers.encryptedFormat(encryptionService),
       indexes = Seq(
         IndexModel(
           Indexes.ascending("lastUpdated"),

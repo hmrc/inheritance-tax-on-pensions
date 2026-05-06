@@ -41,6 +41,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
     .configure("microservice.services.ihtp-report.port" -> wireMockPort)
     .configure("microservice.services.ihtp-report.url.submitReport" -> "/etmp/RESTAdapter/pods/reports/ihtp")
     .configure("http-verbs.retries.intervals" -> Seq("10.millis", "20.millis", "30.millis", "40.millis", "50.millis"))
+    .configure("mongodb.encryption.key" -> "test-key-for-integration-tests-only")
     .build()
 
   private lazy val connector: IhtpReportConnector = app.injector.instanceOf[IhtpReportConnector]
