@@ -42,7 +42,7 @@ class EncryptionServiceSpec extends AnyFreeSpec with Matchers {
     "when encryption is enabled" - {
 
       "must encrypt and decrypt PII fields correctly" in {
-        val service = new EncryptionService("test-master-key", true)
+        val service = new EncryptionService("test-encryption-key", true)
 
         val original = JsString("Joe Bloggs")
 
@@ -57,7 +57,7 @@ class EncryptionServiceSpec extends AnyFreeSpec with Matchers {
         System.setProperty("ENCRYPTION_ENABLED", "true")
 
         try {
-          val service = new EncryptionService("test-master-key", true)
+          val service = new EncryptionService("test-encryption-key", true)
           val original = JsString("some non-PII data")
 
           val encrypted = service.encryptField("someOtherField", original)
@@ -66,7 +66,7 @@ class EncryptionServiceSpec extends AnyFreeSpec with Matchers {
       }
 
       "must handle non-JsString values" in {
-        val service = new EncryptionService("test-master-key", true)
+        val service = new EncryptionService("test-encryption-key", true)
 
         val original = play.api.libs.json.Json.obj("key" -> "value")
         val result = service.encryptField("nameOfDeceased.firstForename", original)
@@ -74,7 +74,7 @@ class EncryptionServiceSpec extends AnyFreeSpec with Matchers {
       }
 
       "must handle decryption errors gracefully" in {
-        val service = new EncryptionService("test-master-key", true)
+        val service = new EncryptionService("test-encryption-key", true)
 
         val corrupted = JsString("invalid-encrypted-data")
         val result = service.decryptField("ninoOrReason.nino", corrupted)
@@ -82,7 +82,7 @@ class EncryptionServiceSpec extends AnyFreeSpec with Matchers {
       }
 
       "must test different PII field names" in {
-        val service = new EncryptionService("test-master-key", true)
+        val service = new EncryptionService("test-encryption-key", true)
 
         val piiFields = List("nameOfDeceased.surname", "ninoOrReason.nino", "birthDeathDates.dateOfBirth")
 
@@ -97,7 +97,7 @@ class EncryptionServiceSpec extends AnyFreeSpec with Matchers {
       }
 
       "must handle empty strings" in {
-        val service = new EncryptionService("test-master-key", true)
+        val service = new EncryptionService("test-encryption-key", true)
 
         val original = JsString("")
         val encrypted = service.encryptField("ninoOrReason.nino", original)

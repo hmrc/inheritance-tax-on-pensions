@@ -40,11 +40,11 @@ class Module extends AppModule:
 @Singleton
 class EncryptionServiceProvider @Inject() (configuration: Configuration) extends Provider[EncryptionService] {
   def get(): EncryptionService = {
-    val masterKey = configuration
+    val encryptionKey = configuration
       .getOptional[String]("mongodb.encryption.key")
-      .getOrElse(throw new IllegalStateException("Encryption master key not configured"))
-    val enabled = configuration.getOptional[Boolean]("encryption.enabled").getOrElse(false)
+      .getOrElse(throw new IllegalStateException("Encryption key not configured"))
+    val enabled = configuration.getOptional[Boolean]("mongodb.encryption.enabled").getOrElse(false)
 
-    new EncryptionService(masterKey, enabled)
+    new EncryptionService(encryptionKey, enabled)
   }
 }
