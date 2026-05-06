@@ -28,7 +28,7 @@ import java.nio.charset.StandardCharsets
 import javax.crypto.{Cipher, SecretKey}
 import java.security.{MessageDigest, SecureRandom}
 
-class EncryptionService(masterKey: String, encryptionEnabled: Boolean, random: SecureRandom = new SecureRandom()) {
+class EncryptionService(encryptionKey: String, encryptionEnabled: Boolean, random: SecureRandom = new SecureRandom()) {
 
   protected val enabled: Boolean = encryptionEnabled
 
@@ -36,7 +36,7 @@ class EncryptionService(masterKey: String, encryptionEnabled: Boolean, random: S
   private val GCM_TAG_BITS = 128
   private val IV_LENGTH_BYTES = 12
 
-  private val key: SecretKey = deriveKey(masterKey)
+  private val key: SecretKey = deriveKey(encryptionKey)
 
   private def deriveKey(secret: String): SecretKey = {
     val decoded = tryBase64DecodeOrPlain(secret)
