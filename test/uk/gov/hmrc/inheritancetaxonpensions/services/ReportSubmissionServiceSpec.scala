@@ -78,7 +78,11 @@ class ReportSubmissionServiceSpec
               "title" -> "Mr",
               "firstForename" -> "John",
               "secondForename" -> "William",
-              "surname" -> "Doe"
+              "surname" -> "Doe",
+              "addressLine1" -> "1 ABCDE Street",
+              "addressLine2" -> "FGHIJ Town",
+              "ukPostcode" -> "ZZ99 1AA",
+              "country" -> "GB"
             )
           ),
           "ninoOrReason" -> Json.obj(
@@ -111,15 +115,33 @@ class ReportSubmissionServiceSpec
         ),
         LprDetails(
           individual = Some(
-            IndividualName(
-              title = Some("Mr"),
-              firstForename = "John",
-              secondForename = Some("William"),
-              surname = "Doe"
+            IndividualDetails(
+              name = IndividualName(
+                title = Some("Mr"),
+                firstForename = "John",
+                secondForename = Some("William"),
+                surname = "Doe"
+              ),
+              address = AddressDetails(
+                addressLine1 = "1 ABCDE Street",
+                addressLine2 = "FGHIJ Town",
+                ukPostcode = Some("ZZ99 1AA"),
+                country = "GB"
+              )
             )
           ),
           organisation = None
         )
+      )
+      Json.toJson(payloadCaptor.getValue.lprDetails.individual.get) mustBe Json.obj(
+        "title" -> "Mr",
+        "firstForename" -> "John",
+        "secondForename" -> "William",
+        "surname" -> "Doe",
+        "addressLine1" -> "1 ABCDE Street",
+        "addressLine2" -> "FGHIJ Town",
+        "ukPostcode" -> "ZZ99 1AA",
+        "country" -> "GB"
       )
     }
 
@@ -170,6 +192,44 @@ class ReportSubmissionServiceSpec
       verify(mockIhtpReportConnector, never).submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]())
     }
 
+    "fail before submission when a mandatory LPR individual address field is missing" in {
+      val testUserAnswers = UserAnswers(
+        testUserAnswersId,
+        Json.obj(
+          "inheritanceTaxReference" -> "A123459/25A",
+          "nameOfDeceased" -> Json.obj(
+            "title" -> "Mr",
+            "firstForename" -> "John",
+            "surname" -> "Doe"
+          ),
+          "birthDeathDates" -> Json.obj(
+            "dateOfBirth" -> testDateOfBirth,
+            "dateOfDeath" -> testDateOfDeath
+          ),
+          "lprType" -> "individual",
+          "lprDetails" -> Json.obj(
+            "individual" -> Json.obj(
+              "title" -> "Mr",
+              "firstForename" -> "John",
+              "surname" -> "Doe",
+              "addressLine1" -> "1 ABCDE Street",
+              "country" -> "GB"
+            )
+          ),
+          "ninoOrReason" -> Json.obj(
+            "nino" -> testNino
+          )
+        )
+      )
+
+      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
+
+      val result = service.submitReport(testUserAnswersId, testPstr).failed.futureValue
+      result mustBe a[IllegalArgumentException]
+      result.getMessage must include("lprDetails.individual")
+      verify(mockIhtpReportConnector, never).submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]())
+    }
+
     "return Left when connector returns an error and send the no nino reason in the payload" in {
       val testUserAnswers = UserAnswers(
         testUserAnswersId,
@@ -191,7 +251,11 @@ class ReportSubmissionServiceSpec
               "title" -> "Mr",
               "firstForename" -> "John",
               "secondForename" -> "William",
-              "surname" -> "Doe"
+              "surname" -> "Doe",
+              "addressLine1" -> "1 ABCDE Street",
+              "addressLine2" -> "FGHIJ Town",
+              "ukPostcode" -> "ZZ99 1AA",
+              "country" -> "GB"
             )
           ),
           "ninoOrReason" -> Json.obj(
@@ -224,11 +288,19 @@ class ReportSubmissionServiceSpec
         ),
         LprDetails(
           individual = Some(
-            IndividualName(
-              title = Some("Mr"),
-              firstForename = "John",
-              secondForename = Some("William"),
-              surname = "Doe"
+            IndividualDetails(
+              name = IndividualName(
+                title = Some("Mr"),
+                firstForename = "John",
+                secondForename = Some("William"),
+                surname = "Doe"
+              ),
+              address = AddressDetails(
+                addressLine1 = "1 ABCDE Street",
+                addressLine2 = "FGHIJ Town",
+                ukPostcode = Some("ZZ99 1AA"),
+                country = "GB"
+              )
             )
           ),
           organisation = None
