@@ -83,10 +83,8 @@ class ReportSubmissionService @Inject() (
       userAnswers,
       Constants.birthDeathDatesPath
     )
-    val lprDetails = UserAnswersHelper.getMandatoryAs[LprDetails](
-      userAnswers,
-      Constants.lprDetailsPath
-    )
+    val lprType = UserAnswersHelper.getMandatory(userAnswers, "lprType")
+    val lprDetails = buildLprDetails(userAnswers, lprType)
 
     val reportDetails = ReportDetails(
       pstr = pstr
@@ -106,4 +104,17 @@ class ReportSubmissionService @Inject() (
 
     IhtpReportSubmission(reportDetails, deceasedDetails, lprDetails)
   }
+
+  private def buildLprDetails(userAnswers: UserAnswers, lprType: String): LprDetails =
+    lprType match {
+      case "organisation" =>
+        val organisationName = UserAnswersHelper.getMandatory(userAnswers, "lprDetails.organisation.organisationName")
+        LprDetails(None, Some(OrganisationName(organisationName)))
+      case "individual" =>
+        val individualName = UserAnswersHelper.getMandatoryAs[IndividualName](
+          userAnswers,
+          "lprDetails.individual"
+        )
+        LprDetails(Some(individualName), None)
+    }
 }

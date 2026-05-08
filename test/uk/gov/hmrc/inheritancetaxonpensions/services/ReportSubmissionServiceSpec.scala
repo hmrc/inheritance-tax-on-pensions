@@ -72,6 +72,7 @@ class ReportSubmissionServiceSpec
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
           ),
+          "lprType" -> "individual",
           "lprDetails" -> Json.obj(
             "individual" -> Json.obj(
               "title" -> "Mr",
@@ -109,13 +110,55 @@ class ReportSubmissionServiceSpec
           reasonForNoNino = None
         ),
         LprDetails(
-          individual = IndividualName(
-            title = Some("Mr"),
-            firstForename = "John",
-            secondForename = Some("William"),
-            surname = "Doe"
+          individual = Some(
+            IndividualName(
+              title = Some("Mr"),
+              firstForename = "John",
+              secondForename = Some("William"),
+              surname = "Doe"
+            )
+          ),
+          organisation = None
+        )
+      )
+    }
+
+    "return Right when submission is successful with organisation lprType" in {
+      val testUserAnswers = UserAnswers(
+        testUserAnswersId,
+        Json.obj(
+          "inheritanceTaxReference" -> "A123459/25A",
+          "nameOfDeceased" -> Json.obj(
+            "title" -> "Mr",
+            "firstForename" -> "John",
+            "surname" -> "Doe"
+          ),
+          "birthDeathDates" -> Json.obj(
+            "dateOfBirth" -> testDateOfBirth,
+            "dateOfDeath" -> testDateOfDeath
+          ),
+          "lprType" -> "organisation",
+          "lprDetails" -> Json.obj(
+            "organisation" -> Json.obj(
+              "organisationName" -> "Test Organisation"
+            )
+          ),
+          "ninoOrReason" -> Json.obj(
+            "nino" -> testNino
           )
         )
+      )
+      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
+      when(mockIhtpReportConnector.submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Right(testSubmissionResponse)))
+
+      val result = service.submitReport(testUserAnswersId, testPstr).futureValue
+      result.isRight mustBe true
+      val payloadCaptor: ArgumentCaptor[IhtpReportSubmission] = ArgumentCaptor.forClass(classOf[IhtpReportSubmission])
+      verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
+      payloadCaptor.getValue.lprDetails mustBe LprDetails(
+        individual = None,
+        organisation = Some(OrganisationName("Test Organisation"))
       )
     }
 
@@ -142,6 +185,7 @@ class ReportSubmissionServiceSpec
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
           ),
+          "lprType" -> "individual",
           "lprDetails" -> Json.obj(
             "individual" -> Json.obj(
               "title" -> "Mr",
@@ -179,12 +223,15 @@ class ReportSubmissionServiceSpec
           reasonForNoNino = Some("The deceased was not a UK citizen")
         ),
         LprDetails(
-          individual = IndividualName(
-            title = Some("Mr"),
-            firstForename = "John",
-            secondForename = Some("William"),
-            surname = "Doe"
-          )
+          individual = Some(
+            IndividualName(
+              title = Some("Mr"),
+              firstForename = "John",
+              secondForename = Some("William"),
+              surname = "Doe"
+            )
+          ),
+          organisation = None
         )
       )
     }

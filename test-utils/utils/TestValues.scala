@@ -72,12 +72,15 @@ trait TestValues extends Generators {
       reasonForNoNino = None
     ),
     LprDetails(
-      individual = IndividualName(
-        title = Some("Mr"),
-        firstForename = "John",
-        secondForename = Some("William"),
-        surname = "Doe"
-      )
+      individual = Some(
+        IndividualName(
+          title = Some("Mr"),
+          firstForename = "John",
+          secondForename = Some("William"),
+          surname = "Doe"
+        )
+      ),
+      organisation = None
     )
   )
 
