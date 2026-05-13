@@ -35,7 +35,8 @@ class PiiFieldsSpec extends AnyFreeSpec with Matchers {
         "birthDeathDates.dateOfDeath",
         "lprDetails.individual.firstForename",
         "lprDetails.individual.secondForename",
-        "lprDetails.individual.surname"
+        "lprDetails.individual.surname",
+        "lprDetails.organisation.organisationName"
       )
 
       piiFields.foreach { field =>

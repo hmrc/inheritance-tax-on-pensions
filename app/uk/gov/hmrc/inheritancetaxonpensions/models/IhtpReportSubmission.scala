@@ -55,7 +55,7 @@ object DeceasedDetails {
     Json.format[DeceasedDetails]
 }
 
-case class LprDetails(individual: IndividualName)
+case class LprDetails(individual: Option[IndividualName], organisation: Option[OrganisationName])
 
 object LprDetails {
   implicit val lprDetailsFormat: OFormat[LprDetails] =
@@ -72,6 +72,13 @@ case class IndividualName(
 object IndividualName {
   implicit val individualNameFormat: OFormat[IndividualName] =
     Json.format[IndividualName]
+}
+
+case class OrganisationName(organisationName: String)
+
+object OrganisationName {
+  implicit val organisationNameFormat: OFormat[OrganisationName] =
+    Json.format[OrganisationName]
 }
 
 case class NinoOrReasonAnswers(nino: Option[String], reasonForNoNino: Option[String])
