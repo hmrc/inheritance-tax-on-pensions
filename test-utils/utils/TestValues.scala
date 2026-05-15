@@ -55,6 +55,10 @@ trait TestValues extends Generators {
   val testNino: String = ninoGen.sample.get
   val testDateOfBirth = "1950-01-01"
   val testDateOfDeath = "2026-01-01"
+  val testAddressLine1 = "1 ABCDE Street"
+  val testAddressLine2 = "FGHIJ Town"
+  val testUkPostcode = "ZZ99 1AA"
+  val testCountry = "GB"
 
   val testReportSubmissionRequestBody = IhtpReportSubmission(
     ReportDetails(
@@ -73,11 +77,19 @@ trait TestValues extends Generators {
     ),
     LprDetails(
       individual = Some(
-        IndividualName(
-          title = Some("Mr"),
-          firstForename = "John",
-          secondForename = Some("William"),
-          surname = "Doe"
+        IndividualDetails(
+          name = IndividualName(
+            title = Some("Mr"),
+            firstForename = "John",
+            secondForename = Some("William"),
+            surname = "Doe"
+          ),
+          address = AddressDetails(
+            addressLine1 = testAddressLine1,
+            addressLine2 = testAddressLine2,
+            ukPostcode = Some(testUkPostcode),
+            country = testCountry
+          )
         )
       ),
       organisation = None

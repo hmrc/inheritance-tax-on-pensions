@@ -111,10 +111,10 @@ class ReportSubmissionService @Inject() (
         val organisationName = UserAnswersHelper.getMandatory(userAnswers, "lprDetails.organisation.organisationName")
         LprDetails(None, Some(OrganisationName(organisationName)))
       case "individual" =>
-        val individualName = UserAnswersHelper.getMandatoryAs[IndividualName](
+        val individualDetails = UserAnswersHelper.getMandatoryAs[IndividualDetails](
           userAnswers,
           "lprDetails.individual"
         )
-        LprDetails(Some(individualName), None)
+        LprDetails(Some(individualDetails), None)
     }
 }

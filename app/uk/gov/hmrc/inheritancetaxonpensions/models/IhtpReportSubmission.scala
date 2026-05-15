@@ -16,7 +16,8 @@
 
 package uk.gov.hmrc.inheritancetaxonpensions.models
 
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json._
+import play.api.libs.functional.syntax._
 
 import java.time.Instant
 
@@ -55,7 +56,7 @@ object DeceasedDetails {
     Json.format[DeceasedDetails]
 }
 
-case class LprDetails(individual: Option[IndividualName], organisation: Option[OrganisationName])
+case class LprDetails(individual: Option[IndividualDetails], organisation: Option[OrganisationName])
 
 object LprDetails {
   implicit val lprDetailsFormat: OFormat[LprDetails] =
@@ -72,6 +73,30 @@ case class IndividualName(
 object IndividualName {
   implicit val individualNameFormat: OFormat[IndividualName] =
     Json.format[IndividualName]
+}
+
+case class AddressDetails(
+  addressLine1: String,
+  addressLine2: String,
+  addressLine3: Option[String] = None,
+  addressLine4: Option[String] = None,
+  ukPostcode: Option[String] = None,
+  country: String
+)
+
+object AddressDetails {
+  implicit val addressDetailsFormat: OFormat[AddressDetails] =
+    Json.format[AddressDetails]
+}
+
+case class IndividualDetails(name: IndividualName, address: AddressDetails)
+
+object IndividualDetails {
+  implicit val individualDetailsReads: Reads[IndividualDetails] =
+    JsPath.read[IndividualName].and(JsPath.read[AddressDetails])(IndividualDetails.apply)
+
+  implicit val individualDetailsWrites: OWrites[IndividualDetails] = individualDetails =>
+    Json.toJsObject(individualDetails.name) ++ Json.toJsObject(individualDetails.address)
 }
 
 case class OrganisationName(organisationName: String)
