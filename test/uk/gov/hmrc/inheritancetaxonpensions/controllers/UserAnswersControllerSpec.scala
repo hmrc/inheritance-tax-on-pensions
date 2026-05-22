@@ -75,6 +75,8 @@ class UserAnswersControllerSpec extends BaseSpec:
     .build()
 
   private val controller = application.injector.instanceOf[UserAnswersController]
+  private val cacheKeyService =
+    application.injector.instanceOf[uk.gov.hmrc.inheritancetaxonpensions.services.CacheKeyService]
 
   "Fetch user answers" must {
 
@@ -144,27 +146,7 @@ class UserAnswersControllerSpec extends BaseSpec:
       verify(mockSchemeDetailsConnector, never).checkAssociation(any(), any(), any())(any(), any())
     }
 
-    "return BAD_REQUEST (400) when cache key format is invalid" in {
-      when(mockAuthConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any()))
-        .thenReturn(Future.successful(new ~(Some(externalId), enrolments)))
-      when(mockSchemeDetailsConnector.checkAssociation(any(), any(), any())(any(), any()))
-        .thenReturn(Future.successful(true))
-
-      val result = controller.fetch("invalid-cache-key")(
-        fakeRequest.withHeaders(
-          newHeaders = HEADER_KEY_SRN -> testSrn,
-          HEADER_KEY_SCHEME_NAME -> schemeName,
-          HEADER_KEY_USER_NAME -> userName,
-          HEADER_KEY_REQUEST_ROLE -> HEADER_VALUE_PSA
-        )
-      )
-
-      status(result) mustEqual Status.BAD_REQUEST
-      verify(mockAuthConnector, never).authorise(any(), any())(any(), any())
-      verify(mockSchemeDetailsConnector, never).checkAssociation(any(), any(), any())(any(), any())
-    }
-
-    "return BAD_REQUEST (400) when cache key SRN does not match header SRN" in {
+    "return NOT_FOUND (404) when cache key SRN does not match header SRN" in {
       when(mockAuthConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any()))
         .thenReturn(Future.successful(new ~(Some(externalId), enrolments)))
       when(mockSchemeDetailsConnector.checkAssociation(any(), any(), any())(any(), any()))
@@ -179,7 +161,7 @@ class UserAnswersControllerSpec extends BaseSpec:
         )
       )
 
-      status(result) mustEqual Status.BAD_REQUEST
+      status(result) mustEqual Status.NOT_FOUND
       verify(mockAuthConnector, never).authorise(any(), any())(any(), any())
       verify(mockSchemeDetailsConnector, never).checkAssociation(any(), any(), any())(any(), any())
     }
@@ -276,11 +258,12 @@ class UserAnswersControllerSpec extends BaseSpec:
       verify(mockSchemeDetailsConnector, never).checkAssociation(any(), any(), any())(any(), any())
     }
 
-    "return BAD_REQUEST (400) when cache key format is invalid" in {
+    "must generate UUID when cache key is invalid or SRN mismatch" in {
       when(mockAuthConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any()))
         .thenReturn(Future.successful(new ~(Some(externalId), enrolments)))
       when(mockSchemeDetailsConnector.checkAssociation(any(), any(), any())(any(), any()))
         .thenReturn(Future.successful(true))
+      when(mockUserAnswersRepository.set(any())).thenReturn(Future.successful(true))
 
       val invalidUserAnswers = UserAnswers("invalid-cache-key", testSrn, testUuid)
 
@@ -295,83 +278,10 @@ class UserAnswersControllerSpec extends BaseSpec:
           )
       )
 
-      status(result) mustEqual Status.BAD_REQUEST
-      verify(mockAuthConnector, never).authorise(any(), any())(any(), any())
-      verify(mockSchemeDetailsConnector, never).checkAssociation(any(), any(), any())(any(), any())
-      verify(mockUserAnswersRepository, never).set(any())
-    }
-
-    "return BAD_REQUEST (400) when cache key SRN does not match header SRN" in {
-      when(mockAuthConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any()))
-        .thenReturn(Future.successful(new ~(Some(externalId), enrolments)))
-      when(mockSchemeDetailsConnector.checkAssociation(any(), any(), any())(any(), any()))
-        .thenReturn(Future.successful(true))
-
-      val result = controller.set()(
-        fakeRequest
-          .withJsonBody(Json.toJson(emptyUserAnswers))
-          .withHeaders(
-            newHeaders = HEADER_KEY_SRN -> "S9999999999",
-            HEADER_KEY_SCHEME_NAME -> schemeName,
-            HEADER_KEY_USER_NAME -> userName,
-            HEADER_KEY_REQUEST_ROLE -> HEADER_VALUE_PSA
-          )
-      )
-
-      status(result) mustEqual Status.BAD_REQUEST
-      verify(mockAuthConnector, never).authorise(any(), any())(any(), any())
-      verify(mockSchemeDetailsConnector, never).checkAssociation(any(), any(), any())(any(), any())
-      verify(mockUserAnswersRepository, never).set(any())
-    }
-
-    "return BAD_REQUEST (400) when UserAnswers SRN does not match header SRN" in {
-      when(mockAuthConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any()))
-        .thenReturn(Future.successful(new ~(Some(externalId), enrolments)))
-      when(mockSchemeDetailsConnector.checkAssociation(any(), any(), any())(any(), any()))
-        .thenReturn(Future.successful(true))
-
-      val mismatchedSrnUserAnswers = UserAnswers(s"$testSrn-$testUuid", "S9999999999", testUuid)
-
-      val result = controller.set()(
-        fakeRequest
-          .withJsonBody(Json.toJson(mismatchedSrnUserAnswers))
-          .withHeaders(
-            newHeaders = HEADER_KEY_SRN -> testSrn,
-            HEADER_KEY_SCHEME_NAME -> schemeName,
-            HEADER_KEY_USER_NAME -> userName,
-            HEADER_KEY_REQUEST_ROLE -> HEADER_VALUE_PSA
-          )
-      )
-
-      status(result) mustEqual Status.BAD_REQUEST
-      verify(mockAuthConnector, never).authorise(any(), any())(any(), any())
-      verify(mockSchemeDetailsConnector, never).checkAssociation(any(), any(), any())(any(), any())
-      verify(mockUserAnswersRepository, never).set(any())
-    }
-
-    "return BAD_REQUEST (400) when UserAnswers UUID does not match cache key UUID" in {
-      when(mockAuthConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any()))
-        .thenReturn(Future.successful(new ~(Some(externalId), enrolments)))
-      when(mockSchemeDetailsConnector.checkAssociation(any(), any(), any())(any(), any()))
-        .thenReturn(Future.successful(true))
-
-      val mismatchedUuidUserAnswers =
-        UserAnswers(s"$testSrn-$testUuid", testSrn, "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
-
-      val result = controller.set()(
-        fakeRequest
-          .withJsonBody(Json.toJson(mismatchedUuidUserAnswers))
-          .withHeaders(
-            newHeaders = HEADER_KEY_SRN -> testSrn,
-            HEADER_KEY_SCHEME_NAME -> schemeName,
-            HEADER_KEY_USER_NAME -> userName,
-            HEADER_KEY_REQUEST_ROLE -> HEADER_VALUE_PSA
-          )
-      )
-
-      status(result) mustEqual Status.BAD_REQUEST
-      verify(mockAuthConnector, never).authorise(any(), any())(any(), any())
-      verify(mockSchemeDetailsConnector, never).checkAssociation(any(), any(), any())(any(), any())
-      verify(mockUserAnswersRepository, never).set(any())
+      status(result) mustEqual Status.OK
+      val responseBody = contentAsJson(result).as[UserAnswers]
+      cacheKeyService.validateCacheKey(responseBody.id).mustBe(true)
+      cacheKeyService.extractSrn(responseBody.id).mustBe(Some(testSrn))
+      verify(mockUserAnswersRepository, times(1)).set(any())
     }
   }

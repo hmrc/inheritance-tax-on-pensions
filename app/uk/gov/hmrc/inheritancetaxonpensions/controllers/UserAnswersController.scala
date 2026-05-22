@@ -51,9 +51,9 @@ class UserAnswersController @Inject() (
       requiredHeaders(HEADER_KEY_USER_NAME, HEADER_KEY_SCHEME_NAME, HEADER_KEY_SRN, HEADER_KEY_REQUEST_ROLE)
 
     if (!cacheKeyService.validateCacheKey(id)) {
-      Future.successful(BadRequest("Invalid cache key format"))
+      Future.successful(NotFound)
     } else if (!cacheKeyService.extractSrn(id).contains(srnS)) {
-      Future.successful(BadRequest("Cache key SRN does not match the header SRN"))
+      Future.successful(NotFound)
     } else {
       authorisedAsIhtpUser(srnS) { _ =>
         userAnswersRepository.get(id).map {
@@ -69,21 +69,23 @@ class UserAnswersController @Inject() (
       requiredHeaders(HEADER_KEY_USER_NAME, HEADER_KEY_SCHEME_NAME, HEADER_KEY_SRN, HEADER_KEY_REQUEST_ROLE)
     val userAnswers = requiredBody.as[UserAnswers]
 
-    val cacheKey = userAnswers.id
-    if (!cacheKeyService.validateCacheKey(cacheKey)) {
-      Future.successful(BadRequest("Invalid cache key format"))
-    } else if (!cacheKeyService.extractSrn(cacheKey).contains(srnS)) {
-      Future.successful(BadRequest("Cache key SRN does not match the header SRN"))
-    } else if (userAnswers.srn != srnS) {
-      Future.successful(BadRequest("UserAnswers SRN does not match the header SRN"))
-    } else if (!cacheKeyService.extractUuid(cacheKey).contains(userAnswers.uuid)) {
-      Future.successful(BadRequest("UserAnswers UUID does not match the cache key UUID"))
-    } else {
-      authorisedAsIhtpUser(srnS) { _ =>
-        userAnswersRepository.set(userAnswers).map {
-          case true => Ok(Json.toJson(userAnswers))
-          case _ => InternalServerError("Failed to save the user answers")
-        }
+    val finalUserAnswers =
+      if (
+        cacheKeyService.validateCacheKey(userAnswers.id) &&
+        cacheKeyService.extractSrn(userAnswers.id).contains(srnS) &&
+        userAnswers.srn == srnS
+      ) {
+        userAnswers
+      } else {
+        val generatedCacheKey = cacheKeyService.generateCacheKey(srnS)
+        val generatedUuid = cacheKeyService.extractUuid(generatedCacheKey).getOrElse("")
+        userAnswers.copy(id = generatedCacheKey, srn = srnS, uuid = generatedUuid)
+      }
+
+    authorisedAsIhtpUser(srnS) { _ =>
+      userAnswersRepository.set(finalUserAnswers).map {
+        case true => Ok(Json.toJson(finalUserAnswers))
+        case _ => InternalServerError("Failed to save the user answers")
       }
     }
   }
