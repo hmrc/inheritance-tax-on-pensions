@@ -23,8 +23,13 @@ import uk.gov.hmrc.inheritancetaxonpensions.models.UserAnswers
 
 class UserAnswersHelperSpec extends AnyFreeSpec with Matchers {
 
+  val testSrn = "S2400000001"
+  val testUuid = "test-uuid"
+
   val userAnswers: UserAnswers = UserAnswers(
-    id = "testId",
+    id = s"$testSrn-$testUuid",
+    srn = testSrn,
+    uuid = testUuid,
     data = Json.obj(
       "mandatoryField" -> "mandatoryValue",
       "optionalField" -> "optionalValue"
@@ -32,7 +37,9 @@ class UserAnswersHelperSpec extends AnyFreeSpec with Matchers {
   )
 
   val userAnswersWithoutFields: UserAnswers = UserAnswers(
-    id = "testId",
+    id = s"$testSrn-$testUuid",
+    srn = testSrn,
+    uuid = testUuid,
     data = Json.obj()
   )
 

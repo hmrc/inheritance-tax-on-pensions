@@ -48,7 +48,10 @@ class UserAnswersRepositorySpec
   private val instant = Instant.now.truncatedTo(ChronoUnit.MILLIS)
   private val stubClock: Clock = Clock.fixed(instant, ZoneId.systemDefault)
 
-  private val userAnswers = UserAnswers("id", Json.obj("foo" -> "bar"), Instant.ofEpochSecond(1))
+  private val testSrn = "S2400000001"
+  private val testUuid = "ed350bdc-4010-406c-9ca0-8faaf5f93cbc"
+  private val userAnswers =
+    UserAnswers(s"$testSrn-$testUuid", testSrn, testUuid, Json.obj("foo" -> "bar"), Instant.ofEpochSecond(1))
 
   private val mockAppConfig = mock[AppConfig]
   private val mockEncryptionService = mock[EncryptionService]
@@ -150,6 +153,44 @@ class UserAnswersRepositorySpec
     }
 
     mustPreserveMdc(repository.keepAlive(userAnswers.id))
+  }
+
+  ".findBySrn" - {
+
+    "must return all user answers for a given SRN" in {
+      val testSrn2 = "S2400000002"
+      val testUuid2 = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"
+      val userAnswers2 =
+        UserAnswers(s"$testSrn2-$testUuid2", testSrn2, testUuid2, Json.obj("foo" -> "bar"), Instant.ofEpochSecond(2))
+
+      insert(userAnswers).futureValue
+      insert(userAnswers2).futureValue
+
+      val result = repository.findBySrn(testSrn).futureValue
+      result must have size 1
+      result.head.srn mustBe testSrn
+    }
+
+    "must return empty list when no user answers exist for SRN" in {
+      val result = repository.findBySrn("S9999999999").futureValue
+      result mustBe empty
+    }
+
+    "must return multiple user answers for the same SRN with different UUIDs" in {
+      val testUuid2 = "cccccccc-cccc-cccc-cccc-cccccccccccc"
+      val userAnswers2 =
+        UserAnswers(s"$testSrn-$testUuid2", testSrn, testUuid2, Json.obj("foo" -> "bar"), Instant.ofEpochSecond(2))
+
+      insert(userAnswers).futureValue
+      insert(userAnswers2).futureValue
+
+      val result = repository.findBySrn(testSrn).futureValue
+      result must have size 2
+      result.map(_.srn).distinct mustBe Seq(testSrn)
+      result.map(_.uuid).distinct must have size 2
+    }
+
+    mustPreserveMdc(repository.findBySrn(testSrn))
   }
 
   private def mustPreserveMdc[A](f: => Future[A])(implicit pos: Position): Unit =

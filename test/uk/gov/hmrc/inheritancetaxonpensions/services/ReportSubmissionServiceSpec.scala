@@ -49,6 +49,8 @@ class ReportSubmissionServiceSpec
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   private val testUserAnswersId = "testUserAnswersId"
+  private val testSrn = "S2400000001"
+  private val testUuid = "test-uuid"
   private val testPstr = "12345678"
   private val testSubmissionResponse = IhtpReportSubmissionResponse(Instant.now(), "910000000000", "123456781")
 
@@ -60,6 +62,8 @@ class ReportSubmissionServiceSpec
     "return Right when submission is successful with a nino in the payload" in {
       val testUserAnswers = UserAnswers(
         testUserAnswersId,
+        testSrn,
+        testUuid,
         Json.obj(
           "inheritanceTaxReference" -> "A123459/25A",
           "nameOfDeceased" -> Json.obj(
@@ -148,6 +152,8 @@ class ReportSubmissionServiceSpec
     "return Right when submission is successful with organisation lprType" in {
       val testUserAnswers = UserAnswers(
         testUserAnswersId,
+        testSrn,
+        testUuid,
         Json.obj(
           "inheritanceTaxReference" -> "A123459/25A",
           "nameOfDeceased" -> Json.obj(
@@ -195,6 +201,8 @@ class ReportSubmissionServiceSpec
     "fail before submission when a mandatory LPR individual address field is missing" in {
       val testUserAnswers = UserAnswers(
         testUserAnswersId,
+        testSrn,
+        testUuid,
         Json.obj(
           "inheritanceTaxReference" -> "A123459/25A",
           "nameOfDeceased" -> Json.obj(
@@ -233,6 +241,8 @@ class ReportSubmissionServiceSpec
     "return Left when connector returns an error and send the no nino reason in the payload" in {
       val testUserAnswers = UserAnswers(
         testUserAnswersId,
+        testSrn,
+        testUuid,
         Json.obj(
           "inheritanceTaxReference" -> "A123459/25A",
           "nameOfDeceased" -> Json.obj(

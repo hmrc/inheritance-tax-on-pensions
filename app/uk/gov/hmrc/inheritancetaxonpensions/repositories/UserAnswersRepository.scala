@@ -50,6 +50,16 @@ class UserAnswersRepository @Inject() (
           IndexOptions()
             .name("lastUpdatedIdx")
             .expireAfter(appConfig.userAnswersTtl, TimeUnit.SECONDS)
+        ),
+        IndexModel(
+          Indexes.ascending("srn"),
+          IndexOptions()
+            .name("srnIdx")
+        ),
+        IndexModel(
+          Indexes.ascending("uuid"),
+          IndexOptions()
+            .name("uuidIdx")
         )
       )
     ) {
@@ -89,6 +99,11 @@ class UserAnswersRepository @Inject() (
       .toFuture()
       .map(_ => true)
   }
+
+  def findBySrn(srn: String): Future[Seq[UserAnswers]] =
+    collection
+      .find(Filters.equal("srn", srn))
+      .toFuture()
 
   def clear(id: String): Future[Boolean] =
     collection

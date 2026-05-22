@@ -23,18 +23,19 @@ import uk.gov.hmrc.inheritancetaxonpensions.auth.IhtpAuthWithSessionCache
 import uk.gov.hmrc.inheritancetaxonpensions.repositories.UserAnswersRepository
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
 import uk.gov.hmrc.inheritancetaxonpensions.models.UserAnswers
-import uk.gov.hmrc.inheritancetaxonpensions.services.SessionService
+import uk.gov.hmrc.inheritancetaxonpensions.services.{CacheKeyService, SessionService}
 import uk.gov.hmrc.auth.core.AuthConnector
 import play.api.Logging
 import play.api.libs.json.Json
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 import javax.inject.{Inject, Singleton}
 
 @Singleton()
 class UserAnswersController @Inject() (
   val userAnswersRepository: UserAnswersRepository,
+  cacheKeyService: CacheKeyService,
   cc: ControllerComponents,
   override val authConnector: AuthConnector,
   override protected val schemeDetailsConnector: SchemeDetailsConnector,
@@ -48,10 +49,17 @@ class UserAnswersController @Inject() (
   def fetch(id: String): Action[AnyContent] = Action.async { implicit request =>
     val Seq(userName, schemeName, srnS, requestRole) =
       requiredHeaders(HEADER_KEY_USER_NAME, HEADER_KEY_SCHEME_NAME, HEADER_KEY_SRN, HEADER_KEY_REQUEST_ROLE)
-    authorisedAsIhtpUser(srnS) { _ =>
-      userAnswersRepository.get(id).map {
-        case Some(ua) => Ok(Json.toJson(ua))
-        case None => NotFound
+
+    if (!cacheKeyService.validateCacheKey(id)) {
+      Future.successful(BadRequest("Invalid cache key format"))
+    } else if (!cacheKeyService.extractSrn(id).contains(srnS)) {
+      Future.successful(BadRequest("Cache key SRN does not match the header SRN"))
+    } else {
+      authorisedAsIhtpUser(srnS) { _ =>
+        userAnswersRepository.get(id).map {
+          case Some(ua) => Ok(Json.toJson(ua))
+          case None => NotFound
+        }
       }
     }
   }
@@ -61,10 +69,21 @@ class UserAnswersController @Inject() (
       requiredHeaders(HEADER_KEY_USER_NAME, HEADER_KEY_SCHEME_NAME, HEADER_KEY_SRN, HEADER_KEY_REQUEST_ROLE)
     val userAnswers = requiredBody.as[UserAnswers]
 
-    authorisedAsIhtpUser(srnS) { _ =>
-      userAnswersRepository.set(userAnswers).map {
-        case true => Ok(Json.toJson(userAnswers))
-        case _ => InternalServerError("Failed to save the user answers")
+    val cacheKey = userAnswers.id
+    if (!cacheKeyService.validateCacheKey(cacheKey)) {
+      Future.successful(BadRequest("Invalid cache key format"))
+    } else if (!cacheKeyService.extractSrn(cacheKey).contains(srnS)) {
+      Future.successful(BadRequest("Cache key SRN does not match the header SRN"))
+    } else if (userAnswers.srn != srnS) {
+      Future.successful(BadRequest("UserAnswers SRN does not match the header SRN"))
+    } else if (!cacheKeyService.extractUuid(cacheKey).contains(userAnswers.uuid)) {
+      Future.successful(BadRequest("UserAnswers UUID does not match the cache key UUID"))
+    } else {
+      authorisedAsIhtpUser(srnS) { _ =>
+        userAnswersRepository.set(userAnswers).map {
+          case true => Ok(Json.toJson(userAnswers))
+          case _ => InternalServerError("Failed to save the user answers")
+        }
       }
     }
   }
