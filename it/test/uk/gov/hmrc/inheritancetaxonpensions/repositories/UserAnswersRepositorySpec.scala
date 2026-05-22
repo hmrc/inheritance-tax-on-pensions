@@ -31,6 +31,7 @@ import uk.gov.hmrc.inheritancetaxonpensions.models.UserAnswers
 import uk.gov.hmrc.inheritancetaxonpensions.services.EncryptionService
 import uk.gov.hmrc.mdc.MdcExecutionContext
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
+import utils.TestValues
 
 import java.time.temporal.ChronoUnit
 import java.time.{Clock, Instant, ZoneId}
@@ -43,15 +44,14 @@ class UserAnswersRepositorySpec
     with ScalaFutures
     with IntegrationPatience
     with OptionValues
-    with MockitoSugar {
+    with MockitoSugar
+    with TestValues {
 
   private val instant = Instant.now.truncatedTo(ChronoUnit.MILLIS)
   private val stubClock: Clock = Clock.fixed(instant, ZoneId.systemDefault)
 
-  private val testSrn = "S2400000001"
-  private val testUuid = "ed350bdc-4010-406c-9ca0-8faaf5f93cbc"
   private val userAnswers =
-    UserAnswers(s"$testSrn-$testUuid", testSrn, testUuid, Json.obj("foo" -> "bar"), Instant.ofEpochSecond(1))
+    UserAnswers(s"$srn-$uuid", srn, uuid, Json.obj("foo" -> "bar"), Instant.ofEpochSecond(1))
 
   private val mockAppConfig = mock[AppConfig]
   private val mockEncryptionService = mock[EncryptionService]
@@ -166,9 +166,9 @@ class UserAnswersRepositorySpec
       insert(userAnswers).futureValue
       insert(userAnswers2).futureValue
 
-      val result = repository.findBySrn(testSrn).futureValue
+      val result = repository.findBySrn(srn).futureValue
       result must have size 1
-      result.head.srn mustBe testSrn
+      result.head.srn mustBe srn
     }
 
     "must return empty list when no user answers exist for SRN" in {
@@ -179,18 +179,18 @@ class UserAnswersRepositorySpec
     "must return multiple user answers for the same SRN with different UUIDs" in {
       val testUuid2 = "cccccccc-cccc-cccc-cccc-cccccccccccc"
       val userAnswers2 =
-        UserAnswers(s"$testSrn-$testUuid2", testSrn, testUuid2, Json.obj("foo" -> "bar"), Instant.ofEpochSecond(2))
+        UserAnswers(s"$srn-$testUuid2", srn, testUuid2, Json.obj("foo" -> "bar"), Instant.ofEpochSecond(2))
 
       insert(userAnswers).futureValue
       insert(userAnswers2).futureValue
 
-      val result = repository.findBySrn(testSrn).futureValue
+      val result = repository.findBySrn(srn).futureValue
       result must have size 2
-      result.map(_.srn).distinct mustBe Seq(testSrn)
+      result.map(_.srn).distinct mustBe Seq(srn)
       result.map(_.uuid).distinct must have size 2
     }
 
-    mustPreserveMdc(repository.findBySrn(testSrn))
+    mustPreserveMdc(repository.findBySrn(srn))
   }
 
   private def mustPreserveMdc[A](f: => Future[A])(implicit pos: Position): Unit =

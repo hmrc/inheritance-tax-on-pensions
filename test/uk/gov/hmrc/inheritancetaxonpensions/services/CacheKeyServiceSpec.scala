@@ -19,10 +19,11 @@ package uk.gov.hmrc.inheritancetaxonpensions.services
 import org.scalatest.matchers.must.Matchers
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.helpers.RandomUUIDGenerator
 import org.scalatestplus.mockito.MockitoSugar
+import utils.TestValues
 import org.scalatest.freespec.AnyFreeSpec
 import org.mockito.Mockito.when
 
-class CacheKeyServiceSpec extends AnyFreeSpec with Matchers with MockitoSugar {
+class CacheKeyServiceSpec extends AnyFreeSpec with Matchers with MockitoSugar with TestValues {
 
   private val mockUUIDGenerator = mock[RandomUUIDGenerator]
   private val cacheKeyService = new CacheKeyService(mockUUIDGenerator)
@@ -32,24 +33,20 @@ class CacheKeyServiceSpec extends AnyFreeSpec with Matchers with MockitoSugar {
     "generateCacheKey" - {
 
       "must generate a cache key with SRN and UUID" in {
-        val testSrn = "S2400000001"
-        val testUuid = "ed350bdc-4010-406c-9ca0-8faaf5f93cbc"
-        when(mockUUIDGenerator.uuid).thenReturn(testUuid)
+        when(mockUUIDGenerator.uuid).thenReturn(uuid)
 
-        val result = cacheKeyService.generateCacheKey(testSrn)
-        result mustBe s"$testSrn-$testUuid"
+        val result = cacheKeyService.generateCacheKey(srn)
+        result mustBe s"$srn-$uuid"
       }
     }
 
     "parseCacheKey" - {
 
       "must parse a valid cache key" in {
-        val testSrn = "S2400000001"
-        val testUuid = "ed350bdc-4010-406c-9ca0-8faaf5f93cbc"
-        val cacheKey = s"$testSrn-$testUuid"
+        val cacheKey = s"$srn-$uuid"
 
         val result = cacheKeyService.parseCacheKey(cacheKey)
-        result mustBe Some((testSrn, testUuid))
+        result mustBe Some((srn, uuid))
       }
 
       "must return None for invalid SRN format" in {
@@ -79,9 +76,7 @@ class CacheKeyServiceSpec extends AnyFreeSpec with Matchers with MockitoSugar {
     "validateCacheKey" - {
 
       "must return true for valid cache key" in {
-        val testSrn = "S2400000001"
-        val testUuid = "ed350bdc-4010-406c-9ca0-8faaf5f93cbc"
-        val cacheKey = s"$testSrn-$testUuid"
+        val cacheKey = s"$srn-$uuid"
 
         val result = cacheKeyService.validateCacheKey(cacheKey)
         result mustBe true
@@ -96,12 +91,10 @@ class CacheKeyServiceSpec extends AnyFreeSpec with Matchers with MockitoSugar {
     "extractSrn" - {
 
       "must extract SRN from valid cache key" in {
-        val testSrn = "S2400000001"
-        val testUuid = "ed350bdc-4010-406c-9ca0-8faaf5f93cbc"
-        val cacheKey = s"$testSrn-$testUuid"
+        val cacheKey = s"$srn-$uuid"
 
         val result = cacheKeyService.extractSrn(cacheKey)
-        result mustBe Some(testSrn)
+        result mustBe Some(srn)
       }
 
       "must return None for invalid cache key" in {
@@ -113,12 +106,10 @@ class CacheKeyServiceSpec extends AnyFreeSpec with Matchers with MockitoSugar {
     "extractUuid" - {
 
       "must extract UUID from valid cache key" in {
-        val testSrn = "S2400000001"
-        val testUuid = "ed350bdc-4010-406c-9ca0-8faaf5f93cbc"
-        val cacheKey = s"$testSrn-$testUuid"
+        val cacheKey = s"$srn-$uuid"
 
         val result = cacheKeyService.extractUuid(cacheKey)
-        result mustBe Some(testUuid)
+        result mustBe Some(uuid)
       }
 
       "must return None for invalid cache key" in {

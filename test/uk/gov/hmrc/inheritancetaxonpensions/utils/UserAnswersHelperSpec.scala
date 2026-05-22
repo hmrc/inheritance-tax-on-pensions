@@ -16,20 +16,18 @@
 
 package uk.gov.hmrc.inheritancetaxonpensions.utils
 
-import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import play.api.libs.json.Json
 import uk.gov.hmrc.inheritancetaxonpensions.models.UserAnswers
+import utils.TestValues
+import org.scalatest.freespec.AnyFreeSpec
 
-class UserAnswersHelperSpec extends AnyFreeSpec with Matchers {
-
-  val testSrn = "S2400000001"
-  val testUuid = "test-uuid"
+class UserAnswersHelperSpec extends AnyFreeSpec with Matchers with TestValues {
 
   val userAnswers: UserAnswers = UserAnswers(
-    id = s"$testSrn-$testUuid",
-    srn = testSrn,
-    uuid = testUuid,
+    id = s"$srn-$uuid",
+    srn = srn,
+    uuid = uuid,
     data = Json.obj(
       "mandatoryField" -> "mandatoryValue",
       "optionalField" -> "optionalValue"
@@ -37,9 +35,9 @@ class UserAnswersHelperSpec extends AnyFreeSpec with Matchers {
   )
 
   val userAnswersWithoutFields: UserAnswers = UserAnswers(
-    id = s"$testSrn-$testUuid",
-    srn = testSrn,
-    uuid = testUuid,
+    id = s"$srn-$uuid",
+    srn = srn,
+    uuid = uuid,
     data = Json.obj()
   )
 
