@@ -24,7 +24,7 @@ import uk.gov.hmrc.http.BadRequestException
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
 import uk.gov.hmrc.inheritancetaxonpensions.models._
 import org.mockito.ArgumentMatchers.any
-import utils.BaseSpec
+import utils.{BaseSpec, TestValues}
 import play.api.test.Helpers._
 import org.mockito.Mockito._
 import uk.gov.hmrc.inheritancetaxonpensions.services.{ReportSubmissionService, SessionService}
@@ -32,20 +32,12 @@ import uk.gov.hmrc.auth.core.AuthConnector
 
 import scala.concurrent.{ExecutionContext, Future}
 
-import java.time.Instant
-
-class ReportSubmissionControllerSpec extends BaseSpec:
+class ReportSubmissionControllerSpec extends BaseSpec with TestValues:
 
   implicit val ec: ExecutionContext = ExecutionContext.global
 
   private val fakeRequest = FakeRequest("POST", "/")
   private val mockReportSubmissionService: ReportSubmissionService = mock[ReportSubmissionService]
-  private val testPstr = "24682468"
-  private val testSubmissionResponse = IhtpReportSubmissionResponse(
-    processingDateTime = Instant.now(),
-    formBundleNumber = "910000000000",
-    paymentReference = "123456781"
-  )
 
   private val controller = new ReportSubmissionController(
     reportSubmissionService = mockReportSubmissionService,
@@ -63,7 +55,7 @@ class ReportSubmissionControllerSpec extends BaseSpec:
       when(mockReportSubmissionService.submitReport(any(), any())(any()))
         .thenReturn(Future.successful(Right(testSubmissionResponse)))
 
-      val result = controller.submitReport(testPstr, "testUserAnswersId")(
+      val result = controller.submitReport(testPstr, testUserAnswersId)(
         fakeRequest.withHeaders(
           HEADER_KEY_SCHEME_NAME -> schemeName,
           HEADER_KEY_USER_NAME -> userName,
@@ -81,7 +73,7 @@ class ReportSubmissionControllerSpec extends BaseSpec:
       when(mockReportSubmissionService.submitReport(any(), any())(any()))
         .thenReturn(Future.successful(Left(ErrorCodes.badRequest)))
 
-      val result = controller.submitReport(testPstr, "testUserAnswersId")(
+      val result = controller.submitReport(testPstr, testUserAnswersId)(
         fakeRequest.withHeaders(
           HEADER_KEY_SCHEME_NAME -> schemeName,
           HEADER_KEY_USER_NAME -> userName,
@@ -96,7 +88,7 @@ class ReportSubmissionControllerSpec extends BaseSpec:
 
     "return BAD_REQUEST (400) when none of the headers exist" in {
       intercept[BadRequestException] {
-        await(controller.submitReport(testPstr, "testUserAnswersId")(fakeRequest))
+        await(controller.submitReport(testPstr, testUserAnswersId)(fakeRequest))
       }
       verify(mockReportSubmissionService, never).submitReport(any(), any())(any())
     }

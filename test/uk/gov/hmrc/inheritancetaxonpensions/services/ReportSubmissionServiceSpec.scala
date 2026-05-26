@@ -34,8 +34,6 @@ import org.scalatestplus.mockito.MockitoSugar
 
 import scala.concurrent.Future
 
-import java.time.Instant
-
 class ReportSubmissionServiceSpec
     extends AnyFreeSpec
     with Matchers
@@ -48,10 +46,6 @@ class ReportSubmissionServiceSpec
   implicit val hc: HeaderCarrier = HeaderCarrier()
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
-  private val testUserAnswersId = "testUserAnswersId"
-  private val testPstr = "12345678"
-  private val testSubmissionResponse = IhtpReportSubmissionResponse(Instant.now(), "910000000000", "123456781")
-
   private val mockUserAnswersRepository: UserAnswersRepository = mock[UserAnswersRepository]
   private val mockIhtpReportConnector: IhtpReportConnector = mock[IhtpReportConnector]
   private val service = new ReportSubmissionService(mockUserAnswersRepository, mockIhtpReportConnector)
@@ -60,6 +54,8 @@ class ReportSubmissionServiceSpec
     "return Right when submission is successful with a nino in the payload" in {
       val testUserAnswers = UserAnswers(
         testUserAnswersId,
+        srn,
+        uuid,
         Json.obj(
           "inheritanceTaxReference" -> "A123459/25A",
           "nameOfDeceased" -> Json.obj(
@@ -148,6 +144,8 @@ class ReportSubmissionServiceSpec
     "return Right when submission is successful with organisation lprType" in {
       val testUserAnswers = UserAnswers(
         testUserAnswersId,
+        srn,
+        uuid,
         Json.obj(
           "inheritanceTaxReference" -> "A123459/25A",
           "nameOfDeceased" -> Json.obj(
@@ -195,6 +193,8 @@ class ReportSubmissionServiceSpec
     "fail before submission when a mandatory LPR individual address field is missing" in {
       val testUserAnswers = UserAnswers(
         testUserAnswersId,
+        srn,
+        uuid,
         Json.obj(
           "inheritanceTaxReference" -> "A123459/25A",
           "nameOfDeceased" -> Json.obj(
@@ -233,6 +233,8 @@ class ReportSubmissionServiceSpec
     "return Left when connector returns an error and send the no nino reason in the payload" in {
       val testUserAnswers = UserAnswers(
         testUserAnswersId,
+        srn,
+        uuid,
         Json.obj(
           "inheritanceTaxReference" -> "A123459/25A",
           "nameOfDeceased" -> Json.obj(

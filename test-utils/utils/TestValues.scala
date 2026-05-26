@@ -42,13 +42,14 @@ trait TestValues extends Generators {
   )
   val pstr = "testPstr"
   val srn = "S2400000001"
+  val uuid = "ed350bdc-4010-406c-9ca0-8faaf5f93cbc"
   val psrVersion = "001"
   val psrFormBundleNumber = "1234567890"
   val schemeName = "SchemeName"
   val userName = "userName"
   val psaPspId = "psaPspId"
   val credentialRole = "credentialRole"
-  val cipPsrStatus = None
+  val cipPsrStatus: Option[Nothing] = None
   val sampleToday: LocalDate = LocalDate.of(2023, 10, 19)
   val psaId = "A0000000"
   val pspId = "21000005"
@@ -59,6 +60,13 @@ trait TestValues extends Generators {
   val testAddressLine2 = "FGHIJ Town"
   val testUkPostcode = "ZZ99 1AA"
   val testCountry = "GB"
+  val testUserAnswersId = "testUserAnswersId"
+  val testPstr = "12345678"
+  val testSubmissionResponse = IhtpReportSubmissionResponse(
+    processingDateTime = Instant.now(),
+    formBundleNumber = "910000000000",
+    paymentReference = "123456781"
+  )
 
   val testReportSubmissionRequestBody = IhtpReportSubmission(
     ReportDetails(

@@ -16,20 +16,21 @@
 
 package uk.gov.hmrc.inheritancetaxonpensions.models
 
-import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
 import uk.gov.hmrc.inheritancetaxonpensions.services.EncryptionService
 import play.api.libs.json.{JsValue, Json}
+import utils.TestValues
+import org.scalatest.freespec.AnyFreeSpec
 
-import java.time.{Clock, Instant, ZoneId}
+import java.time.Instant
 
-class UserAnswersSpec extends AnyFreeSpec with Matchers {
-  val clockMillis: Long = 1718118467838L
-  val clock: Clock = Clock.fixed(Instant.ofEpochMilli(clockMillis), ZoneId.of("UTC"))
+class UserAnswersSpec extends AnyFreeSpec with Matchers with TestValues {
   private val instant = Instant.now(clock)
 
   val userAnswers: UserAnswers = UserAnswers(
-    id = "id",
+    id = s"$srn-$uuid",
+    srn = srn,
+    uuid = uuid,
     data = Json.obj("someDataItem" -> "someDataItemValue"),
     lastUpdated = instant
   )
@@ -40,7 +41,9 @@ class UserAnswersSpec extends AnyFreeSpec with Matchers {
       val fromJson = Json.parse(
         s"""
              {
-           |  "_id": "id",
+           |  "_id": "$srn-$uuid",
+           |  "srn": "$srn",
+           |  "uuid": "$uuid",
            |  "data": {
            |    "someDataItem": "someDataItemValue"
            |  },
@@ -61,7 +64,9 @@ class UserAnswersSpec extends AnyFreeSpec with Matchers {
       val expectedJson = Json.parse(
         s"""
          {
-           |  "_id": "id",
+           |  "_id": "$srn-$uuid",
+           |  "srn": "$srn",
+           |  "uuid": "$uuid",
            |  "data": {
            |    "someDataItem": "someDataItemValue"
            |  },
@@ -91,7 +96,7 @@ class UserAnswersSpec extends AnyFreeSpec with Matchers {
           "someOtherField" -> "non-PII data"
         )
 
-        val userAnswers = UserAnswers("test-id", originalData, Instant.now())
+        val userAnswers = UserAnswers(s"$srn-$uuid", srn, uuid, originalData, Instant.now())
         val json = format.writes(userAnswers)
         val result = format.reads(json)
 
@@ -117,7 +122,7 @@ class UserAnswersSpec extends AnyFreeSpec with Matchers {
           "anotherField" -> "also non-PII"
         )
 
-        val userAnswers = UserAnswers("test-id", originalData, Instant.now())
+        val userAnswers = UserAnswers(s"$srn-$uuid", srn, uuid, originalData, Instant.now())
         val json = format.writes(userAnswers)
 
         (json \ "data" \ "someOtherField").get.asOpt[String] mustBe Some("non-PII data")
@@ -139,7 +144,7 @@ class UserAnswersSpec extends AnyFreeSpec with Matchers {
           )
         )
 
-        val userAnswers = UserAnswers("test-id", originalData, Instant.now())
+        val userAnswers = UserAnswers(s"$srn-$uuid", srn, uuid, originalData, Instant.now())
         val json = format.writes(userAnswers)
         val result = format.reads(json).get
 
@@ -160,7 +165,7 @@ class UserAnswersSpec extends AnyFreeSpec with Matchers {
           "ninoOrReason.nino" -> "AB123456C"
         )
 
-        val userAnswers = UserAnswers("test-id", originalData, Instant.now())
+        val userAnswers = UserAnswers(s"$srn-$uuid", srn, uuid, originalData, Instant.now())
         val json = format.writes(userAnswers)
         val result = format.reads(json).get
 
