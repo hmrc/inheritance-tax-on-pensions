@@ -36,12 +36,19 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
   lazy val submitReportUrl: String =
     s"$ihtpReportHost$submitIhtpReportUrl"
 
+  lazy val getOverviewUrl: String =
+    s"$ihtpReportHost$getIhtpOverviewUrl"
+
   private val ihtpReportHost: String = servicesConfig.baseUrl("ihtp-report")
   lazy val ihtpReportClientId: String = getConfStringAndThrowIfNotFound("ihtp-report.clientId")
   lazy val ihtpReportSecret: String = getConfStringAndThrowIfNotFound("ihtp-report.secret")
 
   private lazy val submitIhtpReportUrl: String = getConfStringAndThrowIfNotFound(
     "ihtp-report.url.submitReport"
+  )
+
+  private lazy val getIhtpOverviewUrl: String = getConfStringAndThrowIfNotFound(
+    "ihtp-report.url.getOverview"
   )
   // IHTP Report End
 

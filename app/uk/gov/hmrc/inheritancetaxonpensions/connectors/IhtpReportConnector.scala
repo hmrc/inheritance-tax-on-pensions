@@ -25,7 +25,7 @@ import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.inheritancetaxonpensions.models._
 import play.api.Logging
 import play.api.libs.ws.JsonBodyWritables.writeableOf_JsValue
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json}
 import play.api.http.Status._
 import uk.gov.hmrc.http.{StringContextOps, _}
 
@@ -33,7 +33,9 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 import java.time.Instant
+import java.nio.charset.StandardCharsets
 import javax.inject.Inject
+import java.net.URLEncoder
 
 class IhtpReportConnector @Inject() (
   headers: HIPHeaders,
@@ -45,6 +47,60 @@ class IhtpReportConnector @Inject() (
     extends HttpReadsInstances
     with Retries
     with Logging {
+
+  def getOverview(pstr: String, dateFrom: String, dateTo: String, status: Option[String])(implicit
+    hc: HeaderCarrier
+  ): Future[Either[ErrorResponse, JsValue]] = {
+    val url: String = overviewUrl(pstr, dateFrom, dateTo, status)
+
+    retryFor[Either[ErrorResponse, JsValue]]("IHTP Report overview") {
+      case UpstreamErrorResponse.WithStatusCode(status) if Constants.TransientErrorStatusCodes.contains(status) => true
+    } {
+      val startTime = Instant.now()
+      httpClient
+        .get(url"$url")
+        .setHeader(headers.ihtpReportSubmissionHeaders()*)
+        .execute[HttpResponse]
+        .map {
+          case response if response.status == OK =>
+            logger.info("[IhtpReportConnector][getOverview] IHTP Report overview retrieved successfully")
+            Right(response.json)
+          case response if response.status == BAD_REQUEST =>
+            logger.warn("[IhtpReportConnector][getOverview] Bad request returned for overview")
+            Left(ErrorCodes.badRequest)
+          case response if response.status == NOT_FOUND =>
+            logger.warn("[IhtpReportConnector][getOverview] Not found returned for overview")
+            Left(ErrorCodes.entityNotFound)
+          case response if response.status == UNPROCESSABLE_ENTITY =>
+            logger.warn("[IhtpReportConnector][getOverview] Unprocessable entity returned for overview")
+            Left(ErrorCodes.unprocessableEntity)
+          case response if Constants.TransientErrorStatusCodes.contains(response.status) =>
+            throw UpstreamErrorResponse(
+              s"Transient error: ${response.status}",
+              response.status,
+              response.status
+            )
+          case response =>
+            logger.warn(
+              s"[IhtpReportConnector][getOverview] Unexpected status returned for overview: ${response.status}"
+            )
+            Left(ErrorCodes.unexpectedResponse)
+        }
+        .recoverWith {
+          case errorResponse @ UpstreamErrorResponse.WithStatusCode(statusCode)
+              if Constants.TransientErrorStatusCodes.contains(statusCode) =>
+            val elapsedTime = java.time.Duration.between(startTime, Instant.now()).toSeconds
+            logger.warn(
+              s"[IhtpReportConnector][getOverview] IHTP Report overview failed with status: $statusCode and took: ${elapsedTime}s. Error: ${errorResponse.getMessage}"
+            )
+            Future.failed(errorResponse)
+        }
+    }.recover {
+      case UpstreamErrorResponse.WithStatusCode(statusCode)
+          if Constants.TransientErrorStatusCodes.contains(statusCode) =>
+        Left(ErrorCodes.unexpectedResponse)
+    }
+  }
 
   def submitReport(ihtpReportSubmission: IhtpReportSubmission)(implicit
     hc: HeaderCarrier
@@ -110,5 +166,16 @@ class IhtpReportConnector @Inject() (
           if Constants.TransientErrorStatusCodes.contains(statusCode) =>
         Left(ErrorCodes.unexpectedResponse)
     }
+  }
+
+  private def overviewUrl(pstr: String, dateFrom: String, dateTo: String, status: Option[String]): String = {
+    val queryParams =
+      Seq("pstr" -> pstr, "dateFrom" -> dateFrom, "dateTo" -> dateTo) ++ status.map("status" -> _)
+
+    val queryString = queryParams
+      .map { case (key, value) => s"$key=${URLEncoder.encode(value, StandardCharsets.UTF_8)}" }
+      .mkString("&")
+
+    s"${config.getOverviewUrl}?$queryString"
   }
 }

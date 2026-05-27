@@ -40,6 +40,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
   val app: Application = new GuiceApplicationBuilder()
     .configure("microservice.services.ihtp-report.port" -> wireMockPort)
     .configure("microservice.services.ihtp-report.url.submitReport" -> "/etmp/RESTAdapter/pods/reports/ihtp")
+    .configure("microservice.services.ihtp-report.url.getOverview" -> "/etmp/RESTAdapter/pods/reports/ihtp-overview")
     .configure("http-verbs.retries.intervals" -> Seq("10.millis", "20.millis", "30.millis", "40.millis", "50.millis"))
     .configure("mongodb.encryption.key" -> "test-key-for-integration-tests-only")
     .build()
@@ -47,6 +48,144 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
   private lazy val connector: IhtpReportConnector = app.injector.instanceOf[IhtpReportConnector]
 
   val submitReturnUrl: String = "/etmp/RESTAdapter/pods/reports/ihtp"
+  val overviewUrl: String = "/etmp/RESTAdapter/pods/reports/ihtp-overview"
+
+  "getOverview" should {
+
+    "return a valid overview response for a successful call" in {
+      val response = Json.obj(
+        "success" -> Json.obj(
+          "pstr" -> "24000001IN",
+          "ihtpOverview" -> Json.arr()
+        )
+      )
+
+      wireMockServer.stubFor(
+        get(urlEqualTo(s"$overviewUrl?pstr=24000001IN&dateFrom=2026-01-01&dateTo=2026-12-31"))
+          .willReturn(ok(response.toString))
+      )
+
+      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", None)) { result =>
+        WireMock.verify(
+          getRequestedFor(
+            urlEqualTo(s"$overviewUrl?pstr=24000001IN&dateFrom=2026-01-01&dateTo=2026-12-31")
+          )
+        )
+
+        result mustBe Right(response)
+      }
+    }
+
+    "include status when supplied" in {
+      val response = Json.obj(
+        "success" -> Json.obj(
+          "pstr" -> "24000001IN",
+          "ihtpOverview" -> Json.arr()
+        )
+      )
+
+      wireMockServer.stubFor(
+        get(urlEqualTo(s"$overviewUrl?pstr=24000001IN&dateFrom=2026-01-01&dateTo=2026-12-31&status=Submitted"))
+          .willReturn(ok(response.toString))
+      )
+
+      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", Some("Submitted"))) { result =>
+        WireMock.verify(
+          getRequestedFor(
+            urlEqualTo(s"$overviewUrl?pstr=24000001IN&dateFrom=2026-01-01&dateTo=2026-12-31&status=Submitted")
+          )
+        )
+
+        result mustBe Right(response)
+      }
+    }
+
+    "url encode status when supplied" in {
+      val response = Json.obj(
+        "success" -> Json.obj(
+          "pstr" -> "24000001IN",
+          "ihtpOverview" -> Json.arr()
+        )
+      )
+
+      wireMockServer.stubFor(
+        get(urlEqualTo(s"$overviewUrl?pstr=24000001IN&dateFrom=2026-01-01&dateTo=2026-12-31&status=In+Progress"))
+          .willReturn(ok(response.toString))
+      )
+
+      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", Some("In Progress"))) { result =>
+        WireMock.verify(
+          getRequestedFor(
+            urlEqualTo(s"$overviewUrl?pstr=24000001IN&dateFrom=2026-01-01&dateTo=2026-12-31&status=In+Progress")
+          )
+        )
+
+        result mustBe Right(response)
+      }
+    }
+
+    "return a bad request when the response from the server is a bad request" in {
+      wireMockServer.stubFor(
+        get(urlEqualTo(s"$overviewUrl?pstr=24000001IN&dateFrom=2026-01-01&dateTo=2026-12-31"))
+          .willReturn(badRequest())
+      )
+
+      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", None)) { result =>
+        result mustBe Left(ErrorCodes.badRequest)
+      }
+    }
+
+    "return not found when the response from the server is not found" in {
+      wireMockServer.stubFor(
+        get(urlEqualTo(s"$overviewUrl?pstr=24000001IN&dateFrom=2026-01-01&dateTo=2026-12-31"))
+          .willReturn(notFound())
+      )
+
+      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", None)) { result =>
+        result mustBe Left(ErrorCodes.entityNotFound)
+      }
+    }
+
+    "return unprocessable entity when the response from the server is unprocessable entity" in {
+      wireMockServer.stubFor(
+        get(urlEqualTo(s"$overviewUrl?pstr=24000001IN&dateFrom=2026-01-01&dateTo=2026-12-31"))
+          .willReturn(badRequestEntity())
+      )
+
+      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", None)) { result =>
+        result mustBe Left(ErrorCodes.unprocessableEntity)
+      }
+    }
+
+    "return unexpected response when the response from the server is unrecognised" in {
+      wireMockServer.stubFor(
+        get(urlEqualTo(s"$overviewUrl?pstr=24000001IN&dateFrom=2026-01-01&dateTo=2026-12-31"))
+          .willReturn(aResponse().withStatus(418))
+      )
+
+      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", None)) { result =>
+        result mustBe Left(ErrorCodes.unexpectedResponse)
+      }
+    }
+
+    "retry 5 times when the response from the server is a 500" in {
+      wireMockServer.stubFor(
+        get(urlEqualTo(s"$overviewUrl?pstr=24000001IN&dateFrom=2026-01-01&dateTo=2026-12-31"))
+          .willReturn(serverError())
+      )
+
+      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", None)) { result =>
+        WireMock.verify(
+          6,
+          getRequestedFor(
+            urlEqualTo(s"$overviewUrl?pstr=24000001IN&dateFrom=2026-01-01&dateTo=2026-12-31")
+          )
+        )
+
+        result mustBe Left(ErrorCodes.unexpectedResponse)
+      }
+    }
+  }
 
   "submitReport" should {
 

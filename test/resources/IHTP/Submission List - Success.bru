@@ -5,9 +5,15 @@ meta {
 }
 
 get {
-  url: {{ihtp_url}}/24000001IN/submission-list
+  url: {{ihtp_url}}/24000001IN/submission-list?dateFrom=2026-01-01&dateTo=2026-12-31
   body: none
   auth: bearer
+}
+
+params:query {
+  dateFrom: 2026-01-01
+  dateTo: 2026-12-31
+  ~status: Processed
 }
 
 headers {

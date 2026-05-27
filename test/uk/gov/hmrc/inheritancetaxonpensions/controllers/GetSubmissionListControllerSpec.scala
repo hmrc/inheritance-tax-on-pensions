@@ -17,20 +17,21 @@
 package uk.gov.hmrc.inheritancetaxonpensions.controllers
 
 import play.api.test.{FakeRequest, Helpers}
-import uk.gov.hmrc.inheritancetaxonpensions.connectors.SchemeDetailsConnector
+import uk.gov.hmrc.inheritancetaxonpensions.connectors.{IhtpReportConnector, SchemeDetailsConnector}
 import play.api.http.Status
 import play.api.inject.bind
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolments}
 import uk.gov.hmrc.auth.core.retrieve.~
-import play.api.Application
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
 import uk.gov.hmrc.inheritancetaxonpensions.repositories.SessionSchemeDetailsRepository
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
-import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import play.api.test.Helpers._
 import org.mockito.Mockito._
 import utils.BaseSpec
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
+import play.api.Application
+import play.api.libs.json.Json
 
 import scala.concurrent.Future
 
@@ -41,12 +42,14 @@ class GetSubmissionListControllerSpec extends BaseSpec:
   private val fakeRequest = FakeRequest("GET", "/")
   private val mockAuthConnector: AuthConnector = mock[AuthConnector]
   private val mockSchemeDetailsConnector: SchemeDetailsConnector = mock[SchemeDetailsConnector]
+  private val mockIhtpReportConnector: IhtpReportConnector = mock[IhtpReportConnector]
   private val mockSessionSchemeDetailsRepository: SessionSchemeDetailsRepository = mock[SessionSchemeDetailsRepository]
 
   override def beforeEach(): Unit = {
     reset(
       mockAuthConnector,
       mockSchemeDetailsConnector,
+      mockIhtpReportConnector,
       mockSessionSchemeDetailsRepository
     )
 
@@ -56,6 +59,7 @@ class GetSubmissionListControllerSpec extends BaseSpec:
     Seq(
       bind[AuthConnector].toInstance(mockAuthConnector),
       bind[SchemeDetailsConnector].toInstance(mockSchemeDetailsConnector),
+      bind[IhtpReportConnector].toInstance(mockIhtpReportConnector),
       bind[SessionSchemeDetailsRepository].toInstance(mockSessionSchemeDetailsRepository)
     )
 
@@ -70,6 +74,15 @@ class GetSubmissionListControllerSpec extends BaseSpec:
     .build()
 
   private val controller = application.injector.instanceOf[GetSubmissionListController]
+  private def requestWithRequiredHeaders(path: String = "/") = FakeRequest("GET", path).withHeaders(
+    newHeaders = HEADER_KEY_SRN -> srn,
+    HEADER_KEY_SCHEME_NAME -> schemeName,
+    HEADER_KEY_USER_NAME -> userName,
+    HEADER_KEY_REQUEST_ROLE -> HEADER_VALUE_PSA
+  )
+
+  private val requestWithRequiredHeadersAndDates =
+    requestWithRequiredHeaders("/?dateFrom=2026-01-01&dateTo=2026-12-31")
 
   "GET submission list" must {
     "return 200" in {
@@ -79,19 +92,79 @@ class GetSubmissionListControllerSpec extends BaseSpec:
         )
       when(mockSchemeDetailsConnector.checkAssociation(any(), any(), any())(any(), any()))
         .thenReturn(Future.successful(true))
+      when(mockIhtpReportConnector.getOverview(any(), any(), any(), any())(any()))
+        .thenReturn(
+          Future.successful(
+            Right(
+              Json.obj(
+                "success" -> Json.obj(
+                  "pstr" -> pstr,
+                  "ihtpOverview" -> Json.arr()
+                )
+              )
+            )
+          )
+        )
 
       val result = controller.getSubmissionList(pstr)(
-        fakeRequest.withHeaders(
-          newHeaders = HEADER_KEY_SRN -> srn,
-          HEADER_KEY_SCHEME_NAME -> schemeName,
-          HEADER_KEY_USER_NAME -> userName,
-          HEADER_KEY_REQUEST_ROLE -> HEADER_VALUE_PSA
-        )
+        requestWithRequiredHeadersAndDates
       )
 
       status(result) mustEqual Status.OK
+      contentAsJson(result) mustEqual Json.obj(
+        "success" -> Json.obj(
+          "pstr" -> pstr,
+          "ihtpOverview" -> Json.arr()
+        )
+      )
       verify(mockAuthConnector, times(1)).authorise(any(), any())(any(), any())
       verify(mockSchemeDetailsConnector, times(1)).checkAssociation(any(), any(), any())(any(), any())
+      verify(mockIhtpReportConnector, times(1)).getOverview(
+        eqTo(pstr),
+        eqTo("2026-01-01"),
+        eqTo("2026-12-31"),
+        eqTo(None)
+      )(
+        any[HeaderCarrier]()
+      )
+    }
+
+    "return 400 when dateFrom is missing" in {
+      when(mockAuthConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any()))
+        .thenReturn(
+          Future.successful(new ~(Some(externalId), enrolments))
+        )
+      when(mockSchemeDetailsConnector.checkAssociation(any(), any(), any())(any(), any()))
+        .thenReturn(Future.successful(true))
+
+      intercept[BadRequestException] {
+        await(
+          controller.getSubmissionList(pstr)(
+            requestWithRequiredHeaders("/?dateTo=2026-12-31")
+          )
+        )
+      }
+
+      verify(mockIhtpReportConnector, never).getOverview(any(), any(), any(), any())(any())
+    }
+
+    "return 400 when dateTo is missing" in {
+      when(mockAuthConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any()))
+        .thenReturn(
+          Future.successful(new ~(Some(externalId), enrolments))
+        )
+      when(mockSchemeDetailsConnector.checkAssociation(any(), any(), any())(any(), any()))
+        .thenReturn(Future.successful(true))
+
+      intercept[BadRequestException] {
+        await(
+          controller.getSubmissionList(pstr)(
+            requestWithRequiredHeaders("/?dateFrom=2026-01-01")
+          )
+        )
+      }
+
+      verify(mockIhtpReportConnector, never).getOverview(any(), any(), any(), any())(any())
     }
 
     "return 400 when non of required headers exist" in {
