@@ -160,7 +160,11 @@ class ReportSubmissionServiceSpec
           "lprType" -> "organisation",
           "lprDetails" -> Json.obj(
             "organisation" -> Json.obj(
-              "organisationName" -> "Test Organisation"
+              "organisationName" -> "Test Organisation",
+              "title" -> "Ms",
+              "firstForename" -> "Jane",
+              "secondForename" -> "Ann",
+              "surname" -> "Doe"
             )
           ),
           "ninoOrReason" -> Json.obj(
@@ -178,8 +182,59 @@ class ReportSubmissionServiceSpec
       verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
       payloadCaptor.getValue.lprDetails mustBe LprDetails(
         individual = None,
-        organisation = Some(OrganisationName("Test Organisation"))
+        organisation = Some(
+          OrganisationDetails(
+            organisationName = "Test Organisation",
+            title = Some("Ms"),
+            firstForename = "Jane",
+            secondForename = Some("Ann"),
+            surname = "Doe"
+          )
+        )
       )
+      Json.toJson(payloadCaptor.getValue.lprDetails.organisation.get) mustBe Json.obj(
+        "organisationName" -> "Test Organisation",
+        "title" -> "Ms",
+        "firstForename" -> "Jane",
+        "secondForename" -> "Ann",
+        "surname" -> "Doe"
+      )
+    }
+
+    "fail before submission when mandatory organisation PR name fields are missing" in {
+      val testUserAnswers = UserAnswers(
+        testUserAnswersId,
+        srn,
+        uuid,
+        Json.obj(
+          "inheritanceTaxReference" -> "A123459/25A",
+          "nameOfDeceased" -> Json.obj(
+            "title" -> "Mr",
+            "firstForename" -> "John",
+            "surname" -> "Doe"
+          ),
+          "birthDeathDates" -> Json.obj(
+            "dateOfBirth" -> testDateOfBirth,
+            "dateOfDeath" -> testDateOfDeath
+          ),
+          "lprType" -> "organisation",
+          "lprDetails" -> Json.obj(
+            "organisation" -> Json.obj(
+              "organisationName" -> "Test Organisation"
+            )
+          ),
+          "ninoOrReason" -> Json.obj(
+            "nino" -> testNino
+          )
+        )
+      )
+
+      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
+
+      val result = service.submitReport(testUserAnswersId, testPstr).failed.futureValue
+      result mustBe a[IllegalArgumentException]
+      result.getMessage must include("lprDetails.organisation")
+      verify(mockIhtpReportConnector, never).submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]())
     }
 
     "return Left when the user answers are not found" in {
