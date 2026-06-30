@@ -18,8 +18,10 @@ package utils
 
 import generators.Generators
 import uk.gov.hmrc.auth.core.{Enrolment, EnrolmentIdentifier, Enrolments}
+import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.YesNo.Yes
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants.psaEnrolmentKey
 import uk.gov.hmrc.inheritancetaxonpensions.models._
+import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.YesNo
 
 import java.time._
 
@@ -101,6 +103,9 @@ trait TestValues extends Generators {
         )
       ),
       organisation = None
+    ),
+    IhtTaxInformation(
+      didTheLegalPersonalRepresentativeSubmitTheNotice = Yes
     )
   )
 

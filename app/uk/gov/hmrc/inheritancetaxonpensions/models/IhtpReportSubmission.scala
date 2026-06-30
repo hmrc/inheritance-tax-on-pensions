@@ -18,12 +18,18 @@ package uk.gov.hmrc.inheritancetaxonpensions.models
 
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
+import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.YesNo
 
 import java.time.Instant
 
 // TODO - build out as the journey matures
 // TODO - Review this model against the IHTP EPIDs when we get them!
-case class IhtpReportSubmission(reportDetails: ReportDetails, deceasedDetails: DeceasedDetails, lprDetails: LprDetails)
+case class IhtpReportSubmission(
+  reportDetails: ReportDetails,
+  deceasedDetails: DeceasedDetails,
+  lprDetails: LprDetails,
+  ihtTaxInformation: IhtTaxInformation
+)
 
 object IhtpReportSubmission {
   implicit val ihtpReportSubmissionFormat: OFormat[IhtpReportSubmission] =
@@ -131,4 +137,13 @@ case class IhtpReportSubmissionResponse(processingDateTime: Instant, formBundleN
 object IhtpReportSubmissionResponse {
   implicit val ihtpReportSubmissionResponseFormat: OFormat[IhtpReportSubmissionResponse] =
     Json.format[IhtpReportSubmissionResponse]
+}
+
+case class IhtTaxInformation(
+  didTheLegalPersonalRepresentativeSubmitTheNotice: YesNo
+)
+
+object IhtTaxInformation {
+  implicit val ihtTaxInformationFormat: OFormat[IhtTaxInformation] =
+    Json.format[IhtTaxInformation]
 }
