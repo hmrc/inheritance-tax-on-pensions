@@ -30,7 +30,9 @@ object PiiFields {
     "lprDetails.individual.firstForename",
     "lprDetails.individual.secondForename",
     "lprDetails.individual.surname",
-    "lprDetails.organisation.organisationName"
+    "lprDetails.organisation.firstForename",
+    "lprDetails.organisation.secondForename",
+    "lprDetails.organisation.surname"
   )
 
   def isPiiField(fieldName: String): Boolean = piiFields.contains(fieldName)
