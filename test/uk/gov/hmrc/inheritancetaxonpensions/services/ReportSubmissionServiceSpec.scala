@@ -19,7 +19,6 @@ package uk.gov.hmrc.inheritancetaxonpensions.services
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 import uk.gov.hmrc.inheritancetaxonpensions.repositories.UserAnswersRepository
-import org.scalatest.concurrent.ScalaFutures.convertScalaFuture
 import uk.gov.hmrc.inheritancetaxonpensions.models._
 import org.mockito.ArgumentMatchers._
 import utils.TestValues
@@ -29,6 +28,8 @@ import uk.gov.hmrc.inheritancetaxonpensions.connectors.IhtpReportConnector
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.BeforeAndAfterEach
 import play.api.libs.json.Json
+import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.YesNo.Yes
+import org.scalatest.concurrent.ScalaFutures.convertScalaFuture
 import org.mockito.ArgumentCaptor
 import org.scalatestplus.mockito.MockitoSugar
 
@@ -83,7 +84,8 @@ class ReportSubmissionServiceSpec
           ),
           "ninoOrReason" -> Json.obj(
             "nino" -> testNino
-          )
+          ),
+          "didPrSubmit" -> true
         )
       )
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
@@ -127,6 +129,9 @@ class ReportSubmissionServiceSpec
             )
           ),
           organisation = None
+        ),
+        IhtTaxInformation(
+          didTheLegalPersonalRepresentativeSubmitTheNotice = Yes
         )
       )
       Json.toJson(payloadCaptor.getValue.lprDetails.individual.get) mustBe Json.obj(
@@ -169,7 +174,11 @@ class ReportSubmissionServiceSpec
           ),
           "ninoOrReason" -> Json.obj(
             "nino" -> testNino
-          )
+          ),
+          "ihtTaxInformation" -> Json.obj(
+            "didTheLegalPersonalRepresentativeSubmitTheNotice" -> "Yes"
+          ),
+          "didPrSubmit" -> true
         )
       )
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
@@ -317,7 +326,8 @@ class ReportSubmissionServiceSpec
           ),
           "ninoOrReason" -> Json.obj(
             "reasonForNoNino" -> "The deceased was not a UK citizen"
-          )
+          ),
+          "didPrSubmit" -> true
         )
       )
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
@@ -361,6 +371,9 @@ class ReportSubmissionServiceSpec
             )
           ),
           organisation = None
+        ),
+        IhtTaxInformation(
+          didTheLegalPersonalRepresentativeSubmitTheNotice = Yes
         )
       )
     }

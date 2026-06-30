@@ -23,6 +23,7 @@ import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 import uk.gov.hmrc.inheritancetaxonpensions.repositories.UserAnswersRepository
 import uk.gov.hmrc.inheritancetaxonpensions.utils.UserAnswersHelper
 import uk.gov.hmrc.inheritancetaxonpensions.models._
+import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.YesNo
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants
 import com.google.inject.{Inject, Singleton}
 
@@ -102,7 +103,7 @@ class ReportSubmissionService @Inject() (
       reasonForNoNino = ninoOrReasonAnswers.reasonForNoNino
     )
 
-    IhtpReportSubmission(reportDetails, deceasedDetails, lprDetails)
+    IhtpReportSubmission(reportDetails, deceasedDetails, lprDetails, buildIhtTaxInformation(userAnswers))
   }
 
   private def buildLprDetails(userAnswers: UserAnswers, lprType: String): LprDetails =
@@ -120,4 +121,14 @@ class ReportSubmissionService @Inject() (
         )
         LprDetails(Some(individualDetails), None)
     }
+
+  private def buildIhtTaxInformation(userAnswers: UserAnswers): IhtTaxInformation =
+    IhtTaxInformation(didTheLegalPersonalRepresentativeSubmitTheNotice =
+      YesNo(
+        UserAnswersHelper.getMandatoryAs[Boolean](
+          userAnswers,
+          "didPrSubmit"
+        )
+      )
+    )
 }
