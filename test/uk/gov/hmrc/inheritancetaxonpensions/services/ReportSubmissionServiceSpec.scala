@@ -69,8 +69,8 @@ class ReportSubmissionServiceSpec
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
           ),
-          "lprType" -> "individual",
-          "lprDetails" -> Json.obj(
+          "prType" -> "individual",
+          "prDetails" -> Json.obj(
             "individual" -> Json.obj(
               "title" -> "Mr",
               "firstForename" -> "John",
@@ -114,7 +114,7 @@ class ReportSubmissionServiceSpec
           nino = Some(testNino),
           reasonForNoNino = None
         ),
-        LprDetails(
+        PrDetails(
           individual = Some(
             IndividualDetails(
               name = IndividualName(
@@ -135,10 +135,10 @@ class ReportSubmissionServiceSpec
         ),
         IhtTaxInformation(
           dateThePensionSchemeReceivedNoticeToPay = testPaymentNoticeDate,
-          didTheLegalPersonalRepresentativeSubmitTheNotice = Yes
+          didThePersonalRepresentativeSubmitTheNotice = Yes
         )
       )
-      Json.toJson(payloadCaptor.getValue.lprDetails.individual.get) mustBe Json.obj(
+      Json.toJson(payloadCaptor.getValue.prDetails.individual.get) mustBe Json.obj(
         "title" -> "Mr",
         "firstForename" -> "John",
         "secondForename" -> "William",
@@ -150,7 +150,7 @@ class ReportSubmissionServiceSpec
       )
     }
 
-    "return Right when submission is successful with organisation lprType" in {
+    "return Right when submission is successful with organisation prType" in {
       val testUserAnswers = UserAnswers(
         testUserAnswersId,
         srn,
@@ -166,8 +166,8 @@ class ReportSubmissionServiceSpec
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
           ),
-          "lprType" -> "organisation",
-          "lprDetails" -> Json.obj(
+          "prType" -> "organisation",
+          "prDetails" -> Json.obj(
             "organisation" -> Json.obj(
               "organisationName" -> "Test Organisation",
               "title" -> "Ms",
@@ -181,7 +181,7 @@ class ReportSubmissionServiceSpec
           ),
           "ihtTaxInformation" -> Json.obj(
             "dateThePensionSchemeReceivedNoticeToPay" -> testPaymentNoticeDate,
-            "didTheLegalPersonalRepresentativeSubmitTheNotice" -> "Yes"
+            "didThePersonalRepresentativeSubmitTheNotice" -> "Yes"
           ),
           "didPrSubmit" -> true
         )
@@ -194,7 +194,7 @@ class ReportSubmissionServiceSpec
       result.isRight mustBe true
       val payloadCaptor: ArgumentCaptor[IhtpReportSubmission] = ArgumentCaptor.forClass(classOf[IhtpReportSubmission])
       verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
-      payloadCaptor.getValue.lprDetails mustBe LprDetails(
+      payloadCaptor.getValue.prDetails mustBe PrDetails(
         individual = None,
         organisation = Some(
           OrganisationDetails(
@@ -206,7 +206,7 @@ class ReportSubmissionServiceSpec
           )
         )
       )
-      Json.toJson(payloadCaptor.getValue.lprDetails.organisation.get) mustBe Json.obj(
+      Json.toJson(payloadCaptor.getValue.prDetails.organisation.get) mustBe Json.obj(
         "organisationName" -> "Test Organisation",
         "title" -> "Ms",
         "firstForename" -> "Jane",
@@ -231,8 +231,8 @@ class ReportSubmissionServiceSpec
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
           ),
-          "lprType" -> "organisation",
-          "lprDetails" -> Json.obj(
+          "prType" -> "organisation",
+          "prDetails" -> Json.obj(
             "organisation" -> Json.obj(
               "organisationName" -> "Test Organisation"
             )
@@ -247,7 +247,7 @@ class ReportSubmissionServiceSpec
 
       val result = service.submitReport(testUserAnswersId, testPstr).failed.futureValue
       result mustBe a[IllegalArgumentException]
-      result.getMessage must include("lprDetails.organisation")
+      result.getMessage must include("prDetails.organisation")
       verify(mockIhtpReportConnector, never).submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]())
     }
 
@@ -275,8 +275,8 @@ class ReportSubmissionServiceSpec
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
           ),
-          "lprType" -> "individual",
-          "lprDetails" -> Json.obj(
+          "prType" -> "individual",
+          "prDetails" -> Json.obj(
             "individual" -> Json.obj(
               "title" -> "Mr",
               "firstForename" -> "John",
@@ -295,7 +295,7 @@ class ReportSubmissionServiceSpec
 
       val result = service.submitReport(testUserAnswersId, testPstr).failed.futureValue
       result mustBe a[IllegalArgumentException]
-      result.getMessage must include("lprDetails.individual")
+      result.getMessage must include("prDetails.individual")
       verify(mockIhtpReportConnector, never).submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]())
     }
 
@@ -315,8 +315,8 @@ class ReportSubmissionServiceSpec
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
           ),
-          "lprType" -> "individual",
-          "lprDetails" -> Json.obj(
+          "prType" -> "individual",
+          "prDetails" -> Json.obj(
             "individual" -> Json.obj(
               "title" -> "Mr",
               "firstForename" -> "John",
@@ -359,8 +359,8 @@ class ReportSubmissionServiceSpec
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
           ),
-          "lprType" -> "individual",
-          "lprDetails" -> Json.obj(
+          "prType" -> "individual",
+          "prDetails" -> Json.obj(
             "individual" -> Json.obj(
               "title" -> "Mr",
               "firstForename" -> "John",
@@ -404,7 +404,7 @@ class ReportSubmissionServiceSpec
           nino = None,
           reasonForNoNino = Some("The deceased was not a UK citizen")
         ),
-        LprDetails(
+        PrDetails(
           individual = Some(
             IndividualDetails(
               name = IndividualName(
@@ -425,7 +425,7 @@ class ReportSubmissionServiceSpec
         ),
         IhtTaxInformation(
           dateThePensionSchemeReceivedNoticeToPay = testPaymentNoticeDate,
-          didTheLegalPersonalRepresentativeSubmitTheNotice = Yes
+          didThePersonalRepresentativeSubmitTheNotice = Yes
         )
       )
     }

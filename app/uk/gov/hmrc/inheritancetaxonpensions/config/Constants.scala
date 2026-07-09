@@ -36,7 +36,7 @@ object Constants {
   val inheritanceTaxReferenceNumberPath = "inheritanceTaxReference"
   val ninoOrReasonPath = "ninoOrReason"
   val birthDeathDatesPath = "birthDeathDates"
-  val lprDetailsPath = "lprDetails"
+  val prDetailsPath = "prDetails"
 
   val deceasedDetailsPath = "nameOfDeceased"
   val deceasedTitle = "title"
