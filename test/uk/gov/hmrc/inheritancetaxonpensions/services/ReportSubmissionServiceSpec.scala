@@ -85,6 +85,9 @@ class ReportSubmissionServiceSpec
           "ninoOrReason" -> Json.obj(
             "nino" -> testNino
           ),
+          "ihtTaxInformation" -> Json.obj(
+            "dateThePensionSchemeReceivedNoticeToPay" -> testPaymentNoticeDate
+          ),
           "didPrSubmit" -> true
         )
       )
@@ -131,6 +134,7 @@ class ReportSubmissionServiceSpec
           organisation = None
         ),
         IhtTaxInformation(
+          dateThePensionSchemeReceivedNoticeToPay = testPaymentNoticeDate,
           didTheLegalPersonalRepresentativeSubmitTheNotice = Yes
         )
       )
@@ -176,6 +180,7 @@ class ReportSubmissionServiceSpec
             "nino" -> testNino
           ),
           "ihtTaxInformation" -> Json.obj(
+            "dateThePensionSchemeReceivedNoticeToPay" -> testPaymentNoticeDate,
             "didTheLegalPersonalRepresentativeSubmitTheNotice" -> "Yes"
           ),
           "didPrSubmit" -> true
@@ -294,6 +299,49 @@ class ReportSubmissionServiceSpec
       verify(mockIhtpReportConnector, never).submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]())
     }
 
+    "fail before submission when the payment notice date is missing" in {
+      val testUserAnswers = UserAnswers(
+        testUserAnswersId,
+        srn,
+        uuid,
+        Json.obj(
+          "inheritanceTaxReference" -> "A123459/25A",
+          "nameOfDeceased" -> Json.obj(
+            "title" -> "Mr",
+            "firstForename" -> "John",
+            "surname" -> "Doe"
+          ),
+          "birthDeathDates" -> Json.obj(
+            "dateOfBirth" -> testDateOfBirth,
+            "dateOfDeath" -> testDateOfDeath
+          ),
+          "lprType" -> "individual",
+          "lprDetails" -> Json.obj(
+            "individual" -> Json.obj(
+              "title" -> "Mr",
+              "firstForename" -> "John",
+              "surname" -> "Doe",
+              "addressLine1" -> "1 ABCDE Street",
+              "addressLine2" -> "FGHIJ Town",
+              "ukPostcode" -> "ZZ99 1AA",
+              "country" -> "GB"
+            )
+          ),
+          "ninoOrReason" -> Json.obj(
+            "nino" -> testNino
+          ),
+          "didPrSubmit" -> true
+        )
+      )
+
+      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
+
+      val result = service.submitReport(testUserAnswersId, testPstr).failed.futureValue
+      result mustBe a[IllegalArgumentException]
+      result.getMessage must include("ihtTaxInformation.dateThePensionSchemeReceivedNoticeToPay")
+      verify(mockIhtpReportConnector, never).submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]())
+    }
+
     "return Left when connector returns an error and send the no nino reason in the payload" in {
       val testUserAnswers = UserAnswers(
         testUserAnswersId,
@@ -326,6 +374,9 @@ class ReportSubmissionServiceSpec
           ),
           "ninoOrReason" -> Json.obj(
             "reasonForNoNino" -> "The deceased was not a UK citizen"
+          ),
+          "ihtTaxInformation" -> Json.obj(
+            "dateThePensionSchemeReceivedNoticeToPay" -> testPaymentNoticeDate
           ),
           "didPrSubmit" -> true
         )
@@ -373,6 +424,7 @@ class ReportSubmissionServiceSpec
           organisation = None
         ),
         IhtTaxInformation(
+          dateThePensionSchemeReceivedNoticeToPay = testPaymentNoticeDate,
           didTheLegalPersonalRepresentativeSubmitTheNotice = Yes
         )
       )

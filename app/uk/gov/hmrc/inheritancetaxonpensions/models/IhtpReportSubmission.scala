@@ -140,6 +140,7 @@ object IhtpReportSubmissionResponse {
 }
 
 case class IhtTaxInformation(
+  dateThePensionSchemeReceivedNoticeToPay: String,
   didTheLegalPersonalRepresentativeSubmitTheNotice: YesNo
 )
 

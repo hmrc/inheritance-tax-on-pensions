@@ -123,8 +123,12 @@ class ReportSubmissionService @Inject() (
     }
 
   private def buildIhtTaxInformation(userAnswers: UserAnswers): IhtTaxInformation =
-    IhtTaxInformation(didTheLegalPersonalRepresentativeSubmitTheNotice =
-      YesNo(
+    IhtTaxInformation(
+      dateThePensionSchemeReceivedNoticeToPay = UserAnswersHelper.getMandatory(
+        userAnswers,
+        "ihtTaxInformation.dateThePensionSchemeReceivedNoticeToPay"
+      ),
+      didTheLegalPersonalRepresentativeSubmitTheNotice = YesNo(
         UserAnswersHelper.getMandatoryAs[Boolean](
           userAnswers,
           "didPrSubmit"
