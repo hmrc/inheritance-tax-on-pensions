@@ -27,12 +27,12 @@ object PiiFields {
     "ninoOrReason.nino",
     "birthDeathDates.dateOfBirth",
     "birthDeathDates.dateOfDeath",
-    "lprDetails.individual.firstForename",
-    "lprDetails.individual.secondForename",
-    "lprDetails.individual.surname",
-    "lprDetails.organisation.firstForename",
-    "lprDetails.organisation.secondForename",
-    "lprDetails.organisation.surname"
+    "prDetails.individual.firstForename",
+    "prDetails.individual.secondForename",
+    "prDetails.individual.surname",
+    "prDetails.organisation.firstForename",
+    "prDetails.organisation.secondForename",
+    "prDetails.organisation.surname"
   )
 
   def isPiiField(fieldName: String): Boolean = piiFields.contains(fieldName)

@@ -84,8 +84,8 @@ class ReportSubmissionService @Inject() (
       userAnswers,
       Constants.birthDeathDatesPath
     )
-    val lprType = UserAnswersHelper.getMandatory(userAnswers, "lprType")
-    val lprDetails = buildLprDetails(userAnswers, lprType)
+    val prType = UserAnswersHelper.getMandatory(userAnswers, "prType")
+    val prDetails = buildPrDetails(userAnswers, prType)
 
     val reportDetails = ReportDetails(
       pstr = pstr
@@ -103,23 +103,23 @@ class ReportSubmissionService @Inject() (
       reasonForNoNino = ninoOrReasonAnswers.reasonForNoNino
     )
 
-    IhtpReportSubmission(reportDetails, deceasedDetails, lprDetails, buildIhtTaxInformation(userAnswers))
+    IhtpReportSubmission(reportDetails, deceasedDetails, prDetails, buildIhtTaxInformation(userAnswers))
   }
 
-  private def buildLprDetails(userAnswers: UserAnswers, lprType: String): LprDetails =
-    lprType match {
+  private def buildPrDetails(userAnswers: UserAnswers, prType: String): PrDetails =
+    prType match {
       case "organisation" =>
         val organisationDetails = UserAnswersHelper.getMandatoryAs[OrganisationDetails](
           userAnswers,
-          "lprDetails.organisation"
+          "prDetails.organisation"
         )
-        LprDetails(None, Some(organisationDetails))
+        PrDetails(None, Some(organisationDetails))
       case "individual" =>
         val individualDetails = UserAnswersHelper.getMandatoryAs[IndividualDetails](
           userAnswers,
-          "lprDetails.individual"
+          "prDetails.individual"
         )
-        LprDetails(Some(individualDetails), None)
+        PrDetails(Some(individualDetails), None)
     }
 
   private def buildIhtTaxInformation(userAnswers: UserAnswers): IhtTaxInformation =
@@ -128,7 +128,7 @@ class ReportSubmissionService @Inject() (
         userAnswers,
         "ihtTaxInformation.dateThePensionSchemeReceivedNoticeToPay"
       ),
-      didTheLegalPersonalRepresentativeSubmitTheNotice = YesNo(
+      didThePersonalRepresentativeSubmitTheNotice = YesNo(
         UserAnswersHelper.getMandatoryAs[Boolean](
           userAnswers,
           "didPrSubmit"

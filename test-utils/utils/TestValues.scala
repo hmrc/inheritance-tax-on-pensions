@@ -86,7 +86,7 @@ trait TestValues extends Generators {
       nino = Some(testNino),
       reasonForNoNino = None
     ),
-    LprDetails(
+    PrDetails(
       individual = Some(
         IndividualDetails(
           name = IndividualName(
@@ -107,7 +107,7 @@ trait TestValues extends Generators {
     ),
     IhtTaxInformation(
       dateThePensionSchemeReceivedNoticeToPay = testPaymentNoticeDate,
-      didTheLegalPersonalRepresentativeSubmitTheNotice = Yes
+      didThePersonalRepresentativeSubmitTheNotice = Yes
     )
   )
 
