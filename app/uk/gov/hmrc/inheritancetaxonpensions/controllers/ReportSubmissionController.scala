@@ -44,19 +44,21 @@ class ReportSubmissionController @Inject() (
     with Logging {
 
   def submitReport(pstr: String, userAnswersId: String): Action[AnyContent] = Action.async { implicit request =>
-    val Seq(userName, schemeName, srn, requestRole) =
+    val Seq(userName, schemeName, srnS, requestRole) =
       requiredHeaders(HEADER_KEY_USER_NAME, HEADER_KEY_SCHEME_NAME, HEADER_KEY_SRN, HEADER_KEY_REQUEST_ROLE)
 
-    reportSubmissionService.submitReport(userAnswersId, pstr).map {
-      case Right(submissionResponse) =>
-        logger.info(s"[ReportSubmissionController][submitReport] Report submitted successfully for pstr $pstr")
-        Ok(Json.toJson(submissionResponse))
+    authorisedAsIhtpUser(srnS) { _ =>
+      reportSubmissionService.submitReport(userAnswersId, pstr).map {
+        case Right(submissionResponse) =>
+          logger.info(s"[ReportSubmissionController][submitReport] Report submitted successfully for pstr $pstr")
+          Ok(Json.toJson(submissionResponse))
 
-      case Left(errorResponse) =>
-        logger.warn(
-          s"[ReportSubmissionController][submitReport] Report submission failed for pstr $pstr: ${errorResponse.message}"
-        )
-        Status(errorResponse.statusCode)(Json.toJson(errorResponse))
+        case Left(errorResponse) =>
+          logger.warn(
+            s"[ReportSubmissionController][submitReport] Report submission failed for pstr $pstr: ${errorResponse.message}"
+          )
+          Status(errorResponse.statusCode)(Json.toJson(errorResponse))
+      }
     }
   }
 }
