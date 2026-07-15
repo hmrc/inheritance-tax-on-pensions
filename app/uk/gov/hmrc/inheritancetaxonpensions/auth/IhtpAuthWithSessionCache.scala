@@ -18,9 +18,7 @@ package uk.gov.hmrc.inheritancetaxonpensions.auth
 
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.SchemeDetailsConnector
 import play.api.mvc.{Request, Result}
-import uk.gov.hmrc.auth.core.retrieve.{~, Retrieval}
-import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals
-import play.api.Logging
+import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, UnauthorizedException}
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
 import uk.gov.hmrc.inheritancetaxonpensions.models.Srn
@@ -30,17 +28,12 @@ import uk.gov.hmrc.auth.core._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-trait IhtpAuthWithSessionCache extends AuthorisedFunctions with Logging {
+trait IhtpAuthWithSessionCache extends IhtpAuth {
 
   protected val schemeDetailsConnector: SchemeDetailsConnector
-  private val predicate = Enrolment(psaEnrolmentKey).or(Enrolment(pspEnrolmentKey))
-  private val retrievals: Retrieval[Option[String] ~ Enrolments] =
-    Retrievals.externalId.and(Retrievals.allEnrolments)
   protected val sessionService: SessionService
 
-  private type IhtpAction[A] = IhtpAuthContext[A] => Future[Result]
-
-  def authorisedAsIhtpUser(srnS: String)(
+  override def authorisedAsIhtpUser(srnS: String)(
     body: IhtpAction[Any]
   )(implicit
     ec: ExecutionContext,
@@ -120,16 +113,4 @@ trait IhtpAuthWithSessionCache extends AuthorisedFunctions with Logging {
       case psp =>
         Future.failed(new BadRequestException("Bad Request - no PspId in the enrolment"))
     }
-
-  private def getPsaId(enrolments: Enrolments): Option[String] =
-    enrolments
-      .getEnrolment(psaEnrolmentKey)
-      .flatMap(_.getIdentifier(psaId.toUpperCase))
-      .map(_.value)
-
-  private def getPspId(enrolments: Enrolments): Option[String] =
-    enrolments
-      .getEnrolment(pspEnrolmentKey)
-      .flatMap(_.getIdentifier(pspId.toUpperCase))
-      .map(_.value)
 }
