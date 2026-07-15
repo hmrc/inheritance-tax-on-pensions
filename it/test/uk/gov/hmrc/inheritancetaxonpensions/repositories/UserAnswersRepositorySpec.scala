@@ -55,7 +55,7 @@ class UserAnswersRepositorySpec
 
   private val mockAppConfig = mock[AppConfig]
   private val mockEncryptionService = mock[EncryptionService]
-  when(mockAppConfig.userAnswersTtl).`thenReturn`(100L)
+  when(mockAppConfig.userAnswersTtl).`thenReturn`(1L)
 
   implicit val productionLikeTestMdcExecutionContext: ExecutionContext = MdcExecutionContext()
 
