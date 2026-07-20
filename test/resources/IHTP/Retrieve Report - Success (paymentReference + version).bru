@@ -1,0 +1,38 @@
+meta {
+  name: Retrieve Report - Success (paymentReference + version)
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{ihtp_url}}/ihtp?pstr=24000001IN&paymentReferenceNumber=PR000000001&versionNumber=001
+  body: none
+  auth: bearer
+}
+
+params:query {
+  pstr: 24000001IN
+  paymentReferenceNumber: PR000000001
+  versionNumber: 001
+}
+
+headers {
+  srn: S0000000042
+  userName: TestUser
+  schemeName: TestScheme
+  requestRole: PSA
+}
+
+auth:bearer {
+  token: {{bearer_token}}
+}
+
+tests {
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+
+  test("Response contains the requested PSTR", function () {
+      expect(res.body.success.pstr).to.equal("24000001IN");
+  });
+}

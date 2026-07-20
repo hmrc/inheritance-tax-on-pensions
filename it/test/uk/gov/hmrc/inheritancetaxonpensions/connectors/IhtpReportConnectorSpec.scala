@@ -40,6 +40,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
   val app: Application = new GuiceApplicationBuilder()
     .configure("microservice.services.ihtp-report.port" -> wireMockPort)
     .configure("microservice.services.ihtp-report.url.submitReport" -> "/etmp/RESTAdapter/pods/reports/ihtp")
+    .configure("microservice.services.ihtp-report.url.getReport" -> "/etmp/RESTAdapter/pods/reports/ihtp")
     .configure("microservice.services.ihtp-report.url.getOverview" -> "/etmp/RESTAdapter/pods/reports/ihtp-overview")
     .configure("http-verbs.retries.intervals" -> Seq("10.millis", "20.millis", "30.millis", "40.millis", "50.millis"))
     .configure("mongodb.encryption.key" -> "test-key-for-integration-tests-only")
@@ -48,7 +49,93 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
   private lazy val connector: IhtpReportConnector = app.injector.instanceOf[IhtpReportConnector]
 
   val submitReturnUrl: String = "/etmp/RESTAdapter/pods/reports/ihtp"
+  val reportUrl: String = "/etmp/RESTAdapter/pods/reports/ihtp"
   val overviewUrl: String = "/etmp/RESTAdapter/pods/reports/ihtp-overview"
+
+  "getReport" should {
+
+    "return a report retrieved by form bundle number with the required HIP headers" in {
+      val response = Json.obj(
+        "success" -> Json.obj(
+          "pstr" -> "24000001IN",
+          "ihtpDetails" -> Json.obj("version" -> "001", "status" -> "In Progress")
+        )
+      )
+      val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
+
+      wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(ok(response.toString)))
+
+      whenReady(connector.getReport("24000001IN", Some("119000004320"), None, None)) { result =>
+        WireMock.verify(
+          getRequestedFor(urlEqualTo(url))
+            .withHeader("X-Message-Type", equalTo("Request"))
+            .withHeader("X-Regime-Type", equalTo("IHTP"))
+            .withHeader("X-Originating-System", equalTo("MDTP"))
+            .withHeader("X-Transmitting-System", equalTo("MDTP"))
+        )
+
+        result mustBe Right(response)
+      }
+    }
+
+    "return a report retrieved by an encoded payment reference number and version number" in {
+      val response = Json.obj("success" -> Json.obj("pstr" -> "24000001IN"))
+      val url = s"$reportUrl?pstr=24000001IN&paymentReferenceNumber=PR+000/001&versionNumber=001"
+
+      wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(ok(response.toString)))
+
+      whenReady(connector.getReport("24000001IN", None, Some("PR 000/001"), Some("001"))) { result =>
+        WireMock.verify(getRequestedFor(urlEqualTo(url)))
+        result mustBe Right(response)
+      }
+    }
+
+    "return a bad request when the response from the server is a bad request" in {
+      val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
+      wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(badRequest()))
+
+      whenReady(connector.getReport("24000001IN", Some("119000004320"), None, None)) { result =>
+        result mustBe Left(ErrorCodes.badRequest)
+      }
+    }
+
+    "return not found when the response from the server is not found" in {
+      val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
+      wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(notFound()))
+
+      whenReady(connector.getReport("24000001IN", Some("119000004320"), None, None)) { result =>
+        result mustBe Left(ErrorCodes.entityNotFound)
+      }
+    }
+
+    "return unprocessable entity when the response from the server is unprocessable entity" in {
+      val url = s"$reportUrl?pstr=24000001IN&fbNumber=000000000000"
+      wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(badRequestEntity()))
+
+      whenReady(connector.getReport("24000001IN", Some("000000000000"), None, None)) { result =>
+        result mustBe Left(ErrorCodes.unprocessableEntity)
+      }
+    }
+
+    "return unexpected response when the response from the server is unrecognised" in {
+      val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
+      wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(aResponse().withStatus(418)))
+
+      whenReady(connector.getReport("24000001IN", Some("119000004320"), None, None)) { result =>
+        result mustBe Left(ErrorCodes.unexpectedResponse)
+      }
+    }
+
+    "retry 5 times when the response from the server is a 500" in {
+      val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
+      wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(serverError()))
+
+      whenReady(connector.getReport("24000001IN", Some("119000004320"), None, None)) { result =>
+        WireMock.verify(6, getRequestedFor(urlEqualTo(url)))
+        result mustBe Left(ErrorCodes.unexpectedResponse)
+      }
+    }
+  }
 
   "getOverview" should {
 
