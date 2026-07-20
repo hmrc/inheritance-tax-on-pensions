@@ -26,24 +26,29 @@ import javax.inject.Inject
 
 class HIPHeaders @Inject() (randomUUIDGenerator: RandomUUIDGenerator, appConfig: AppConfig, clock: Clock) {
   private val correlationIdHeader: String = "correlationId"
+  private val xMessageTypeHeader: String = "X-Message-Type"
   private val xOriginatingSystemHeader: String = "X-Originating-System"
   private val xReceiptDateHeader: String = "X-Receipt-Date"
+  private val xRegimeTypeHeader: String = "X-Regime-Type"
   private val xTransmittingSystemHeader: String = "X-Transmitting-System"
 
   private val mdtp = "MDTP"
-  private val hip = "HIP"
+  private val request = "Request"
+  private val ihtp = "IHTP"
 
   // TODO check these headers against the EPIDs when we get them!
-  def ihtpReportSubmissionHeaders(): Seq[(String, String)] =
+  def ihtpReportHeaders(): Seq[(String, String)] =
     Seq(
-      (HeaderNames.AUTHORIZATION, authorizationForIhtpReportSubmission()),
+      (HeaderNames.AUTHORIZATION, authorizationForIhtpReport()),
       (correlationIdHeader, randomUUIDGenerator.uuid),
+      (xMessageTypeHeader, request),
       (xOriginatingSystemHeader, mdtp),
       (xReceiptDateHeader, DateTimeHelper.formatISOInstantSeconds(Instant.now(clock))),
-      (xTransmittingSystemHeader, hip)
+      (xRegimeTypeHeader, ihtp),
+      (xTransmittingSystemHeader, mdtp)
     )
 
-  private def authorizationForIhtpReportSubmission(): String = {
+  private def authorizationForIhtpReport(): String = {
     val clientId = appConfig.ihtpReportClientId
     val secret = appConfig.ihtpReportSecret
 

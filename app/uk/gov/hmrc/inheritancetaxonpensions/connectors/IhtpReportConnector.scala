@@ -59,7 +59,7 @@ class IhtpReportConnector @Inject() (
       val startTime = Instant.now()
       httpClient
         .get(url"$url")
-        .setHeader(headers.ihtpReportSubmissionHeaders()*)
+        .setHeader(headers.ihtpReportHeaders()*)
         .execute[HttpResponse]
         .map {
           case response if response.status == OK =>
@@ -102,6 +102,63 @@ class IhtpReportConnector @Inject() (
     }
   }
 
+  def getReport(
+    pstr: String,
+    fbNumber: Option[String],
+    paymentReferenceNumber: Option[String],
+    versionNumber: Option[String]
+  )(implicit hc: HeaderCarrier): Future[Either[ErrorResponse, JsValue]] = {
+    val url: String = reportUrl(pstr, fbNumber, paymentReferenceNumber, versionNumber)
+
+    retryFor[Either[ErrorResponse, JsValue]]("IHTP Report retrieval") {
+      case UpstreamErrorResponse.WithStatusCode(status) if Constants.TransientErrorStatusCodes.contains(status) => true
+    } {
+      val startTime = Instant.now()
+      httpClient
+        .get(url"$url")
+        .setHeader(headers.ihtpReportHeaders()*)
+        .execute[HttpResponse]
+        .map {
+          case response if response.status == OK =>
+            logger.info("[IhtpReportConnector][getReport] IHTP Report retrieved successfully")
+            Right(response.json)
+          case response if response.status == BAD_REQUEST =>
+            logger.warn("[IhtpReportConnector][getReport] Bad request returned for report retrieval")
+            Left(ErrorCodes.badRequest)
+          case response if response.status == NOT_FOUND =>
+            logger.warn("[IhtpReportConnector][getReport] Not found returned for report retrieval")
+            Left(ErrorCodes.entityNotFound)
+          case response if response.status == UNPROCESSABLE_ENTITY =>
+            logger.warn("[IhtpReportConnector][getReport] Unprocessable entity returned for report retrieval")
+            Left(ErrorCodes.unprocessableEntity)
+          case response if Constants.TransientErrorStatusCodes.contains(response.status) =>
+            throw UpstreamErrorResponse(
+              s"Transient error: ${response.status}",
+              response.status,
+              response.status
+            )
+          case response =>
+            logger.warn(
+              s"[IhtpReportConnector][getReport] Unexpected status returned for report retrieval: ${response.status}"
+            )
+            Left(ErrorCodes.unexpectedResponse)
+        }
+        .recoverWith {
+          case errorResponse @ UpstreamErrorResponse.WithStatusCode(statusCode)
+              if Constants.TransientErrorStatusCodes.contains(statusCode) =>
+            val elapsedTime = java.time.Duration.between(startTime, Instant.now()).toSeconds
+            logger.warn(
+              s"[IhtpReportConnector][getReport] IHTP Report retrieval failed with status: $statusCode and took: ${elapsedTime}s. Error: ${errorResponse.getMessage}"
+            )
+            Future.failed(errorResponse)
+        }
+    }.recover {
+      case UpstreamErrorResponse.WithStatusCode(statusCode)
+          if Constants.TransientErrorStatusCodes.contains(statusCode) =>
+        Left(ErrorCodes.unexpectedResponse)
+    }
+  }
+
   def submitReport(ihtpReportSubmission: IhtpReportSubmission)(implicit
     hc: HeaderCarrier
   ): Future[Either[ErrorResponse, IhtpReportSubmissionResponse]] = {
@@ -113,7 +170,7 @@ class IhtpReportConnector @Inject() (
       val startTime = Instant.now()
       httpClient
         .post(url"$url")
-        .setHeader(headers.ihtpReportSubmissionHeaders()*)
+        .setHeader(headers.ihtpReportHeaders()*)
         .withBody(Json.toJson(ihtpReportSubmission))
         .execute[HttpResponse]
         .flatMap {
@@ -177,5 +234,25 @@ class IhtpReportConnector @Inject() (
       .mkString("&")
 
     s"${config.getOverviewUrl}?$queryString"
+  }
+
+  private def reportUrl(
+    pstr: String,
+    fbNumber: Option[String],
+    paymentReferenceNumber: Option[String],
+    versionNumber: Option[String]
+  ): String = {
+    val queryParams = Seq(
+      Some("pstr" -> pstr),
+      fbNumber.map("fbNumber" -> _),
+      paymentReferenceNumber.map("paymentReferenceNumber" -> _),
+      versionNumber.map("versionNumber" -> _)
+    ).flatten
+
+    val queryString = queryParams
+      .map { case (key, value) => s"$key=${URLEncoder.encode(value, StandardCharsets.UTF_8)}" }
+      .mkString("&")
+
+    s"${config.getReportUrl}?$queryString"
   }
 }

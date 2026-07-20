@@ -1,0 +1,38 @@
+meta {
+  name: Retrieve Report - Bad Request 400
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{ihtp_url}}/ihtp?pstr=24000001IN&fbNumber=119000004320&paymentReferenceNumber=PR000000001
+  body: none
+  auth: bearer
+}
+
+params:query {
+  pstr: 24000001IN
+  fbNumber: 119000004320
+  paymentReferenceNumber: PR000000001
+}
+
+headers {
+  srn: S0000000042
+  userName: TestUser
+  schemeName: TestScheme
+  requestRole: PSA
+}
+
+auth:bearer {
+  token: {{bearer_token}}
+}
+
+tests {
+  test("Status code is 400", function () {
+      expect(res.getStatus()).to.equal(400);
+  });
+
+  test("Response contains the backend error message", function () {
+      expect(res.body.message).to.equal("Bad request made");
+  });
+}

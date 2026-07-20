@@ -36,6 +36,9 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
   lazy val submitReportUrl: String =
     s"$ihtpReportHost$submitIhtpReportUrl"
 
+  lazy val getReportUrl: String =
+    s"$ihtpReportHost$getIhtpReportUrl"
+
   lazy val getOverviewUrl: String =
     s"$ihtpReportHost$getIhtpOverviewUrl"
 
@@ -45,6 +48,10 @@ class AppConfig @Inject() (config: Configuration, servicesConfig: ServicesConfig
 
   private lazy val submitIhtpReportUrl: String = getConfStringAndThrowIfNotFound(
     "ihtp-report.url.submitReport"
+  )
+
+  private lazy val getIhtpReportUrl: String = getConfStringAndThrowIfNotFound(
+    "ihtp-report.url.getReport"
   )
 
   private lazy val getIhtpOverviewUrl: String = getConfStringAndThrowIfNotFound(
