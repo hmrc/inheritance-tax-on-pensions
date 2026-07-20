@@ -173,7 +173,11 @@ class ReportSubmissionServiceSpec
               "title" -> "Ms",
               "firstForename" -> "Jane",
               "secondForename" -> "Ann",
-              "surname" -> "Doe"
+              "surname" -> "Doe",
+              "addressLine1" -> "1 ABCDE Street",
+              "addressLine2" -> "FGHIJ Town",
+              "ukPostcode" -> "ZZ99 1AA",
+              "country" -> "GB"
             )
           ),
           "ninoOrReason" -> Json.obj(
@@ -198,11 +202,19 @@ class ReportSubmissionServiceSpec
         individual = None,
         organisation = Some(
           OrganisationDetails(
-            organisationName = "Test Organisation",
-            title = Some("Ms"),
-            firstForename = "Jane",
-            secondForename = Some("Ann"),
-            surname = "Doe"
+            info = OrganisationInfo(
+              organisationName = "Test Organisation",
+              title = Some("Ms"),
+              firstForename = "Jane",
+              secondForename = Some("Ann"),
+              surname = "Doe"
+            ),
+            address = AddressDetails(
+              addressLine1 = "1 ABCDE Street",
+              addressLine2 = "FGHIJ Town",
+              ukPostcode = Some("ZZ99 1AA"),
+              country = "GB"
+            )
           )
         )
       )
@@ -211,7 +223,11 @@ class ReportSubmissionServiceSpec
         "title" -> "Ms",
         "firstForename" -> "Jane",
         "secondForename" -> "Ann",
-        "surname" -> "Doe"
+        "surname" -> "Doe",
+        "addressLine1" -> "1 ABCDE Street",
+        "addressLine2" -> "FGHIJ Town",
+        "ukPostcode" -> "ZZ99 1AA",
+        "country" -> "GB"
       )
     }
 

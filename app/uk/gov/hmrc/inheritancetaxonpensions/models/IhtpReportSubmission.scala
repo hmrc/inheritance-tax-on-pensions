@@ -69,18 +69,6 @@ object PrDetails {
     Json.format[PrDetails]
 }
 
-case class IndividualName(
-  title: Option[String],
-  firstForename: String,
-  secondForename: Option[String],
-  surname: String
-)
-
-object IndividualName {
-  implicit val individualNameFormat: OFormat[IndividualName] =
-    Json.format[IndividualName]
-}
-
 case class AddressDetails(
   addressLine1: String,
   addressLine2: String,
@@ -95,6 +83,18 @@ object AddressDetails {
     Json.format[AddressDetails]
 }
 
+case class IndividualName(
+  title: Option[String],
+  firstForename: String,
+  secondForename: Option[String],
+  surname: String
+)
+
+object IndividualName {
+  implicit val individualNameFormat: OFormat[IndividualName] =
+    Json.format[IndividualName]
+}
+
 case class IndividualDetails(name: IndividualName, address: AddressDetails)
 
 object IndividualDetails {
@@ -105,7 +105,7 @@ object IndividualDetails {
     Json.toJsObject(individualDetails.name) ++ Json.toJsObject(individualDetails.address)
 }
 
-case class OrganisationDetails(
+case class OrganisationInfo(
   organisationName: String,
   title: Option[String],
   firstForename: String,
@@ -113,9 +113,19 @@ case class OrganisationDetails(
   surname: String
 )
 
+object OrganisationInfo {
+  implicit val organisationDetailsFormat: OFormat[OrganisationInfo] =
+    Json.format[OrganisationInfo]
+}
+
+case class OrganisationDetails(info: OrganisationInfo, address: AddressDetails)
+
 object OrganisationDetails {
-  implicit val organisationDetailsFormat: OFormat[OrganisationDetails] =
-    Json.format[OrganisationDetails]
+  implicit val organisationDetailsReads: Reads[OrganisationDetails] =
+    JsPath.read[OrganisationInfo].and(JsPath.read[AddressDetails])(OrganisationDetails.apply)
+
+  implicit val organisationDetailsWrites: OWrites[OrganisationDetails] = organisationDetails =>
+    Json.toJsObject(organisationDetails.info) ++ Json.toJsObject(organisationDetails.address)
 }
 
 case class NinoOrReasonAnswers(nino: Option[String], reasonForNoNino: Option[String])
