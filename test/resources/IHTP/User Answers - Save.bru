@@ -1,0 +1,84 @@
+meta {
+  name: User Answers - Save
+  type: http
+  seq: 9
+}
+
+put {
+  url: {{ihtp_url}}/user-answers
+  body: json
+  auth: bearer
+}
+
+headers {
+  srn: {{srn}}
+  userName: TestUser
+  schemeName: TestScheme
+  requestRole: PSA
+}
+
+auth:bearer {
+  token: {{bearer_token}}
+}
+
+script:pre-request {
+  bru.setVar("last_updated_epoch_millis", Date.now().toString());
+}
+
+body:json {
+  {
+    "_id": "{{user_answers_id}}",
+    "srn": "{{srn}}",
+    "uuid": "{{user_answers_uuid}}",
+    "data": {
+      "inheritanceTaxReference": "A123459/25A",
+      "nameOfDeceased": {
+        "title": "Mr",
+        "firstForename": "John",
+        "secondForename": "William",
+        "surname": "Doe"
+      },
+      "birthDeathDates": {
+        "dateOfBirth": "1950-01-01",
+        "dateOfDeath": "2026-01-01"
+      },
+      "prType": "individual",
+      "prDetails": {
+        "individual": {
+          "title": "Mr",
+          "firstForename": "John",
+          "secondForename": "William",
+          "surname": "Doe",
+          "addressLine1": "1 ABCDE Street",
+          "addressLine2": "FGHIJ Town",
+          "ukPostcode": "ZZ99 1AA",
+          "country": "GB"
+        }
+      },
+      "ninoOrReason": {
+        "nino": "AB123456C"
+      },
+      "ihtTaxInformation": {
+        "dateThePensionSchemeReceivedNoticeToPay": "2026-03-27"
+      },
+      "didPrSubmit": true
+    },
+    "lastUpdated": {
+      "$date": {
+        "$numberLong": "{{last_updated_epoch_millis}}"
+      }
+    }
+  }
+}
+
+tests {
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+
+  test("Response contains the saved user answers identifiers", function () {
+      expect(res.body._id).to.equal(bru.getEnvVar("user_answers_id"));
+      expect(res.body.srn).to.equal(bru.getEnvVar("srn"));
+      expect(res.body.uuid).to.equal(bru.getEnvVar("user_answers_uuid"));
+  });
+}

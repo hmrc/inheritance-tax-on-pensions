@@ -20,6 +20,7 @@ import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.*
 import org.scalatest.time.{Millis, Seconds, Span}
 import play.api.Application
+import play.api.http.Status._
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.*
@@ -51,6 +52,16 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
   val submitReturnUrl: String = "/etmp/RESTAdapter/pods/reports/ihtp"
   val reportUrl: String = "/etmp/RESTAdapter/pods/reports/ihtp"
   val overviewUrl: String = "/etmp/RESTAdapter/pods/reports/ihtp-overview"
+  val correlationId: String = "e4946bba-23f1-4a75-9207-b20b7741cf40"
+  val unexpectedResponse = Json.obj(
+    "origin" -> "HIP",
+    "response" -> Json.arr(
+      Json.obj(
+        "type" -> "Unexpected response",
+        "reason" -> "An unexpected response was received from the downstream service"
+      )
+    )
+  )
 
   "getReport" should {
 
@@ -63,7 +74,13 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
       )
       val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
 
-      wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(ok(response.toString)))
+      wireMockServer.stubFor(
+        get(urlEqualTo(url)).willReturn(
+          ok(response.toString)
+            .withHeader("Content-Type", "application/json")
+            .withHeader("correlationid", correlationId)
+        )
+      )
 
       whenReady(connector.getReport("24000001IN", Some("119000004320"), None, None)) { result =>
         WireMock.verify(
@@ -74,7 +91,9 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
             .withHeader("X-Transmitting-System", equalTo("MDTP"))
         )
 
-        result mustBe Right(response)
+        result.status mustBe OK
+        result.json mustBe response
+        result.header("correlationid") mustBe Some(correlationId)
       }
     }
 
@@ -85,54 +104,140 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
       wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(ok(response.toString)))
 
       whenReady(connector.getReport("24000001IN", None, Some("PR 000/001"), Some("001"))) { result =>
-        WireMock.verify(getRequestedFor(urlEqualTo(url)))
-        result mustBe Right(response)
+        val generatedCorrelationId = result
+          .header("correlationid")
+          .getOrElse(fail("Expected the generated correlation ID on the response"))
+
+        WireMock.verify(
+          getRequestedFor(urlEqualTo(url)).withHeader("correlationid", equalTo(generatedCorrelationId))
+        )
+        result.status mustBe OK
+        result.json mustBe response
       }
     }
 
-    "return a bad request when the response from the server is a bad request" in {
+    Seq("" -> "an empty", "not-json" -> "a malformed").foreach { case (body, description) =>
+      s"return a standardised server error for $description successful response" in {
+        val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
+        wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(ok(body)))
+
+        whenReady(connector.getReport("24000001IN", Some("119000004320"), None, None)) { result =>
+          result.status mustBe INTERNAL_SERVER_ERROR
+          result.json mustBe unexpectedResponse
+          result.header("correlationid") must not be empty
+        }
+      }
+    }
+
+    "return the bad request response unchanged" in {
+      val response = Json.obj(
+        "origin" -> "HoD",
+        "response" -> Json.obj(
+          "error" -> Json.obj(
+            "code" -> "VR_001",
+            "logID" -> "UUID-123",
+            "message" -> "Invalid IHT Reference Pattern"
+          )
+        )
+      )
       val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
-      wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(badRequest()))
+      wireMockServer.stubFor(
+        get(urlEqualTo(url)).willReturn(
+          badRequest().withHeader("Content-Type", "application/json").withBody(response.toString)
+        )
+      )
 
       whenReady(connector.getReport("24000001IN", Some("119000004320"), None, None)) { result =>
-        result mustBe Left(ErrorCodes.badRequest)
+        result.status mustBe BAD_REQUEST
+        result.json mustBe response
       }
     }
 
-    "return not found when the response from the server is not found" in {
+    "return not found without manufacturing a response body" in {
       val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
       wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(notFound()))
 
       whenReady(connector.getReport("24000001IN", Some("119000004320"), None, None)) { result =>
-        result mustBe Left(ErrorCodes.entityNotFound)
+        result.status mustBe NOT_FOUND
+        result.body mustBe empty
+        result.header("correlationid") must not be empty
       }
     }
 
-    "return unprocessable entity when the response from the server is unprocessable entity" in {
+    "return the unprocessable entity response unchanged" in {
+      val response = Json.obj(
+        "errors" -> Json.obj(
+          "processingDate" -> "2026-06-07T16:12:49Z",
+          "code" -> "003",
+          "text" -> "Request could not be processed"
+        )
+      )
       val url = s"$reportUrl?pstr=24000001IN&fbNumber=000000000000"
-      wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(badRequestEntity()))
+      wireMockServer.stubFor(
+        get(urlEqualTo(url)).willReturn(
+          aResponse()
+            .withStatus(UNPROCESSABLE_ENTITY)
+            .withHeader("Content-Type", "application/json")
+            .withBody(response.toString)
+        )
+      )
 
       whenReady(connector.getReport("24000001IN", Some("000000000000"), None, None)) { result =>
-        result mustBe Left(ErrorCodes.unprocessableEntity)
+        result.status mustBe UNPROCESSABLE_ENTITY
+        result.json mustBe response
       }
     }
 
-    "return unexpected response when the response from the server is unrecognised" in {
+    "normalise an error status not listed in the draft API specification" in {
       val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
       wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(aResponse().withStatus(418)))
 
       whenReady(connector.getReport("24000001IN", Some("119000004320"), None, None)) { result =>
-        result mustBe Left(ErrorCodes.unexpectedResponse)
+        result.status mustBe INTERNAL_SERVER_ERROR
+        result.json mustBe unexpectedResponse
+        result.header("correlationid") must not be empty
       }
     }
 
-    "retry 5 times when the response from the server is a 500" in {
-      val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
-      wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(serverError()))
+    Seq(INTERNAL_SERVER_ERROR, SERVICE_UNAVAILABLE).foreach { statusCode =>
+      s"retry 5 times and then preserve a $statusCode response" in {
+        val response = Json.obj(
+          "origin" -> "HIP",
+          "response" -> Json.obj(
+            "failures" -> Json.arr(
+              Json.obj("type" -> "Upstream failure", "reason" -> "The downstream service is unavailable")
+            )
+          )
+        )
+        val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
+        wireMockServer.stubFor(
+          get(urlEqualTo(url)).willReturn(
+            aResponse()
+              .withStatus(statusCode)
+              .withHeader("Content-Type", "application/json")
+              .withBody(response.toString)
+          )
+        )
 
-      whenReady(connector.getReport("24000001IN", Some("119000004320"), None, None)) { result =>
-        WireMock.verify(6, getRequestedFor(urlEqualTo(url)))
-        result mustBe Left(ErrorCodes.unexpectedResponse)
+        whenReady(connector.getReport("24000001IN", Some("119000004320"), None, None)) { result =>
+          WireMock.verify(6, getRequestedFor(urlEqualTo(url)))
+          result.status mustBe statusCode
+          result.json mustBe response
+        }
+      }
+    }
+
+    Seq(BAD_GATEWAY, GATEWAY_TIMEOUT).foreach { statusCode =>
+      s"retry 5 times and then normalise a $statusCode response" in {
+        val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
+        wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(aResponse().withStatus(statusCode)))
+
+        whenReady(connector.getReport("24000001IN", Some("119000004320"), None, None)) { result =>
+          WireMock.verify(6, getRequestedFor(urlEqualTo(url)))
+          result.status mustBe INTERNAL_SERVER_ERROR
+          result.json mustBe unexpectedResponse
+          result.header("correlationid") must not be empty
+        }
       }
     }
   }

@@ -18,13 +18,14 @@ package uk.gov.hmrc.inheritancetaxonpensions.controllers
 
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.{IhtpReportConnector, SchemeDetailsConnector}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import play.api.http.{ContentTypes, HeaderNames}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.inheritancetaxonpensions.auth.IhtpAuthWithSessionCache
-import play.api.libs.json.Json
-import uk.gov.hmrc.http.BadRequestException
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
 import uk.gov.hmrc.inheritancetaxonpensions.services.SessionService
 import uk.gov.hmrc.auth.core.AuthConnector
+import play.api.http.Status._
+import uk.gov.hmrc.http.{BadRequestException, HttpResponse}
 
 import scala.concurrent.ExecutionContext
 
@@ -58,10 +59,21 @@ class GetReportController @Inject() (
           request.getQueryString("paymentReferenceNumber"),
           request.getQueryString("versionNumber")
         )
-        .map {
-          case Right(response) => Ok(response)
-          case Left(error) => Status(error.statusCode)(Json.obj("message" -> error.message))
-        }
+        .map(toResult)
     }
   }
+
+  private def toResult(response: HttpResponse) = {
+    val result =
+      if (noBodyStatuses.contains(response.status) || response.body.isEmpty) {
+        Status(response.status)
+      } else {
+        Status(response.status)(response.body)
+          .as(response.header(HeaderNames.CONTENT_TYPE).getOrElse(ContentTypes.JSON))
+      }
+
+    response.header("correlationid").fold(result)(correlationId => result.withHeaders("correlationid" -> correlationId))
+  }
+
+  private val noBodyStatuses: Set[Int] = Set(UNAUTHORIZED, FORBIDDEN, NOT_FOUND, UNSUPPORTED_MEDIA_TYPE)
 }

@@ -1,7 +1,7 @@
 meta {
   name: Retrieve Report - Bad Request 400
   type: http
-  seq: 12
+  seq: 8
 }
 
 get {
@@ -32,7 +32,8 @@ tests {
       expect(res.getStatus()).to.equal(400);
   });
 
-  test("Response contains the backend error message", function () {
-      expect(res.body.message).to.equal("Bad request made");
+  test("Response contains the HoD error", function () {
+      expect(res.body.origin).to.equal("HoD");
+      expect(res.body.response.error.code).to.equal("400");
   });
 }
