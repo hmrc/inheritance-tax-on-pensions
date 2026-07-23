@@ -38,7 +38,19 @@ class PiiFieldsSpec extends AnyFreeSpec with Matchers {
         "prDetails.individual.surname",
         "prDetails.organisation.firstForename",
         "prDetails.organisation.secondForename",
-        "prDetails.organisation.surname"
+        "prDetails.organisation.surname",
+        "prDetails.individual.addressLine1",
+        "prDetails.individual.addressLine2",
+        "prDetails.individual.addressLine3",
+        "prDetails.individual.addressLine4",
+        "prDetails.individual.ukPostcode",
+        "prDetails.individual.country",
+        "prDetails.organisation.addressLine1",
+        "prDetails.organisation.addressLine2",
+        "prDetails.organisation.addressLine3",
+        "prDetails.organisation.addressLine4",
+        "prDetails.organisation.ukPostcode",
+        "prDetails.organisation.country"
       )
 
       piiFields.foreach { field =>
