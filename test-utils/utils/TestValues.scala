@@ -111,5 +111,46 @@ trait TestValues extends Generators {
     )
   )
 
+  val testReportSubmissionRequestBodyOrganisation = IhtpReportSubmission(
+    ReportDetails(
+      pstr = "S2400000001"
+    ),
+    DeceasedDetails(
+      inheritanceTaxReference = "A123456/25A",
+      title = Some("Mr"),
+      firstForename = "John",
+      secondForename = Some("William"),
+      surname = "Doe",
+      dateOfBirth = testDateOfBirth,
+      dateOfDeath = testDateOfDeath,
+      nino = Some(testNino),
+      reasonForNoNino = None
+    ),
+    PrDetails(
+      individual = None,
+      organisation = Some(
+        OrganisationDetails(
+          info = OrganisationInfo(
+            organisationName = "Test Organisation",
+            title = Some("Ms"),
+            firstForename = "Jane",
+            secondForename = Some("Ann"),
+            surname = "Doe"
+          ),
+          address = AddressDetails(
+            addressLine1 = "1 ABCDE Street",
+            addressLine2 = "FGHIJ Town",
+            ukPostcode = Some("ZZ99 1AA"),
+            country = "GB"
+          )
+        )
+      )
+    ),
+    IhtTaxInformation(
+      dateThePensionSchemeReceivedNoticeToPay = testPaymentNoticeDate,
+      didThePersonalRepresentativeSubmitTheNotice = Yes
+    )
+  )
+
   val testReportSubmissionResponse = IhtpReportSubmissionResponse(Instant.now(clock), "910000000000", "123456789")
 }

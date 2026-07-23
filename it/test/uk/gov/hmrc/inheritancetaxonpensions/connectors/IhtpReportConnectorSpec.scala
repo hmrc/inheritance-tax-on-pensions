@@ -274,174 +274,184 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
     }
   }
 
+  private lazy val reportSubmissionRequestBodyTestCases = Seq(
+    testReportSubmissionRequestBody,
+    testReportSubmissionRequestBodyOrganisation
+  )
+
   "submitReport" should {
 
-    "return a valid report submission response for a successful call (OK)" in {
-      stubPost(
-        submitReturnUrl,
-        Json.toJson(testReportSubmissionRequestBody).toString,
-        ok(s"${Json.toJson(testReportSubmissionResponse)}")
-      )
+    reportSubmissionRequestBodyTestCases.foreach { requestBody =>
 
-      whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
-        WireMock.verify(
-          postRequestedFor(
-            urlEqualTo(submitReturnUrl)
-          )
+      val reportType = if (requestBody.prDetails.individual.isDefined) "individual" else "organisation"
+
+      s"return a valid report submission response for a successful call (OK) for $reportType" in {
+        stubPost(
+          submitReturnUrl,
+          Json.toJson(requestBody).toString,
+          ok(s"${Json.toJson(testReportSubmissionResponse)}")
         )
 
-        result mustBe Right(testReportSubmissionResponse)
+        whenReady(connector.submitReport(requestBody)) { result =>
+          WireMock.verify(
+            postRequestedFor(
+              urlEqualTo(submitReturnUrl)
+            )
+          )
+
+          result mustBe Right(testReportSubmissionResponse)
+        }
       }
-    }
 
-    "return an unexpected response where the response from the server cannot be parsed" in {
-      stubPost(
-        submitReturnUrl,
-        Json.toJson(testReportSubmissionRequestBody).toString,
-        ok(s"${Json.toJson("foo")}")
-      )
-
-      whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
-        WireMock.verify(
-          postRequestedFor(
-            urlEqualTo(submitReturnUrl)
-          )
+      s"return an unexpected response where the response from the server cannot be parsed for $reportType" in {
+        stubPost(
+          submitReturnUrl,
+          Json.toJson(requestBody).toString,
+          ok(s"${Json.toJson("foo")}")
         )
 
-        result mustBe Left(ErrorCodes.unexpectedResponse)
+        whenReady(connector.submitReport(requestBody)) { result =>
+          WireMock.verify(
+            postRequestedFor(
+              urlEqualTo(submitReturnUrl)
+            )
+          )
+
+          result mustBe Left(ErrorCodes.unexpectedResponse)
+        }
       }
-    }
 
-    "return a bad request when the response from the server is a bad request (BAD_REQUEST)" in {
-      stubPost(
-        submitReturnUrl,
-        Json.toJson(testReportSubmissionRequestBody).toString,
-        badRequest()
-      )
-
-      whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
-        WireMock.verify(
-          1,
-          postRequestedFor(
-            urlEqualTo(submitReturnUrl)
-          )
+      s"return a bad request when the response from the server is a bad request (BAD_REQUEST) for $reportType" in {
+        stubPost(
+          submitReturnUrl,
+          Json.toJson(requestBody).toString,
+          badRequest()
         )
 
-        result mustBe Left(ErrorCodes.badRequest)
+        whenReady(connector.submitReport(requestBody)) { result =>
+          WireMock.verify(
+            1,
+            postRequestedFor(
+              urlEqualTo(submitReturnUrl)
+            )
+          )
+
+          result mustBe Left(ErrorCodes.badRequest)
+        }
       }
-    }
 
-    "return a not found when the response from the server is a not found (NOT_FOUND)" in {
-      stubPost(
-        submitReturnUrl,
-        Json.toJson(testReportSubmissionRequestBody).toString,
-        notFound()
-      )
-
-      whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
-        WireMock.verify(
-          1,
-          postRequestedFor(
-            urlEqualTo(submitReturnUrl)
-          )
+      s"return a not found when the response from the server is a not found (NOT_FOUND) for $reportType" in {
+        stubPost(
+          submitReturnUrl,
+          Json.toJson(requestBody).toString,
+          notFound()
         )
 
-        result mustBe Left(ErrorCodes.entityNotFound)
+        whenReady(connector.submitReport(requestBody)) { result =>
+          WireMock.verify(
+            1,
+            postRequestedFor(
+              urlEqualTo(submitReturnUrl)
+            )
+          )
+
+          result mustBe Left(ErrorCodes.entityNotFound)
+        }
       }
-    }
 
-    "return an unprocessable entity when the response from the server is a unprocessable entity (UNPROCESSABLE_ENTITY)" in {
-      stubPost(
-        submitReturnUrl,
-        Json.toJson(testReportSubmissionRequestBody).toString,
-        badRequestEntity()
-      )
-
-      whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
-        WireMock.verify(
-          1,
-          postRequestedFor(
-            urlEqualTo(submitReturnUrl)
-          )
+      s"return an unprocessable entity when the response from the server is a unprocessable entity (UNPROCESSABLE_ENTITY) for $reportType" in {
+        stubPost(
+          submitReturnUrl,
+          Json.toJson(requestBody).toString,
+          badRequestEntity()
         )
 
-        result mustBe Left(ErrorCodes.unprocessableEntity)
+        whenReady(connector.submitReport(requestBody)) { result =>
+          WireMock.verify(
+            1,
+            postRequestedFor(
+              urlEqualTo(submitReturnUrl)
+            )
+          )
+
+          result mustBe Left(ErrorCodes.unprocessableEntity)
+        }
       }
-    }
 
-    "retry 5 times when the response from the server is a 500" in {
-      stubPost(
-        submitReturnUrl,
-        Json.toJson(testReportSubmissionRequestBody).toString,
-        serverError()
-      )
-
-      whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
-        WireMock.verify(
-          6,
-          postRequestedFor(
-            urlEqualTo(submitReturnUrl)
-          )
+      s"retry 5 times when the response from the server is a 500 for $reportType" in {
+        stubPost(
+          submitReturnUrl,
+          Json.toJson(requestBody).toString,
+          serverError()
         )
 
-        result mustBe Left(ErrorCodes.unexpectedResponse)
+        whenReady(connector.submitReport(requestBody)) { result =>
+          WireMock.verify(
+            6,
+            postRequestedFor(
+              urlEqualTo(submitReturnUrl)
+            )
+          )
+
+          result mustBe Left(ErrorCodes.unexpectedResponse)
+        }
       }
-    }
 
-    "retry 5 times when the response from the server is a 502 (BAD_GATEWAY)" in {
-      stubPost(
-        submitReturnUrl,
-        Json.toJson(testReportSubmissionRequestBody).toString,
-        aResponse().withStatus(502)
-      )
-
-      whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
-        WireMock.verify(
-          6,
-          postRequestedFor(
-            urlEqualTo(submitReturnUrl)
-          )
+      s"retry 5 times when the response from the server is a 502 (BAD_GATEWAY) for $reportType" in {
+        stubPost(
+          submitReturnUrl,
+          Json.toJson(requestBody).toString,
+          aResponse().withStatus(502)
         )
 
-        result mustBe Left(ErrorCodes.unexpectedResponse)
+        whenReady(connector.submitReport(requestBody)) { result =>
+          WireMock.verify(
+            6,
+            postRequestedFor(
+              urlEqualTo(submitReturnUrl)
+            )
+          )
+
+          result mustBe Left(ErrorCodes.unexpectedResponse)
+        }
       }
-    }
 
-    "retry 5 times when the response from the server is a 503 (SERVICE_UNAVAILABLE)" in {
-      stubPost(
-        submitReturnUrl,
-        Json.toJson(testReportSubmissionRequestBody).toString,
-        serviceUnavailable()
-      )
-
-      whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
-        WireMock.verify(
-          6,
-          postRequestedFor(
-            urlEqualTo(submitReturnUrl)
-          )
+      s"retry 5 times when the response from the server is a 503 (SERVICE_UNAVAILABLE) for $reportType" in {
+        stubPost(
+          submitReturnUrl,
+          Json.toJson(requestBody).toString,
+          serviceUnavailable()
         )
 
-        result mustBe Left(ErrorCodes.unexpectedResponse)
+        whenReady(connector.submitReport(requestBody)) { result =>
+          WireMock.verify(
+            6,
+            postRequestedFor(
+              urlEqualTo(submitReturnUrl)
+            )
+          )
+
+          result mustBe Left(ErrorCodes.unexpectedResponse)
+        }
       }
-    }
 
-    "retry 5 times when the response from the server is a 504 (GATEWAY_TIMEOUT)" in {
-      stubPost(
-        submitReturnUrl,
-        Json.toJson(testReportSubmissionRequestBody).toString,
-        aResponse().withStatus(504)
-      )
-
-      whenReady(connector.submitReport(testReportSubmissionRequestBody)) { result =>
-        WireMock.verify(
-          6,
-          postRequestedFor(
-            urlEqualTo(submitReturnUrl)
-          )
+      s"retry 5 times when the response from the server is a 504 (GATEWAY_TIMEOUT) for $reportType" in {
+        stubPost(
+          submitReturnUrl,
+          Json.toJson(requestBody).toString,
+          aResponse().withStatus(504)
         )
 
-        result mustBe Left(ErrorCodes.unexpectedResponse)
+        whenReady(connector.submitReport(requestBody)) { result =>
+          WireMock.verify(
+            6,
+            postRequestedFor(
+              urlEqualTo(submitReturnUrl)
+            )
+          )
+
+          result mustBe Left(ErrorCodes.unexpectedResponse)
+        }
       }
     }
   }
