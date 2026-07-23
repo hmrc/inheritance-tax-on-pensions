@@ -18,6 +18,7 @@ package uk.gov.hmrc.inheritancetaxonpensions.connectors
 
 import com.typesafe.config.Config
 import uk.gov.hmrc.inheritancetaxonpensions.config.{AppConfig, Constants}
+import uk.gov.hmrc.inheritancetaxonpensions.connectors.IhtpReportConnector.RetryableReportResponse
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.helpers.HIPHeaders
 import org.apache.pekko.actor.ActorSystem
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
@@ -107,55 +108,36 @@ class IhtpReportConnector @Inject() (
     fbNumber: Option[String],
     paymentReferenceNumber: Option[String],
     versionNumber: Option[String]
-  )(implicit hc: HeaderCarrier): Future[Either[ErrorResponse, JsValue]] = {
+  )(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     val url: String = reportUrl(pstr, fbNumber, paymentReferenceNumber, versionNumber)
+    val reportHeaders = headers.ihtpReportHeaders()
+    val correlationId = reportHeaders
+      .collectFirst { case (name, value) if name.equalsIgnoreCase(correlationIdHeader) => value }
+      .getOrElse(throw new IllegalStateException("HIP report headers must contain a correlation ID"))
 
-    retryFor[Either[ErrorResponse, JsValue]]("IHTP Report retrieval") {
-      case UpstreamErrorResponse.WithStatusCode(status) if Constants.TransientErrorStatusCodes.contains(status) => true
+    retryFor[HttpResponse]("IHTP Report retrieval") { case RetryableReportResponse(_) =>
+      true
     } {
       val startTime = Instant.now()
       httpClient
         .get(url"$url")
-        .setHeader(headers.ihtpReportHeaders()*)
+        .setHeader(reportHeaders*)
         .execute[HttpResponse]
         .map {
-          case response if response.status == OK =>
-            logger.info("[IhtpReportConnector][getReport] IHTP Report retrieved successfully")
-            Right(response.json)
-          case response if response.status == BAD_REQUEST =>
-            logger.warn("[IhtpReportConnector][getReport] Bad request returned for report retrieval")
-            Left(ErrorCodes.badRequest)
-          case response if response.status == NOT_FOUND =>
-            logger.warn("[IhtpReportConnector][getReport] Not found returned for report retrieval")
-            Left(ErrorCodes.entityNotFound)
-          case response if response.status == UNPROCESSABLE_ENTITY =>
-            logger.warn("[IhtpReportConnector][getReport] Unprocessable entity returned for report retrieval")
-            Left(ErrorCodes.unprocessableEntity)
           case response if Constants.TransientErrorStatusCodes.contains(response.status) =>
-            throw UpstreamErrorResponse(
-              s"Transient error: ${response.status}",
-              response.status,
-              response.status
-            )
+            throw RetryableReportResponse(response)
           case response =>
-            logger.warn(
-              s"[IhtpReportConnector][getReport] Unexpected status returned for report retrieval: ${response.status}"
-            )
-            Left(ErrorCodes.unexpectedResponse)
+            normaliseReportResponse(response, correlationId)
         }
-        .recoverWith {
-          case errorResponse @ UpstreamErrorResponse.WithStatusCode(statusCode)
-              if Constants.TransientErrorStatusCodes.contains(statusCode) =>
-            val elapsedTime = java.time.Duration.between(startTime, Instant.now()).toSeconds
-            logger.warn(
-              s"[IhtpReportConnector][getReport] IHTP Report retrieval failed with status: $statusCode and took: ${elapsedTime}s. Error: ${errorResponse.getMessage}"
-            )
-            Future.failed(errorResponse)
+        .recoverWith { case errorResponse @ RetryableReportResponse(response) =>
+          val elapsedTime = java.time.Duration.between(startTime, Instant.now()).toSeconds
+          logger.warn(
+            s"[IhtpReportConnector][getReport] IHTP Report retrieval failed with status: ${response.status} and took: ${elapsedTime}s. Error: ${errorResponse.getMessage}"
+          )
+          Future.failed(errorResponse)
         }
-    }.recover {
-      case UpstreamErrorResponse.WithStatusCode(statusCode)
-          if Constants.TransientErrorStatusCodes.contains(statusCode) =>
-        Left(ErrorCodes.unexpectedResponse)
+    }.recover { case RetryableReportResponse(response) =>
+      normaliseReportResponse(response, correlationId)
     }
   }
 
@@ -225,6 +207,56 @@ class IhtpReportConnector @Inject() (
     }
   }
 
+  private def normaliseReportResponse(response: HttpResponse, correlationId: String): HttpResponse =
+    response.status match {
+      case OK =>
+        Try(response.json) match {
+          case Success(_) =>
+            logger.info("[IhtpReportConnector][getReport] IHTP Report retrieved successfully")
+            withCorrelationId(response, correlationId)
+          case Failure(error) =>
+            logger.warn(
+              s"[IhtpReportConnector][getReport] Invalid JSON returned for successful report retrieval: ${error.getMessage}"
+            )
+            unexpectedReportResponse(correlationId)
+        }
+      case status if documentedReportStatusCodes.contains(status) =>
+        logger.warn(s"[IhtpReportConnector][getReport] Error status returned for report retrieval: $status")
+        withCorrelationId(response, correlationId)
+      case status =>
+        logger.warn(s"[IhtpReportConnector][getReport] Unexpected status returned for report retrieval: $status")
+        unexpectedReportResponse(correlationId)
+    }
+
+  private def withCorrelationId(response: HttpResponse, correlationId: String): HttpResponse =
+    if (response.header(correlationIdHeader).isDefined) {
+      response
+    } else {
+      HttpResponse(
+        response.status,
+        response.body,
+        response.headers + (correlationIdHeader -> Seq(correlationId))
+      )
+    }
+
+  private def unexpectedReportResponse(correlationId: String): HttpResponse =
+    HttpResponse(
+      INTERNAL_SERVER_ERROR,
+      Json.obj(
+        "origin" -> "HIP",
+        "response" -> Json.arr(
+          Json.obj(
+            "type" -> "Unexpected response",
+            "reason" -> "An unexpected response was received from the downstream service"
+          )
+        )
+      ),
+      Map(
+        "Content-Type" -> Seq("application/json"),
+        correlationIdHeader -> Seq(correlationId)
+      )
+    )
+
   private def overviewUrl(pstr: String, dateFrom: String, dateTo: String, status: Option[String]): String = {
     val queryParams =
       Seq("pstr" -> pstr, "dateFrom" -> dateFrom, "dateTo" -> dateTo) ++ status.map("status" -> _)
@@ -255,4 +287,22 @@ class IhtpReportConnector @Inject() (
 
     s"${config.getReportUrl}?$queryString"
   }
+
+  private val correlationIdHeader = "correlationid"
+  private val documentedReportStatusCodes =
+    Set(
+      BAD_REQUEST,
+      UNAUTHORIZED,
+      FORBIDDEN,
+      NOT_FOUND,
+      UNSUPPORTED_MEDIA_TYPE,
+      UNPROCESSABLE_ENTITY,
+      INTERNAL_SERVER_ERROR,
+      SERVICE_UNAVAILABLE
+    )
+}
+
+object IhtpReportConnector {
+  final private case class RetryableReportResponse(response: HttpResponse)
+      extends RuntimeException(s"Transient error: ${response.status}")
 }

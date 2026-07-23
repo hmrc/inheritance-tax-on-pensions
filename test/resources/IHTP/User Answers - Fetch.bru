@@ -1,0 +1,34 @@
+meta {
+  name: User Answers - Fetch
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{ihtp_url}}/user-answers/{{user_answers_id}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  srn: {{srn}}
+  userName: TestUser
+  schemeName: TestScheme
+  requestRole: PSA
+}
+
+auth:bearer {
+  token: {{bearer_token}}
+}
+
+tests {
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+
+  test("Response contains the requested user answers", function () {
+      expect(res.body._id).to.equal(bru.getEnvVar("user_answers_id"));
+      expect(res.body.srn).to.equal(bru.getEnvVar("srn"));
+      expect(res.body.data.inheritanceTaxReference).to.equal("A123459/25A");
+  });
+}

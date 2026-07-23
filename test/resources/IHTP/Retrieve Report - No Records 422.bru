@@ -1,7 +1,7 @@
 meta {
   name: Retrieve Report - No Records 422
   type: http
-  seq: 11
+  seq: 7
 }
 
 get {
@@ -31,7 +31,8 @@ tests {
       expect(res.getStatus()).to.equal(422);
   });
 
-  test("Response contains the backend error message", function () {
-      expect(res.body.message).to.equal("The request was received but could not be processed");
+  test("Response contains the ETMP validation error", function () {
+      expect(res.body.errors.code).to.equal("003");
+      expect(res.body.errors.text).to.equal("Request could not be processed");
   });
 }

@@ -20,11 +20,10 @@ import play.api.test.FakeRequest
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.{IhtpReportConnector, SchemeDetailsConnector}
 import play.api.http.Status
 import uk.gov.hmrc.auth.core.retrieve.~
-import play.api.libs.json.Json
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
+import play.api.libs.json.{JsValue, Json}
+import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.inheritancetaxonpensions.repositories.SessionSchemeDetailsRepository
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
-import uk.gov.hmrc.inheritancetaxonpensions.models.ErrorCodes
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import utils.{BaseSpec, TestValues}
 import play.api.test.Helpers._
@@ -88,11 +87,23 @@ class GetReportControllerSpec extends BaseSpec with TestValues:
     )
   )
 
+  private val correlationId = "e4946bba-23f1-4a75-9207-b20b7741cf40"
+
+  private def httpResponse(status: Int, body: Option[JsValue]): HttpResponse =
+    HttpResponse(
+      status,
+      body.fold("")(_.toString),
+      Map(
+        "Content-Type" -> Seq("application/json"),
+        "correlationid" -> Seq(correlationId)
+      )
+    )
+
   "getReport" must {
     "return OK and fetch a report by form bundle number" in {
       authoriseUser()
       when(mockIhtpReportConnector.getReport(any(), any(), any(), any())(any()))
-        .thenReturn(Future.successful(Right(reportResponse)))
+        .thenReturn(Future.successful(httpResponse(Status.OK, Some(reportResponse))))
 
       val result = controller.getReport()(
         requestWithRequiredHeaders("/ihtp?pstr=24000001IN&fbNumber=119000004320")
@@ -100,6 +111,7 @@ class GetReportControllerSpec extends BaseSpec with TestValues:
 
       status(result) mustEqual Status.OK
       contentAsJson(result) mustEqual reportResponse
+      header("correlationid", result) mustBe Some(correlationId)
       verify(mockIhtpReportConnector).getReport(
         eqTo("24000001IN"),
         eqTo(Some("119000004320")),
@@ -111,7 +123,7 @@ class GetReportControllerSpec extends BaseSpec with TestValues:
     "fetch a report by payment reference number and version number" in {
       authoriseUser()
       when(mockIhtpReportConnector.getReport(any(), any(), any(), any())(any()))
-        .thenReturn(Future.successful(Right(reportResponse)))
+        .thenReturn(Future.successful(httpResponse(Status.OK, Some(reportResponse))))
 
       val result = controller.getReport()(
         requestWithRequiredHeaders(
@@ -128,17 +140,87 @@ class GetReportControllerSpec extends BaseSpec with TestValues:
       )(any[HeaderCarrier]())
     }
 
-    "return the status from an upstream error" in {
-      authoriseUser()
-      when(mockIhtpReportConnector.getReport(any(), any(), any(), any())(any()))
-        .thenReturn(Future.successful(Left(ErrorCodes.unprocessableEntity)))
-
-      val result = controller.getReport()(
-        requestWithRequiredHeaders("/ihtp?pstr=24000001IN&fbNumber=000000000000")
+    Seq(
+      Status.BAD_REQUEST -> Some(
+        Json.obj(
+          "origin" -> "HoD",
+          "response" -> Json.obj(
+            "error" -> Json.obj(
+              "code" -> "VR_001",
+              "logID" -> "UUID-123",
+              "message" -> "Invalid IHT Reference Pattern"
+            )
+          )
+        )
+      ),
+      Status.UNPROCESSABLE_ENTITY -> Some(
+        Json.obj(
+          "errors" -> Json.obj(
+            "processingDate" -> "2026-06-07T16:12:49Z",
+            "code" -> "003",
+            "text" -> "Request could not be processed"
+          )
+        )
+      ),
+      Status.INTERNAL_SERVER_ERROR -> Some(
+        Json.obj(
+          "origin" -> "HoD",
+          "response" -> Json.obj(
+            "error" -> Json.obj(
+              "code" -> "500",
+              "logID" -> "UUID-500",
+              "message" -> "Internal server error"
+            )
+          )
+        )
+      ),
+      Status.SERVICE_UNAVAILABLE -> Some(
+        Json.obj(
+          "origin" -> "HIP",
+          "response" -> Json.obj(
+            "failures" -> Json.arr(
+              Json.obj(
+                "type" -> "Service unavailable",
+                "reason" -> "The downstream service is unavailable"
+              )
+            )
+          )
+        )
       )
+    ).foreach { case (statusCode, responseBody) =>
+      s"return upstream status $statusCode with its specified response body" in {
+        authoriseUser()
+        when(mockIhtpReportConnector.getReport(any(), any(), any(), any())(any()))
+          .thenReturn(Future.successful(httpResponse(statusCode, responseBody)))
 
-      status(result) mustEqual Status.UNPROCESSABLE_ENTITY
-      contentAsJson(result) mustEqual Json.obj("message" -> ErrorCodes.unprocessableEntity.message)
+        val result = controller.getReport()(
+          requestWithRequiredHeaders("/ihtp?pstr=24000001IN&fbNumber=000000000000")
+        )
+
+        status(result) mustEqual statusCode
+        contentAsString(result) mustEqual responseBody.fold("")(_.toString)
+        header("correlationid", result) mustBe Some(correlationId)
+      }
+    }
+
+    Seq(Status.UNAUTHORIZED, Status.FORBIDDEN, Status.NOT_FOUND, Status.UNSUPPORTED_MEDIA_TYPE).foreach { statusCode =>
+      s"return upstream status $statusCode without a response body" in {
+        authoriseUser()
+        when(mockIhtpReportConnector.getReport(any(), any(), any(), any())(any()))
+          .thenReturn(
+            Future.successful(
+              httpResponse(statusCode, Some(Json.obj("message" -> "This upstream body must not be returned")))
+            )
+          )
+
+        val result = controller.getReport()(
+          requestWithRequiredHeaders("/ihtp?pstr=24000001IN&fbNumber=000000000000")
+        )
+
+        status(result) mustEqual statusCode
+        contentAsString(result) mustBe empty
+        header("correlationid", result) mustBe Some(correlationId)
+      }
     }
 
     "return BAD_REQUEST when pstr is missing" in {
