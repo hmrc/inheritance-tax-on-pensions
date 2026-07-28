@@ -17,7 +17,6 @@
 package uk.gov.hmrc.inheritancetaxonpensions.services
 
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.IhtpReportConnector
-import play.api.Logging
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 import uk.gov.hmrc.inheritancetaxonpensions.repositories.UserAnswersRepository
@@ -26,6 +25,8 @@ import uk.gov.hmrc.inheritancetaxonpensions.models._
 import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.YesNo
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants
 import com.google.inject.{Inject, Singleton}
+import play.api.Logging
+import play.api.libs.json.JsObject
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -87,6 +88,8 @@ class ReportSubmissionService @Inject() (
     val prType = UserAnswersHelper.getMandatory(userAnswers, "prType")
     val prDetails = buildPrDetails(userAnswers, prType)
 
+    val beneficiaryList = buildBeneficiaryList(userAnswers)
+
     val reportDetails = ReportDetails(
       pstr = pstr
     )
@@ -103,7 +106,13 @@ class ReportSubmissionService @Inject() (
       reasonForNoNino = ninoOrReasonAnswers.reasonForNoNino
     )
 
-    IhtpReportSubmission(reportDetails, deceasedDetails, prDetails, buildIhtTaxInformation(userAnswers))
+    IhtpReportSubmission(
+      reportDetails,
+      deceasedDetails,
+      prDetails,
+      buildIhtTaxInformation(userAnswers),
+      beneficiaryList
+    )
   }
 
   private def buildPrDetails(userAnswers: UserAnswers, prType: String): PrDetails =
@@ -135,4 +144,21 @@ class ReportSubmissionService @Inject() (
         )
       )
     )
+
+  private def buildBeneficiaryList(userAnswers: UserAnswers): Option[Seq[BeneficiaryDetails]] = {
+    val beneficiariesArray = userAnswers.data \ "beneficiaries"
+    if (beneficiariesArray.isDefined) {
+      Some(beneficiariesArray.as[Seq[JsObject]].flatMap { beneficiary =>
+        val beneficiaryType = (beneficiary \ "beneficiaryType").as[String]
+        beneficiaryType match {
+          case "individual" =>
+            val individualName = (beneficiary \ "beneficiaryDetails" \ "individual").as[IndividualName]
+            Some(BeneficiaryDetails(Some(individualName)))
+          case _ => None
+        }
+      })
+    } else {
+      None
+    }
+  }
 }

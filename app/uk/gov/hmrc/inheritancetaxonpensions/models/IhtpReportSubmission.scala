@@ -28,7 +28,8 @@ case class IhtpReportSubmission(
   reportDetails: ReportDetails,
   deceasedDetails: DeceasedDetails,
   prDetails: PrDetails,
-  ihtTaxInformation: IhtTaxInformation
+  ihtTaxInformation: IhtTaxInformation,
+  beneficiaries: Option[Seq[BeneficiaryDetails]]
 )
 
 object IhtpReportSubmission {
@@ -126,6 +127,13 @@ object OrganisationDetails {
 
   implicit val organisationDetailsWrites: OWrites[OrganisationDetails] = organisationDetails =>
     Json.toJsObject(organisationDetails.info) ++ Json.toJsObject(organisationDetails.address)
+}
+
+case class BeneficiaryDetails(individual: Option[IndividualName])
+
+object BeneficiaryDetails {
+  implicit val BeneficiaryDetailsFormat: OFormat[BeneficiaryDetails] =
+    Json.format[BeneficiaryDetails]
 }
 
 case class NinoOrReasonAnswers(nino: Option[String], reasonForNoNino: Option[String])
