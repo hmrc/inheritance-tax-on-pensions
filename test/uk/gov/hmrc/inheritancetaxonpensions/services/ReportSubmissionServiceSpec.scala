@@ -136,7 +136,8 @@ class ReportSubmissionServiceSpec
         IhtTaxInformation(
           dateThePensionSchemeReceivedNoticeToPay = testPaymentNoticeDate,
           didThePersonalRepresentativeSubmitTheNotice = Yes
-        )
+        ),
+        beneficiaries = None
       )
       Json.toJson(payloadCaptor.getValue.prDetails.individual.get) mustBe Json.obj(
         "title" -> "Mr",
@@ -442,7 +443,131 @@ class ReportSubmissionServiceSpec
         IhtTaxInformation(
           dateThePensionSchemeReceivedNoticeToPay = testPaymentNoticeDate,
           didThePersonalRepresentativeSubmitTheNotice = Yes
+        ),
+        beneficiaries = None
+      )
+    }
+
+    "return Right when submission is successful with a beneficiary in the payload" in {
+      val testUserAnswers = UserAnswers(
+        testUserAnswersId,
+        srn,
+        uuid,
+        Json.obj(
+          "inheritanceTaxReference" -> "A123459/25A",
+          "nameOfDeceased" -> Json.obj(
+            "title" -> "Mr",
+            "firstForename" -> "John",
+            "secondForename" -> "William",
+            "surname" -> "Doe"
+          ),
+          "birthDeathDates" -> Json.obj(
+            "dateOfBirth" -> testDateOfBirth,
+            "dateOfDeath" -> testDateOfDeath
+          ),
+          "prType" -> "organisation",
+          "prDetails" -> Json.obj(
+            "organisation" -> Json.obj(
+              "organisationName" -> "Test Organisation",
+              "title" -> "Ms",
+              "firstForename" -> "Jane",
+              "secondForename" -> "Ann",
+              "surname" -> "Doe",
+              "addressLine1" -> "1 ABCDE Street",
+              "addressLine2" -> "FGHIJ Town",
+              "ukPostcode" -> "ZZ99 1AA",
+              "country" -> "GB"
+            )
+          ),
+          "beneficiaries" -> Json.arr(
+            Json.obj(
+              "beneficiaryType" -> "individual",
+              "beneficiaryDetails" -> Json.obj(
+                "individual" -> Json.obj(
+                  "title" -> "Mr",
+                  "firstForename" -> "Paul",
+                  "secondForename" -> "William",
+                  "surname" -> "Doe"
+                )
+              )
+            )
+          ),
+          "ninoOrReason" -> Json.obj(
+            "nino" -> testNino
+          ),
+          "ihtTaxInformation" -> Json.obj(
+            "dateThePensionSchemeReceivedNoticeToPay" -> testPaymentNoticeDate
+          ),
+          "didPrSubmit" -> true
         )
+      )
+      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
+      when(mockIhtpReportConnector.submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Right(testSubmissionResponse)))
+
+      val result = service.submitReport(testUserAnswersId, testPstr).futureValue
+      result.isRight mustBe true
+      val payloadCaptor: ArgumentCaptor[IhtpReportSubmission] = ArgumentCaptor.forClass(classOf[IhtpReportSubmission])
+      verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
+      payloadCaptor.getValue mustBe IhtpReportSubmission(
+        ReportDetails(
+          pstr = testPstr
+        ),
+        DeceasedDetails(
+          inheritanceTaxReference = "A123459/25A",
+          title = Some("Mr"),
+          firstForename = "John",
+          secondForename = Some("William"),
+          surname = "Doe",
+          dateOfBirth = testDateOfBirth,
+          dateOfDeath = testDateOfDeath,
+          nino = Some(testNino),
+          reasonForNoNino = None
+        ),
+        PrDetails(
+          individual = None,
+          organisation = Some(
+            OrganisationDetails(
+              info = OrganisationInfo(
+                organisationName = "Test Organisation",
+                title = Some("Ms"),
+                firstForename = "Jane",
+                secondForename = Some("Ann"),
+                surname = "Doe"
+              ),
+              address = AddressDetails(
+                addressLine1 = "1 ABCDE Street",
+                addressLine2 = "FGHIJ Town",
+                ukPostcode = Some("ZZ99 1AA"),
+                country = "GB"
+              )
+            )
+          )
+        ),
+        IhtTaxInformation(
+          dateThePensionSchemeReceivedNoticeToPay = testPaymentNoticeDate,
+          didThePersonalRepresentativeSubmitTheNotice = Yes
+        ),
+        Some(
+          Seq(
+            BeneficiaryDetails(
+              individual = Some(
+                IndividualName(
+                  title = Some("Mr"),
+                  firstForename = "Paul",
+                  secondForename = Some("William"),
+                  surname = "Doe"
+                )
+              )
+            )
+          )
+        )
+      )
+      Json.toJson(payloadCaptor.getValue.beneficiaries.get.head.individual.get) mustBe Json.obj(
+        "title" -> "Mr",
+        "firstForename" -> "Paul",
+        "secondForename" -> "William",
+        "surname" -> "Doe"
       )
     }
   }

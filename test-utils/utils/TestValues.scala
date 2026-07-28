@@ -108,7 +108,8 @@ trait TestValues extends Generators {
     IhtTaxInformation(
       dateThePensionSchemeReceivedNoticeToPay = testPaymentNoticeDate,
       didThePersonalRepresentativeSubmitTheNotice = Yes
-    )
+    ),
+    beneficiaries = None
   )
 
   val testReportSubmissionRequestBodyOrganisation = IhtpReportSubmission(
@@ -149,6 +150,20 @@ trait TestValues extends Generators {
     IhtTaxInformation(
       dateThePensionSchemeReceivedNoticeToPay = testPaymentNoticeDate,
       didThePersonalRepresentativeSubmitTheNotice = Yes
+    ),
+    Some(
+      Seq(
+        BeneficiaryDetails(
+          individual = Some(
+            IndividualName(
+              title = Some("Mr"),
+              firstForename = "Paul",
+              secondForename = Some("William"),
+              surname = "Doe"
+            )
+          )
+        )
+      )
     )
   )
 
