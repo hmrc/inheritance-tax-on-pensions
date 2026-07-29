@@ -17,6 +17,7 @@
 package uk.gov.hmrc.inheritancetaxonpensions.models
 
 import org.scalatest.matchers.must.Matchers
+import uk.gov.hmrc.inheritancetaxonpensions.config.{Crypto, FakeCrypto}
 import uk.gov.hmrc.inheritancetaxonpensions.services.EncryptionService
 import play.api.libs.json.{JsValue, Json}
 import utils.TestValues
@@ -26,8 +27,9 @@ import java.time.Instant
 
 class UserAnswersSpec extends AnyFreeSpec with Matchers with TestValues {
   private val instant = Instant.now(clock)
-
-  val userAnswers: UserAnswers = UserAnswers(
+  private val crypto = FakeCrypto
+  private val noopCrypto = Crypto.noop
+  private val userAnswers: UserAnswers = UserAnswers(
     id = s"$srn-$uuid",
     srn = srn,
     uuid = uuid,
@@ -86,7 +88,7 @@ class UserAnswersSpec extends AnyFreeSpec with Matchers with TestValues {
     "UserAnswers encryptedFormat" - {
 
       "must encrypt PII fields and decrypt back to original" in {
-        val service = new EncryptionService("test-key", true)
+        val service = new EncryptionService(crypto)
 
         val format = UserAnswers.encryptedFormat(service)
 
@@ -113,7 +115,7 @@ class UserAnswersSpec extends AnyFreeSpec with Matchers with TestValues {
       }
 
       "must not encrypt non-PII fields" in {
-        val service = new EncryptionService("test-key", true)
+        val service = new EncryptionService(crypto)
 
         val format = UserAnswers.encryptedFormat(service)
 
@@ -130,7 +132,7 @@ class UserAnswersSpec extends AnyFreeSpec with Matchers with TestValues {
       }
 
       "must handle nested objects correctly" in {
-        val service = new EncryptionService("test-key", true)
+        val service = new EncryptionService(crypto)
 
         val format = UserAnswers.encryptedFormat(service)
 
@@ -158,7 +160,7 @@ class UserAnswersSpec extends AnyFreeSpec with Matchers with TestValues {
       }
 
       "must work with encryption disabled" in {
-        val service = new EncryptionService("test-key", false)
+        val service = new EncryptionService(noopCrypto)
         val format = UserAnswers.encryptedFormat(service)
 
         val originalData = Json.obj(

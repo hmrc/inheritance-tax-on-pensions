@@ -18,31 +18,39 @@ package uk.gov.hmrc.inheritancetaxonpensions.services
 
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
+import uk.gov.hmrc.inheritancetaxonpensions.config.{Crypto, FakeCrypto}
 import play.api.libs.json.JsString
 
 class EncryptionServiceSpec extends AnyFreeSpec with Matchers {
-
   "EncryptionService" - {
 
     "when encryption is disabled" - {
+      val crypto = Crypto.noop
 
       "must return original value for encryptField" in {
-        val service = new EncryptionService("test-key", false)
+        val service = new EncryptionService(crypto)
         val result = service.encryptField("ninoOrReason.nino", JsString("AB123456C"))
         result mustBe JsString("AB123456C")
       }
 
       "must return original value for decryptField" in {
-        val service = new EncryptionService("test-key", false)
+        val service = new EncryptionService(crypto)
         val result = service.decryptField("ninoOrReason.nino", JsString("AB123456C"))
+        result mustBe JsString("AB123456C")
+      }
+
+      "must return original value for nonPii field when decrypting" in {
+        val service = new EncryptionService(crypto)
+        val result = service.decryptField("someOtherField", JsString("AB123456C"))
         result mustBe JsString("AB123456C")
       }
     }
 
     "when encryption is enabled" - {
+      val crypto = FakeCrypto
 
       "must encrypt and decrypt PII fields correctly" in {
-        val service = new EncryptionService("test-encryption-key", true)
+        val service = new EncryptionService(crypto)
 
         val original = JsString("Joe Bloggs")
 
@@ -54,19 +62,15 @@ class EncryptionServiceSpec extends AnyFreeSpec with Matchers {
       }
 
       "must not encrypt non-PII fields" in {
-        System.setProperty("ENCRYPTION_ENABLED", "true")
+        val service = new EncryptionService(crypto)
+        val original = JsString("some non-PII data")
 
-        try {
-          val service = new EncryptionService("test-encryption-key", true)
-          val original = JsString("some non-PII data")
-
-          val encrypted = service.encryptField("someOtherField", original)
-          encrypted mustBe original
-        } finally System.clearProperty("ENCRYPTION_ENABLED")
+        val encrypted = service.encryptField("someOtherField", original)
+        encrypted mustBe original
       }
 
       "must handle non-JsString values" in {
-        val service = new EncryptionService("test-encryption-key", true)
+        val service = new EncryptionService(crypto)
 
         val original = play.api.libs.json.Json.obj("key" -> "value")
         val result = service.encryptField("nameOfDeceased.firstForename", original)
@@ -74,7 +78,7 @@ class EncryptionServiceSpec extends AnyFreeSpec with Matchers {
       }
 
       "must handle decryption errors gracefully" in {
-        val service = new EncryptionService("test-encryption-key", true)
+        val service = new EncryptionService(crypto)
 
         val corrupted = JsString("invalid-encrypted-data")
         val result = service.decryptField("ninoOrReason.nino", corrupted)
@@ -82,7 +86,7 @@ class EncryptionServiceSpec extends AnyFreeSpec with Matchers {
       }
 
       "must test different PII field names" in {
-        val service = new EncryptionService("test-encryption-key", true)
+        val service = new EncryptionService(crypto)
 
         val piiFields = List("nameOfDeceased.surname", "ninoOrReason.nino", "birthDeathDates.dateOfBirth")
 
@@ -97,7 +101,7 @@ class EncryptionServiceSpec extends AnyFreeSpec with Matchers {
       }
 
       "must handle empty strings" in {
-        val service = new EncryptionService("test-encryption-key", true)
+        val service = new EncryptionService(crypto)
 
         val original = JsString("")
         val encrypted = service.encryptField("ninoOrReason.nino", original)
