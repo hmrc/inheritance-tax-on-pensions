@@ -16,79 +16,27 @@
 
 package uk.gov.hmrc.inheritancetaxonpensions.services
 
+import uk.gov.hmrc.inheritancetaxonpensions.config.Crypto
+import uk.gov.hmrc.crypto.{Crypted, PlainText}
 import play.api.libs.json.{JsString, JsValue}
 import uk.gov.hmrc.inheritancetaxonpensions.models.PiiFields
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
-import java.nio.ByteBuffer
-import javax.crypto.spec.{GCMParameterSpec, SecretKeySpec}
-import java.util.Base64
-import java.nio.charset.StandardCharsets
-import javax.crypto.{Cipher, SecretKey}
-import java.security.{MessageDigest, SecureRandom}
+import javax.inject.{Inject, Singleton}
 
-class EncryptionService(encryptionKey: String, encryptionEnabled: Boolean, random: SecureRandom = new SecureRandom()) {
+@Singleton
+class EncryptionService @Inject() (crypto: Crypto) {
+  private def encrypt(plainText: String): String =
+    crypto.getCrypto.encrypt(PlainText(plainText)).value
 
-  protected val enabled: Boolean = encryptionEnabled
-
-  private val AES_ALGO = "AES/GCM/NoPadding"
-  private val GCM_TAG_BITS = 128
-  private val IV_LENGTH_BYTES = 12
-
-  private val key: SecretKey = deriveKey(encryptionKey)
-
-  private def deriveKey(secret: String): SecretKey = {
-    val decoded = tryBase64DecodeOrPlain(secret)
-    val digest = MessageDigest.getInstance("SHA-256").digest(decoded)
-    new SecretKeySpec(digest, "AES")
-  }
-
-  private def tryBase64DecodeOrPlain(value: String): Array[Byte] =
-    Try(Base64.getDecoder.decode(value)) match {
-      case Success(bytes) => bytes
-      case Failure(_) => value.getBytes(StandardCharsets.UTF_8)
-    }
-
-  private def encrypt(plainText: String): String = {
-    if (!enabled) return plainText
-
-    require(plainText != null, "Cannot encrypt null string")
-
-    val iv = new Array[Byte](IV_LENGTH_BYTES)
-    random.nextBytes(iv)
-
-    val cipher = Cipher.getInstance(AES_ALGO)
-    cipher.init(Cipher.ENCRYPT_MODE, key, new GCMParameterSpec(GCM_TAG_BITS, iv))
-
-    val cipherText = cipher.doFinal(plainText.getBytes(StandardCharsets.UTF_8))
-    val payload = ByteBuffer.allocate(iv.length + cipherText.length).put(iv).put(cipherText).array()
-
-    Base64.getEncoder.encodeToString(payload)
-  }
-
-  private def decrypt(encoded: String): Either[Throwable, String] = {
-    if (!enabled) return Right(encoded)
-
+  private def decrypt(encoded: String): Either[Throwable, String] =
     Try {
-      val payload = Base64.getDecoder.decode(encoded)
-      val buf = ByteBuffer.wrap(payload)
-
-      val iv = new Array[Byte](IV_LENGTH_BYTES)
-      buf.get(iv)
-
-      val cipherBytes = new Array[Byte](payload.length - IV_LENGTH_BYTES)
-      buf.get(cipherBytes)
-
-      val cipher = Cipher.getInstance(AES_ALGO)
-      cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(GCM_TAG_BITS, iv))
-
-      new String(cipher.doFinal(cipherBytes), StandardCharsets.UTF_8)
+      crypto.getCrypto.decrypt(Crypted(encoded)).value
     }.toEither
-  }
 
   def encryptField(fieldName: String, value: JsValue): JsValue = {
-    if (!enabled || !PiiFields.isPiiField(fieldName)) return value
+    if (!PiiFields.isPiiField(fieldName)) return value
     value match {
       case JsString(str) => JsString(encrypt(str))
       case _ => value
@@ -96,7 +44,7 @@ class EncryptionService(encryptionKey: String, encryptionEnabled: Boolean, rando
   }
 
   def decryptField(fieldName: String, value: JsValue): JsValue = {
-    if (!enabled || !PiiFields.isPiiField(fieldName)) return value
+    if (!PiiFields.isPiiField(fieldName)) return value
     value match {
       case JsString(encrypted) =>
         decrypt(encrypted) match {
