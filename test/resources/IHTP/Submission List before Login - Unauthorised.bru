@@ -7,7 +7,7 @@ meta {
 get {
   url: {{ihtp_url}}/24000001IN/submission-list
   body: none
-  auth: bearer
+  auth: none
 }
 
 headers {
@@ -15,10 +15,6 @@ headers {
   userName: TestUser
   schemeName: TestScheme
   requestRole: PSA
-}
-
-auth:bearer {
-  token: {{bearer_token}}
 }
 
 tests {
