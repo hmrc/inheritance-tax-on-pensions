@@ -1,7 +1,7 @@
 
 # Inheritance Tax on Pensions
 
-Backend microservice for Inheritance Tax on Pensions (IHTP) which is a feature on manage your pension (MPS) service. Pension Scheme Administrators (PSA) and/or Pension Scheme Practitioners use this service for reporting IHT due on unused pension funds and retrieving payment reference.
+Backend microservice for Inheritance Tax on Pensions (IHTP) which is a feature on manage your pension (MPS) service. Pension Scheme Administrators (PSA) and/or Pension Scheme Practitioners use this service for reporting IHT due on unused pension funds and retrieving payment reference .
 
 ## Running the service
 
