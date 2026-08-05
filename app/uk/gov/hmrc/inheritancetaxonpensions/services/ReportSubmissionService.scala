@@ -77,10 +77,13 @@ class ReportSubmissionService @Inject() (
       userAnswers,
       s"$deceasedDetailsPath.${Constants.deceasedSurname}"
     )
-    val ninoOrReasonAnswers = UserAnswersHelper.getMandatoryAs[NinoOrReasonAnswers](
-      userAnswers,
-      Constants.ninoOrReasonPath
-    )
+    val hasNino = UserAnswersHelper.getMandatoryAs[Boolean](userAnswers, Constants.hasNinoPath)
+    val (nino, reasonForNoNino) =
+      if (hasNino) {
+        (Some(UserAnswersHelper.getMandatory(userAnswers, Constants.ninoPath)), None)
+      } else {
+        (None, Some(UserAnswersHelper.getMandatory(userAnswers, Constants.reasonForNoNinoPath)))
+      }
     val birthDeathDates = UserAnswersHelper.getMandatoryAs[BirthDeathDates](
       userAnswers,
       Constants.birthDeathDatesPath
@@ -102,8 +105,9 @@ class ReportSubmissionService @Inject() (
       surname = deceasedSurname,
       dateOfBirth = birthDeathDates.dateOfBirth,
       dateOfDeath = birthDeathDates.dateOfDeath,
-      nino = ninoOrReasonAnswers.nino,
-      reasonForNoNino = ninoOrReasonAnswers.reasonForNoNino
+      ninoExist = YesNo(hasNino),
+      nino = nino,
+      reasonNoNINO = reasonForNoNino
     )
 
     IhtpReportSubmission(

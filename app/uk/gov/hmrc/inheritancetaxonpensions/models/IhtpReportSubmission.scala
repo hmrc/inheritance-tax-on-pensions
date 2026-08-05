@@ -54,8 +54,9 @@ case class DeceasedDetails(
   surname: String,
   dateOfBirth: String,
   dateOfDeath: String,
+  ninoExist: YesNo,
   nino: Option[String],
-  reasonForNoNino: Option[String]
+  reasonNoNINO: Option[String]
 )
 
 object DeceasedDetails {
@@ -134,13 +135,6 @@ case class BeneficiaryDetails(individual: Option[IndividualName])
 object BeneficiaryDetails {
   implicit val BeneficiaryDetailsFormat: OFormat[BeneficiaryDetails] =
     Json.format[BeneficiaryDetails]
-}
-
-case class NinoOrReasonAnswers(nino: Option[String], reasonForNoNino: Option[String])
-
-object NinoOrReasonAnswers {
-  implicit val ninoOrReasonAnswersFormat: OFormat[NinoOrReasonAnswers] =
-    Json.format[NinoOrReasonAnswers]
 }
 
 case class BirthDeathDates(dateOfBirth: String, dateOfDeath: String)

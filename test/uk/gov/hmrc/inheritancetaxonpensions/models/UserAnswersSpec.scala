@@ -94,7 +94,7 @@ class UserAnswersSpec extends AnyFreeSpec with Matchers with TestValues {
 
         val originalData = Json.obj(
           "nameOfDeceased.firstForename" -> "Joe",
-          "ninoOrReason.nino" -> "AB123456C",
+          "nino" -> "AB123456C",
           "someOtherField" -> "non-PII data"
         )
 
@@ -164,7 +164,7 @@ class UserAnswersSpec extends AnyFreeSpec with Matchers with TestValues {
         val format = UserAnswers.encryptedFormat(service)
 
         val originalData = Json.obj(
-          "ninoOrReason.nino" -> "AB123456C"
+          "nino" -> "AB123456C"
         )
 
         val userAnswers = UserAnswers(s"$srn-$uuid", srn, uuid, originalData, Instant.now())

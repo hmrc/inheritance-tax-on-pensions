@@ -29,13 +29,13 @@ class EncryptionServiceSpec extends AnyFreeSpec with Matchers {
 
       "must return original value for encryptField" in {
         val service = new EncryptionService(crypto)
-        val result = service.encryptField("ninoOrReason.nino", JsString("AB123456C"))
+        val result = service.encryptField("nino", JsString("AB123456C"))
         result mustBe JsString("AB123456C")
       }
 
       "must return original value for decryptField" in {
         val service = new EncryptionService(crypto)
-        val result = service.decryptField("ninoOrReason.nino", JsString("AB123456C"))
+        val result = service.decryptField("nino", JsString("AB123456C"))
         result mustBe JsString("AB123456C")
       }
 
@@ -81,14 +81,14 @@ class EncryptionServiceSpec extends AnyFreeSpec with Matchers {
         val service = new EncryptionService(crypto)
 
         val corrupted = JsString("invalid-encrypted-data")
-        val result = service.decryptField("ninoOrReason.nino", corrupted)
+        val result = service.decryptField("nino", corrupted)
         result mustBe corrupted
       }
 
       "must test different PII field names" in {
         val service = new EncryptionService(crypto)
 
-        val piiFields = List("nameOfDeceased.surname", "ninoOrReason.nino", "birthDeathDates.dateOfBirth")
+        val piiFields = List("nameOfDeceased.surname", "nino", "birthDeathDates.dateOfBirth")
 
         piiFields.foreach { fieldName =>
           val original = JsString("test-data")
@@ -104,10 +104,10 @@ class EncryptionServiceSpec extends AnyFreeSpec with Matchers {
         val service = new EncryptionService(crypto)
 
         val original = JsString("")
-        val encrypted = service.encryptField("ninoOrReason.nino", original)
+        val encrypted = service.encryptField("nino", original)
         encrypted must not be original
 
-        val decrypted = service.decryptField("ninoOrReason.nino", encrypted)
+        val decrypted = service.decryptField("nino", encrypted)
         decrypted mustBe original
       }
     }

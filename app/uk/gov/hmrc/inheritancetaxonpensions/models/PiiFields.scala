@@ -24,7 +24,7 @@ object PiiFields {
     "nameOfDeceased.surname",
     "nameOfDeceased.dateOfBirth",
     "nameOfDeceased.dateOfDeath",
-    "ninoOrReason.nino",
+    "nino",
     "birthDeathDates.dateOfBirth",
     "birthDeathDates.dateOfDeath",
     "prDetails.individual.firstForename",
