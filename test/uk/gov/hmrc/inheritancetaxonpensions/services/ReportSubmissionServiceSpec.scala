@@ -20,7 +20,6 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 import uk.gov.hmrc.inheritancetaxonpensions.repositories.UserAnswersRepository
 import uk.gov.hmrc.inheritancetaxonpensions.models._
-import org.mockito.ArgumentMatchers._
 import utils.TestValues
 import org.scalatest.freespec.AnyFreeSpec
 import org.mockito.Mockito._
@@ -32,6 +31,8 @@ import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.YesNo.{No, Yes}
 import org.scalatest.concurrent.ScalaFutures.convertScalaFuture
 import org.mockito.ArgumentCaptor
 import org.scalatestplus.mockito.MockitoSugar
+import org.mockito.ArgumentMatchers._
+import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.IndividualOrTrust
 
 import scala.concurrent.Future
 
@@ -50,6 +51,93 @@ class ReportSubmissionServiceSpec
   private val mockUserAnswersRepository: UserAnswersRepository = mock[UserAnswersRepository]
   private val mockIhtpReportConnector: IhtpReportConnector = mock[IhtpReportConnector]
   private val service = new ReportSubmissionService(mockUserAnswersRepository, mockIhtpReportConnector)
+
+  private val testAddress = Json.obj(
+    "addressLine1" -> "1 ABCDE Street",
+    "addressLine2" -> "FGHIJ Town",
+    "postcode" -> "ZZ99 1AA",
+    "country" -> "GB"
+  )
+
+  private val deceasedPersonalDetailsJohnDoeJson = Json.obj(
+    "title" -> "Mr",
+    "firstForename" -> "John",
+    "secondForename" -> "William",
+    "surname" -> "Doe"
+  )
+
+  private val individualPersonalRepResponseJson = Json.obj(
+    "typeOfPR" -> "01",
+    "prContactDetails" -> Json.obj(
+      "title" -> "Mr",
+      "firstForename" -> "John",
+      "secondForename" -> "William",
+      "surname" -> "Doe"
+    ),
+    "prAddress" -> testAddress
+  )
+
+  private val individualPrDetailsJson = Json.obj(
+    "individual" -> Json.obj(
+      "title" -> "Mr",
+      "firstForename" -> "John",
+      "secondForename" -> "William",
+      "surname" -> "Doe",
+      "addressLine1" -> "1 ABCDE Street",
+      "addressLine2" -> "FGHIJ Town",
+      "postcode" -> "ZZ99 1AA",
+      "country" -> "GB"
+    )
+  )
+
+  private val organisationPersonalRepResponseJson = Json.obj(
+    "typeOfPR" -> "02",
+    "prContactDetails" -> Json.obj(
+      "orgName" -> "Test Organisation",
+      "title" -> "Ms",
+      "firstForename" -> "Jane",
+      "secondForename" -> "Ann",
+      "surname" -> "Doe"
+    ),
+    "prAddress" -> testAddress
+  )
+
+  private val organisationPrDetailsJson = Json.obj(
+    "organisation" -> Json.obj(
+      "organisationName" -> "Test Organisation",
+      "title" -> "Ms",
+      "firstForename" -> "Jane",
+      "secondForename" -> "Ann",
+      "surname" -> "Doe",
+      "addressLine1" -> "1 ABCDE Street",
+      "addressLine2" -> "FGHIJ Town",
+      "postcode" -> "ZZ99 1AA",
+      "country" -> "GB"
+    )
+  )
+
+  private val ihTaxInformationJson = Json.obj(
+    "dateThePensionSchemeReceivedNoticeToPay" -> testPaymentNoticeDate,
+    "noticeSubmittedByPR" -> true,
+    "knownBeneficiaries" -> false,
+    "totalIHTPayable" -> "1000.00",
+    "totalInterestPayable" -> "50.00",
+    "total" -> "1050.00"
+  )
+
+  private val declarationJson = Json.obj(
+    "submittedBy" -> "PSA",
+    "submitterID" -> "TODO",
+    "psaDeclaration" -> Json.obj(
+      "psaDeclaration1" -> true,
+      "psaDeclaration2" -> true
+    ),
+    "pspDeclaration" -> Json.obj(
+      "pspDeclaration1" -> true,
+      "pspDeclaration2" -> true,
+      "psaid" -> "TODO"
+    )
+  )
 
   private def userAnswersWithNinoData(ninoData: JsObject): UserAnswers =
     UserAnswers(
@@ -73,101 +161,50 @@ class ReportSubmissionServiceSpec
         uuid,
         Json.obj(
           "inheritanceTaxReference" -> "A123459/25A",
-          "nameOfDeceased" -> Json.obj(
-            "title" -> "Mr",
-            "firstForename" -> "John",
-            "secondForename" -> "William",
-            "surname" -> "Doe"
-          ),
+          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeJson,
+          "hasNino" -> true,
+          "nino" -> testNino,
           "birthDeathDates" -> Json.obj(
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
           ),
           "prType" -> "individual",
-          "prDetails" -> Json.obj(
-            "individual" -> Json.obj(
-              "title" -> "Mr",
-              "firstForename" -> "John",
-              "secondForename" -> "William",
-              "surname" -> "Doe",
-              "addressLine1" -> "1 ABCDE Street",
-              "addressLine2" -> "FGHIJ Town",
-              "ukPostcode" -> "ZZ99 1AA",
-              "country" -> "GB"
-            )
-          ),
-          "hasNino" -> true,
-          "nino" -> testNino,
-          "ihtTaxInformation" -> Json.obj(
-            "dateThePensionSchemeReceivedNoticeToPay" -> testPaymentNoticeDate
-          ),
-          "didPrSubmit" -> true
+          "didPrSubmit" -> true,
+          "prDetails" -> individualPrDetailsJson,
+          "areBeneficiariesKnown" -> false,
+          "ihtTaxInformation" -> ihTaxInformationJson,
+          "declarations" -> declarationJson
         )
       )
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
-      when(mockIhtpReportConnector.submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]()))
+      when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))
         .thenReturn(Future.successful(Right(testSubmissionResponse)))
 
       val result = service.submitReport(testUserAnswersId, testPstr).futureValue
       result.isRight mustBe true
-      val payloadCaptor: ArgumentCaptor[IhtpReportSubmission] = ArgumentCaptor.forClass(classOf[IhtpReportSubmission])
+      val payloadCaptor: ArgumentCaptor[IhtpPaymentNoticeSubmission] =
+        ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
       verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
-      payloadCaptor.getValue mustBe IhtpReportSubmission(
+      payloadCaptor.getValue mustBe IhtpPaymentNoticeSubmission(
         ReportDetails(
-          pstr = testPstr
+          pstr = testPstr,
+          ihtPaymentReference = "A123459/25A"
         ),
-        DeceasedDetails(
-          inheritanceTaxReference = "A123459/25A",
-          title = Some("Mr"),
-          firstForename = "John",
-          secondForename = Some("William"),
-          surname = "Doe",
-          dateOfBirth = testDateOfBirth,
-          dateOfDeath = testDateOfDeath,
-          ninoExist = Yes,
-          nino = Some(testNino),
-          reasonNoNINO = None
+        deceased,
+        prDetailsIndividual,
+        IhTaxInformation(
+          ihTaxChangeFlag = None,
+          dateNoticeReceived = testPaymentNoticeDate,
+          noticeSubmittedByPR = Yes,
+          knownBeneficiaries = Some(No),
+          totalIHTPayable = Some("1000.00"),
+          totalInterestPayable = Some("50.00"),
+          total = Some("1050.00")
         ),
-        PrDetails(
-          individual = Some(
-            IndividualDetails(
-              name = IndividualName(
-                title = Some("Mr"),
-                firstForename = "John",
-                secondForename = Some("William"),
-                surname = "Doe"
-              ),
-              address = AddressDetails(
-                addressLine1 = "1 ABCDE Street",
-                addressLine2 = "FGHIJ Town",
-                ukPostcode = Some("ZZ99 1AA"),
-                country = "GB"
-              )
-            )
-          ),
-          organisation = None
-        ),
-        IhtTaxInformation(
-          dateThePensionSchemeReceivedNoticeToPay = testPaymentNoticeDate,
-          didThePersonalRepresentativeSubmitTheNotice = Yes
-        ),
-        beneficiaries = None
+        beneficiaries = None,
+        declarations = declarations
       )
-      val deceasedDetailsJson = Json.toJson(payloadCaptor.getValue.deceasedDetails)
-      (deceasedDetailsJson \ "ninoExist").as[String] mustBe "Yes"
-      (deceasedDetailsJson \ "nino").as[String] mustBe testNino
-      (deceasedDetailsJson \ "reasonNoNINO").toOption mustBe None
-      (deceasedDetailsJson \ "reasonForNoNino").toOption mustBe None
-      Json.toJson(payloadCaptor.getValue.prDetails.individual.get) mustBe Json.obj(
-        "title" -> "Mr",
-        "firstForename" -> "John",
-        "secondForename" -> "William",
-        "surname" -> "Doe",
-        "addressLine1" -> "1 ABCDE Street",
-        "addressLine2" -> "FGHIJ Town",
-        "ukPostcode" -> "ZZ99 1AA",
-        "country" -> "GB"
-      )
+      Json.toJson(payloadCaptor.getValue.personalRep) mustBe individualPersonalRepResponseJson
     }
 
     "return Right when submission is successful with organisation prType" in {
@@ -177,11 +214,9 @@ class ReportSubmissionServiceSpec
         uuid,
         Json.obj(
           "inheritanceTaxReference" -> "A123459/25A",
-          "nameOfDeceased" -> Json.obj(
-            "title" -> "Mr",
-            "firstForename" -> "John",
-            "surname" -> "Doe"
-          ),
+          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeJson,
+          "hasNino" -> true,
+          "nino" -> testNino,
           "birthDeathDates" -> Json.obj(
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
@@ -196,101 +231,27 @@ class ReportSubmissionServiceSpec
               "surname" -> "Doe",
               "addressLine1" -> "1 ABCDE Street",
               "addressLine2" -> "FGHIJ Town",
-              "ukPostcode" -> "ZZ99 1AA",
+              "postcode" -> "ZZ99 1AA",
               "country" -> "GB"
             )
           ),
-          "hasNino" -> true,
-          "nino" -> testNino,
-          "ihtTaxInformation" -> Json.obj(
-            "dateThePensionSchemeReceivedNoticeToPay" -> testPaymentNoticeDate,
-            "didThePersonalRepresentativeSubmitTheNotice" -> "Yes"
-          ),
-          "didPrSubmit" -> true
+          "didPrSubmit" -> true,
+          "areBeneficiariesKnown" -> false,
+          "ihtTaxInformation" -> ihTaxInformationJson,
+          "declarations" -> declarationJson
         )
       )
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
-      when(mockIhtpReportConnector.submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]()))
+      when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))
         .thenReturn(Future.successful(Right(testSubmissionResponse)))
 
       val result = service.submitReport(testUserAnswersId, testPstr).futureValue
       result.isRight mustBe true
-      val payloadCaptor: ArgumentCaptor[IhtpReportSubmission] = ArgumentCaptor.forClass(classOf[IhtpReportSubmission])
+      val payloadCaptor: ArgumentCaptor[IhtpPaymentNoticeSubmission] =
+        ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
       verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
-      payloadCaptor.getValue.prDetails mustBe PrDetails(
-        individual = None,
-        organisation = Some(
-          OrganisationDetails(
-            info = OrganisationInfo(
-              organisationName = "Test Organisation",
-              title = Some("Ms"),
-              firstForename = "Jane",
-              secondForename = Some("Ann"),
-              surname = "Doe"
-            ),
-            address = AddressDetails(
-              addressLine1 = "1 ABCDE Street",
-              addressLine2 = "FGHIJ Town",
-              ukPostcode = Some("ZZ99 1AA"),
-              country = "GB"
-            )
-          )
-        )
-      )
-      Json.toJson(payloadCaptor.getValue.prDetails.organisation.get) mustBe Json.obj(
-        "organisationName" -> "Test Organisation",
-        "title" -> "Ms",
-        "firstForename" -> "Jane",
-        "secondForename" -> "Ann",
-        "surname" -> "Doe",
-        "addressLine1" -> "1 ABCDE Street",
-        "addressLine2" -> "FGHIJ Town",
-        "ukPostcode" -> "ZZ99 1AA",
-        "country" -> "GB"
-      )
-    }
-
-    "fail before submission when mandatory organisation PR name fields are missing" in {
-      val testUserAnswers = UserAnswers(
-        testUserAnswersId,
-        srn,
-        uuid,
-        Json.obj(
-          "inheritanceTaxReference" -> "A123459/25A",
-          "nameOfDeceased" -> Json.obj(
-            "title" -> "Mr",
-            "firstForename" -> "John",
-            "surname" -> "Doe"
-          ),
-          "birthDeathDates" -> Json.obj(
-            "dateOfBirth" -> testDateOfBirth,
-            "dateOfDeath" -> testDateOfDeath
-          ),
-          "prType" -> "organisation",
-          "prDetails" -> Json.obj(
-            "organisation" -> Json.obj(
-              "organisationName" -> "Test Organisation"
-            )
-          ),
-          "hasNino" -> true,
-          "nino" -> testNino
-        )
-      )
-
-      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
-
-      val result = service.submitReport(testUserAnswersId, testPstr).failed.futureValue
-      result mustBe a[IllegalArgumentException]
-      result.getMessage must include("prDetails.organisation")
-      verify(mockIhtpReportConnector, never).submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]())
-    }
-
-    "return Left when the user answers are not found" in {
-      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(None))
-
-      val result = service.submitReport(testUserAnswersId, testPstr).futureValue
-      result mustBe Left(ErrorCodes.entityNotFound)
-      verify(mockIhtpReportConnector, never).submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]())
+      payloadCaptor.getValue.personalRep mustBe prDetailsOrganisation
+      Json.toJson(payloadCaptor.getValue.personalRep) mustBe organisationPersonalRepResponseJson
     }
 
     "fail before submission when the deceased NINO answer is missing" in {
@@ -302,7 +263,7 @@ class ReportSubmissionServiceSpec
 
       result mustBe a[IllegalArgumentException]
       result.getMessage must include("hasNino")
-      verify(mockIhtpReportConnector, never).submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]())
+      verify(mockIhtpReportConnector, never).submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]())
     }
 
     "fail before submission when NINO is selected but the NINO is missing" in {
@@ -314,7 +275,7 @@ class ReportSubmissionServiceSpec
 
       result mustBe a[IllegalArgumentException]
       result.getMessage must include("nino")
-      verify(mockIhtpReportConnector, never).submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]())
+      verify(mockIhtpReportConnector, never).submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]())
     }
 
     "fail before submission when no NINO is selected but the reason is missing" in {
@@ -326,37 +287,84 @@ class ReportSubmissionServiceSpec
 
       result mustBe a[IllegalArgumentException]
       result.getMessage must include("reasonForNoNino")
-      verify(mockIhtpReportConnector, never).submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]())
+      verify(mockIhtpReportConnector, never).submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]())
     }
 
-    "fail before submission when a mandatory LPR individual address field is missing" in {
+    "fail before submission when mandatory pr firstForename field is missing" in {
       val testUserAnswers = UserAnswers(
         testUserAnswersId,
         srn,
         uuid,
         Json.obj(
           "inheritanceTaxReference" -> "A123459/25A",
-          "nameOfDeceased" -> Json.obj(
-            "title" -> "Mr",
-            "firstForename" -> "John",
-            "surname" -> "Doe"
+          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeJson,
+          "hasNino" -> true,
+          "nino" -> testNino,
+          "birthDeathDates" -> Json.obj(
+            "dateOfBirth" -> testDateOfBirth,
+            "dateOfDeath" -> testDateOfDeath
           ),
+          "prType" -> "organisation",
+          "didPrSubmit" -> true,
+          "prDetails" -> Json.obj(
+            "organisation" -> Json.obj(
+              "organisationName" -> "Test Organisation",
+              "title" -> "Ms",
+              "secondForename" -> "Ann",
+              "surname" -> "Doe",
+              "addressLine1" -> "1 ABCDE Street",
+              "addressLine2" -> "FGHIJ Town",
+              "postcode" -> "ZZ99 1AA",
+              "country" -> "GB"
+            )
+          )
+        )
+      )
+
+      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
+
+      val result = service.submitReport(testUserAnswersId, testPstr).failed.futureValue
+      result mustBe a[IllegalArgumentException]
+      result.getMessage must include("prDetails.organisation")
+      verify(mockIhtpReportConnector, never).submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]())
+    }
+
+    "return Left when the user answers are not found" in {
+      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(None))
+
+      val result = service.submitReport(testUserAnswersId, testPstr).futureValue
+      result mustBe Left(ErrorCodes.entityNotFound)
+      verify(mockIhtpReportConnector, never).submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]())
+    }
+
+    "fail before submission when a mandatory PR address field is missing" in {
+      val testUserAnswers = UserAnswers(
+        testUserAnswersId,
+        srn,
+        uuid,
+        Json.obj(
+          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeJson,
+          "inheritanceTaxReference" -> "A123459/25A",
+          "hasNino" -> true,
+          "nino" -> testNino,
           "birthDeathDates" -> Json.obj(
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
           ),
           "prType" -> "individual",
+          "didPrSubmit" -> true,
           "prDetails" -> Json.obj(
             "individual" -> Json.obj(
               "title" -> "Mr",
               "firstForename" -> "John",
+              "secondForename" -> "William",
               "surname" -> "Doe",
-              "addressLine1" -> "1 ABCDE Street",
+              "addressLine2" -> "FGHIJ Town",
+              "postcode" -> "ZZ99 1AA",
               "country" -> "GB"
             )
           ),
-          "hasNino" -> true,
-          "nino" -> testNino
+          "ihtTaxInformation" -> ihTaxInformationJson
         )
       )
 
@@ -365,7 +373,7 @@ class ReportSubmissionServiceSpec
       val result = service.submitReport(testUserAnswersId, testPstr).failed.futureValue
       result mustBe a[IllegalArgumentException]
       result.getMessage must include("prDetails.individual")
-      verify(mockIhtpReportConnector, never).submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]())
+      verify(mockIhtpReportConnector, never).submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]())
     }
 
     "fail before submission when the payment notice date is missing" in {
@@ -375,30 +383,20 @@ class ReportSubmissionServiceSpec
         uuid,
         Json.obj(
           "inheritanceTaxReference" -> "A123459/25A",
-          "nameOfDeceased" -> Json.obj(
-            "title" -> "Mr",
-            "firstForename" -> "John",
-            "surname" -> "Doe"
-          ),
+          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeJson,
+          "hasNino" -> true,
+          "nino" -> testNino,
           "birthDeathDates" -> Json.obj(
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
           ),
           "prType" -> "individual",
-          "prDetails" -> Json.obj(
-            "individual" -> Json.obj(
-              "title" -> "Mr",
-              "firstForename" -> "John",
-              "surname" -> "Doe",
-              "addressLine1" -> "1 ABCDE Street",
-              "addressLine2" -> "FGHIJ Town",
-              "ukPostcode" -> "ZZ99 1AA",
-              "country" -> "GB"
-            )
+          "didPrSubmit" -> true,
+          "areBeneficiariesKnown" -> false,
+          "prDetails" -> individualPrDetailsJson,
+          "ihtTaxInformation" -> Json.obj(
           ),
-          "hasNino" -> true,
-          "nino" -> testNino,
-          "didPrSubmit" -> true
+          "declarations" -> declarationJson
         )
       )
 
@@ -407,7 +405,7 @@ class ReportSubmissionServiceSpec
       val result = service.submitReport(testUserAnswersId, testPstr).failed.futureValue
       result mustBe a[IllegalArgumentException]
       result.getMessage must include("ihtTaxInformation.dateThePensionSchemeReceivedNoticeToPay")
-      verify(mockIhtpReportConnector, never).submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]())
+      verify(mockIhtpReportConnector, never).submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]())
     }
 
     "return Left when connector returns an error and send the no nino reason in the payload" in {
@@ -420,88 +418,61 @@ class ReportSubmissionServiceSpec
           "nameOfDeceased" -> Json.obj(
             "title" -> "Mrs",
             "firstForename" -> "Jane",
-            "secondForename" -> None,
             "surname" -> "Doe"
           ),
+          "hasNino" -> false,
+          "reasonForNoNino" -> "The deceased was not a UK citizen",
           "birthDeathDates" -> Json.obj(
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
           ),
           "prType" -> "individual",
-          "prDetails" -> Json.obj(
-            "individual" -> Json.obj(
-              "title" -> "Mr",
-              "firstForename" -> "John",
-              "secondForename" -> "William",
-              "surname" -> "Doe",
-              "addressLine1" -> "1 ABCDE Street",
-              "addressLine2" -> "FGHIJ Town",
-              "ukPostcode" -> "ZZ99 1AA",
-              "country" -> "GB"
-            )
-          ),
-          "hasNino" -> false,
-          "reasonForNoNino" -> "The deceased was not a UK citizen",
-          "ihtTaxInformation" -> Json.obj(
-            "dateThePensionSchemeReceivedNoticeToPay" -> testPaymentNoticeDate
-          ),
-          "didPrSubmit" -> true
+          "prDetails" -> individualPrDetailsJson,
+          "didPrSubmit" -> true,
+          "areBeneficiariesKnown" -> false,
+          "ihtTaxInformation" -> ihTaxInformationJson,
+          "declarations" -> declarationJson
         )
       )
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
-      when(mockIhtpReportConnector.submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]()))
+      when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))
         .thenReturn(Future.successful(Left(ErrorCodes.badRequest)))
 
       val result = service.submitReport(testUserAnswersId, testPstr).futureValue
       result.isLeft mustBe true
-      val payloadCaptor: ArgumentCaptor[IhtpReportSubmission] = ArgumentCaptor.forClass(classOf[IhtpReportSubmission])
-      verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
-      payloadCaptor.getValue mustBe IhtpReportSubmission(
-        ReportDetails(
-          pstr = testPstr
-        ),
-        DeceasedDetails(
-          inheritanceTaxReference = "A123459/25A",
+      val deceasedJaneDoe = deceased.copy(
+        deceasedPersonalDetails = DeceasedPersonalDetails(
           title = Some("Mrs"),
           firstForename = "Jane",
           secondForename = None,
           surname = "Doe",
-          dateOfBirth = testDateOfBirth,
-          dateOfDeath = testDateOfDeath,
           ninoExist = No,
           nino = None,
           reasonNoNINO = Some("The deceased was not a UK citizen")
-        ),
-        PrDetails(
-          individual = Some(
-            IndividualDetails(
-              name = IndividualName(
-                title = Some("Mr"),
-                firstForename = "John",
-                secondForename = Some("William"),
-                surname = "Doe"
-              ),
-              address = AddressDetails(
-                addressLine1 = "1 ABCDE Street",
-                addressLine2 = "FGHIJ Town",
-                ukPostcode = Some("ZZ99 1AA"),
-                country = "GB"
-              )
-            )
-          ),
-          organisation = None
-        ),
-        IhtTaxInformation(
-          dateThePensionSchemeReceivedNoticeToPay = testPaymentNoticeDate,
-          didThePersonalRepresentativeSubmitTheNotice = Yes
-        ),
-        beneficiaries = None
+        )
       )
-      val deceasedDetailsJson = Json.toJson(payloadCaptor.getValue.deceasedDetails)
-      (deceasedDetailsJson \ "ninoExist").as[String] mustBe "No"
-      (deceasedDetailsJson \ "nino").toOption mustBe None
-      (deceasedDetailsJson \ "reasonNoNINO").as[String] mustBe "The deceased was not a UK citizen"
-      (deceasedDetailsJson \ "reasonForNoNino").toOption mustBe None
+      val payloadCaptor: ArgumentCaptor[IhtpPaymentNoticeSubmission] =
+        ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
+      verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
+      payloadCaptor.getValue mustBe IhtpPaymentNoticeSubmission(
+        ReportDetails(
+          pstr = testPstr,
+          ihtPaymentReference = "A123459/25A"
+        ),
+        deceasedJaneDoe,
+        prDetailsIndividual,
+        IhTaxInformation(
+          ihTaxChangeFlag = None,
+          dateNoticeReceived = testPaymentNoticeDate,
+          noticeSubmittedByPR = Yes,
+          knownBeneficiaries = Some(No),
+          totalIHTPayable = Some("1000.00"),
+          totalInterestPayable = Some("50.00"),
+          total = Some("1050.00")
+        ),
+        beneficiaries = None,
+        declarations = declarations
+      )
     }
 
     "return Right when submission is successful with a beneficiary in the payload" in {
@@ -510,31 +481,21 @@ class ReportSubmissionServiceSpec
         srn,
         uuid,
         Json.obj(
+          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeJson,
           "inheritanceTaxReference" -> "A123459/25A",
-          "nameOfDeceased" -> Json.obj(
-            "title" -> "Mr",
-            "firstForename" -> "John",
-            "secondForename" -> "William",
-            "surname" -> "Doe"
-          ),
+          "hasNino" -> true,
+          "nino" -> testNino,
           "birthDeathDates" -> Json.obj(
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
           ),
           "prType" -> "organisation",
-          "prDetails" -> Json.obj(
-            "organisation" -> Json.obj(
-              "organisationName" -> "Test Organisation",
-              "title" -> "Ms",
-              "firstForename" -> "Jane",
-              "secondForename" -> "Ann",
-              "surname" -> "Doe",
-              "addressLine1" -> "1 ABCDE Street",
-              "addressLine2" -> "FGHIJ Town",
-              "ukPostcode" -> "ZZ99 1AA",
-              "country" -> "GB"
-            )
+          "didPrSubmit" -> true,
+          "prDetails" -> organisationPrDetailsJson,
+          "ihtTaxInformation" -> Json.obj(
+            "dateThePensionSchemeReceivedNoticeToPay" -> testPaymentNoticeDate
           ),
+          "areBeneficiariesKnown" -> true,
           "beneficiaries" -> Json.arr(
             Json.obj(
               "beneficiaryType" -> "individual",
@@ -549,81 +510,53 @@ class ReportSubmissionServiceSpec
             )
           ),
           "hasNino" -> true,
-          "nino" -> testNino,
-          "ihtTaxInformation" -> Json.obj(
-            "dateThePensionSchemeReceivedNoticeToPay" -> testPaymentNoticeDate
-          ),
-          "didPrSubmit" -> true
+          "nino" -> testNino
         )
       )
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
-      when(mockIhtpReportConnector.submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]()))
+      when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))
         .thenReturn(Future.successful(Right(testSubmissionResponse)))
 
       val result = service.submitReport(testUserAnswersId, testPstr).futureValue
       result.isRight mustBe true
-      val payloadCaptor: ArgumentCaptor[IhtpReportSubmission] = ArgumentCaptor.forClass(classOf[IhtpReportSubmission])
+      val payloadCaptor: ArgumentCaptor[IhtpPaymentNoticeSubmission] =
+        ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
       verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
-      payloadCaptor.getValue mustBe IhtpReportSubmission(
+      payloadCaptor.getValue mustBe IhtpPaymentNoticeSubmission(
         ReportDetails(
-          pstr = testPstr
+          pstr = testPstr,
+          ihtPaymentReference = "A123459/25A"
         ),
-        DeceasedDetails(
-          inheritanceTaxReference = "A123459/25A",
-          title = Some("Mr"),
-          firstForename = "John",
-          secondForename = Some("William"),
-          surname = "Doe",
-          dateOfBirth = testDateOfBirth,
-          dateOfDeath = testDateOfDeath,
-          ninoExist = Yes,
-          nino = Some(testNino),
-          reasonNoNINO = None
-        ),
-        PrDetails(
-          individual = None,
-          organisation = Some(
-            OrganisationDetails(
-              info = OrganisationInfo(
-                organisationName = "Test Organisation",
-                title = Some("Ms"),
-                firstForename = "Jane",
-                secondForename = Some("Ann"),
-                surname = "Doe"
-              ),
-              address = AddressDetails(
-                addressLine1 = "1 ABCDE Street",
-                addressLine2 = "FGHIJ Town",
-                ukPostcode = Some("ZZ99 1AA"),
-                country = "GB"
-              )
-            )
-          )
-        ),
-        IhtTaxInformation(
-          dateThePensionSchemeReceivedNoticeToPay = testPaymentNoticeDate,
-          didThePersonalRepresentativeSubmitTheNotice = Yes
+        deceased,
+        prDetailsOrganisation,
+        IhTaxInformation(
+          ihTaxChangeFlag = None,
+          dateNoticeReceived = testPaymentNoticeDate,
+          noticeSubmittedByPR = Yes,
+          knownBeneficiaries = Some(Yes),
+          totalIHTPayable = None,
+          totalInterestPayable = None,
+          total = None
         ),
         Some(
           Seq(
             BeneficiaryDetails(
-              individual = Some(
-                IndividualName(
-                  title = Some("Mr"),
-                  firstForename = "Paul",
-                  secondForename = Some("William"),
-                  surname = "Doe"
-                )
-              )
+              beneficiaryType = IndividualOrTrust.Individual,
+              beneficiaryContactDetails = beneficiaryContactDetails,
+              beneficiaryPaymentDetails = beneficiaryPaymentDetails
             )
           )
-        )
+        ),
+        declarations = declarations
       )
-      Json.toJson(payloadCaptor.getValue.beneficiaries.get.head.individual.get) mustBe Json.obj(
+      Json.toJson(
+        payloadCaptor.getValue.beneficiaries.get.head.beneficiaryContactDetails.beneficiaryPersonalDetails
+      ) mustBe Json.obj(
         "title" -> "Mr",
         "firstForename" -> "Paul",
         "secondForename" -> "William",
-        "surname" -> "Doe"
+        "surname" -> "Doe",
+        "ninoExist" -> "Yes"
       )
     }
   }

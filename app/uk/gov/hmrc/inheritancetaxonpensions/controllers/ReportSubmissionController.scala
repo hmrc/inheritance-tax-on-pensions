@@ -67,10 +67,10 @@ class ReportSubmissionController @Inject() (
                   UserAnswersHelper.set(ua0, JsPath \ "processingDateTime", Instant.now())
                 )
                 ua2 <- Future.fromTry(
-                  UserAnswersHelper.set(ua1, JsPath \ "ihtPaymentReference", submissionResponse.paymentReference)
+                  UserAnswersHelper.set(ua1, JsPath \ "ihtPaymentReference", submissionResponse.ihtPaymentReference)
                 )
                 ua3 <- Future.fromTry(
-                  UserAnswersHelper.set(ua2, JsPath \ "formBundleNo", submissionResponse.formBundleNumber)
+                  UserAnswersHelper.set(ua2, JsPath \ "formBundleNo", submissionResponse.ihtPaymentReference)
                 )
                 _ <- userAnswersRepository.set(ua3)
               } yield ()

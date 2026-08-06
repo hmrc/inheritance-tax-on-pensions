@@ -33,19 +33,20 @@ class HIPHeaders @Inject() (randomUUIDGenerator: RandomUUIDGenerator, appConfig:
   private val xTransmittingSystemHeader: String = "X-Transmitting-System"
 
   private val mdtp = "MDTP"
-  private val request = "Request"
-  private val ihtp = "IHTP"
+  private val hip = "HIP"
+  private val requestSubmitIHTPNotice = "SubmitIHTPNotice"
+  private val pods = "PODS"
 
   // TODO check these headers against the EPIDs when we get them!
   def ihtpReportHeaders(): Seq[(String, String)] =
     Seq(
       (HeaderNames.AUTHORIZATION, authorizationForIhtpReport()),
       (correlationIdHeader, randomUUIDGenerator.uuid),
-      (xMessageTypeHeader, request),
+      (xMessageTypeHeader, requestSubmitIHTPNotice),
       (xOriginatingSystemHeader, mdtp),
       (xReceiptDateHeader, DateTimeHelper.formatISOInstantSeconds(Instant.now(clock))),
-      (xRegimeTypeHeader, ihtp),
-      (xTransmittingSystemHeader, mdtp)
+      (xRegimeTypeHeader, pods),
+      (xTransmittingSystemHeader, hip)
     )
 
   private def authorizationForIhtpReport(): String = {

@@ -26,7 +26,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.*
 import uk.gov.hmrc.inheritancetaxonpensions.BaseConnectorSpec
-import uk.gov.hmrc.inheritancetaxonpensions.models.{ErrorCodes, IhtpReportSubmissionResponse}
+import uk.gov.hmrc.inheritancetaxonpensions.models.{ErrorCodes, IhtpPaymentNoticeResponse}
 import utils.TestValues
 
 class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
@@ -86,10 +86,10 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
       whenReady(connector.getReport("24000001IN", Some("119000004320"), None, None)) { result =>
         WireMock.verify(
           getRequestedFor(urlEqualTo(url))
-            .withHeader("X-Message-Type", equalTo("Request"))
-            .withHeader("X-Regime-Type", equalTo("IHTP"))
+            .withHeader("X-Message-Type", equalTo("SubmitIHTPNotice"))
+            .withHeader("X-Regime-Type", equalTo("PODS"))
             .withHeader("X-Originating-System", equalTo("MDTP"))
-            .withHeader("X-Transmitting-System", equalTo("MDTP"))
+            .withHeader("X-Transmitting-System", equalTo("HIP"))
         )
 
         result.status mustBe OK
@@ -389,7 +389,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
 
     reportSubmissionRequestBodyTestCases.foreach { requestBody =>
 
-      val reportType = if (requestBody.prDetails.individual.isDefined) "individual" else "organisation"
+      val reportType = requestBody.personalRep.typeOfPR
 
       s"return a valid report submission response for a successful call (OK) for $reportType" in {
         stubPost(

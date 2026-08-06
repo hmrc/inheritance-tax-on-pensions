@@ -25,10 +25,9 @@ tests {
   test("Status code is 200", function () {
       expect(res.getStatus()).to.equal(200);
   });
-
+  
   test("Response contains the submission identifiers", function () {
-      expect(res.body.formBundleNumber).to.be.a("string").and.not.be.empty;
-      expect(res.body.paymentReference).to.be.a("string").and.not.be.empty;
-      expect(res.body.processingDateTime).to.be.a("string").and.not.be.empty;
+      expect(res.body.formBundleNo).to.be.a("string").and.not.be.empty;
+      expect(res.body.ihtPaymentReference).to.be.a("string").and.not.be.empty;
   });
 }

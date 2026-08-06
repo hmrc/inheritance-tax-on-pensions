@@ -142,23 +142,23 @@ class IhtpReportConnector @Inject() (
     }
   }
 
-  def submitReport(ihtpReportSubmission: IhtpReportSubmission)(implicit
+  def submitReport(ihtpPaymentNoticeSubmission: IhtpPaymentNoticeSubmission)(implicit
     hc: HeaderCarrier
-  ): Future[Either[ErrorResponse, IhtpReportSubmissionResponse]] = {
+  ): Future[Either[ErrorResponse, IhtpPaymentNoticeResponse]] = {
     val url: String = config.submitReportUrl
 
-    retryFor[Either[ErrorResponse, IhtpReportSubmissionResponse]]("IHTP Report submission") {
+    retryFor[Either[ErrorResponse, IhtpPaymentNoticeResponse]]("IHTP Report submission") {
       case UpstreamErrorResponse.WithStatusCode(status) if Constants.TransientErrorStatusCodes.contains(status) => true
     } {
       val startTime = Instant.now()
       httpClient
         .post(url"$url")
         .setHeader(headers.ihtpReportHeaders()*)
-        .withBody(Json.toJson(ihtpReportSubmission))
+        .withBody(Json.toJson(ihtpPaymentNoticeSubmission))
         .execute[HttpResponse]
         .flatMap {
           case response if response.status == OK =>
-            Try(response.json.as[IhtpReportSubmissionResponse]) match {
+            Try(response.json.as[IhtpPaymentNoticeResponse]) match {
               case Success(submissionResponse) =>
                 logger.info(
                   "[IhtpReportConnector][submitReport] IHTP Report submitted successfully"

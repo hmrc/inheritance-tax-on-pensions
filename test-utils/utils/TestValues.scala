@@ -16,10 +16,12 @@
 
 package utils
 
+import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.IndividualOrOrg.{Individual => IorOIndividual, Organisation}
+import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.IndividualOrTrust.{Individual => IorTIndividual}
 import generators.Generators
 import uk.gov.hmrc.auth.core.{Enrolment, EnrolmentIdentifier, Enrolments}
 import play.api.libs.json.{JsArray, JsObject, Json}
-import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.YesNo.Yes
+import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.YesNo.{No, Yes}
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants.psaEnrolmentKey
 import uk.gov.hmrc.inheritancetaxonpensions.models._
 import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.YesNo
@@ -68,112 +70,152 @@ trait TestValues extends Generators {
   val testUserAnswersId = "testUserAnswersId"
   val testPstr = "12345678"
   val emptyUserAnswers: UserAnswers = UserAnswers(s"$srn-$uuid", srn, uuid)
-  val testSubmissionResponse: IhtpReportSubmissionResponse = IhtpReportSubmissionResponse(
-    processingDateTime = Instant.now(),
-    formBundleNumber = "910000000000",
-    paymentReference = "123456781"
+  val testSubmissionResponse = IhtpPaymentNoticeResponse(
+    formBundleNo = "910000000000",
+    ihtPaymentReference = "A123459/25A"
   )
 
-  val testReportSubmissionRequestBody: IhtpReportSubmission = IhtpReportSubmission(
-    ReportDetails(
-      pstr = "S2400000001"
-    ),
-    DeceasedDetails(
-      inheritanceTaxReference = "A123456/25A",
-      title = Some("Mr"),
-      firstForename = "John",
-      secondForename = Some("William"),
-      surname = "Doe",
-      dateOfBirth = testDateOfBirth,
-      dateOfDeath = testDateOfDeath,
-      ninoExist = Yes,
-      nino = Some(testNino),
-      reasonNoNINO = None
-    ),
-    PrDetails(
-      individual = Some(
-        IndividualDetails(
-          name = IndividualName(
-            title = Some("Mr"),
-            firstForename = "John",
-            secondForename = Some("William"),
-            surname = "Doe"
-          ),
-          address = AddressDetails(
-            addressLine1 = testAddressLine1,
-            addressLine2 = testAddressLine2,
-            ukPostcode = Some(testUkPostcode),
-            country = testCountry
-          )
-        )
-      ),
-      organisation = None
-    ),
-    IhtTaxInformation(
-      dateThePensionSchemeReceivedNoticeToPay = testPaymentNoticeDate,
-      didThePersonalRepresentativeSubmitTheNotice = Yes
-    ),
-    beneficiaries = None
+  val deceasedPersonalDetails = DeceasedPersonalDetails(
+    title = Some("Mr"),
+    firstForename = "John",
+    secondForename = Some("William"),
+    surname = "Doe",
+    ninoExist = Yes,
+    nino = Some(testNino),
+    reasonNoNINO = None
   )
 
-  val testReportSubmissionRequestBodyOrganisation: IhtpReportSubmission = IhtpReportSubmission(
+  val deceasedDetails = DeceasedDetails(
+    deceasedsDOB = testDateOfBirth,
+    deceasedsDOD = testDateOfDeath,
+    ihtRefNumber = "A123459/25A"
+  )
+
+  val deceased = Deceased(
+    deceasedPersonalDetails = deceasedPersonalDetails,
+    deceasedDetails = deceasedDetails
+  )
+
+  val prContactDetailsIndividual = PrContactDetails(
+    title = Some("Mr"),
+    firstForename = "John",
+    secondForename = Some("William"),
+    surname = "Doe"
+  )
+
+  val prContactDetailsOrganisation = PrContactDetails(
+    orgName = Some("Test Organisation"),
+    title = Some("Ms"),
+    firstForename = "Jane",
+    secondForename = Some("Ann"),
+    surname = "Doe"
+  )
+
+  val prDetailsIndividual = PrDetails(
+    prChangeFlag = None,
+    typeOfPR = IorOIndividual,
+    prContactDetails = prContactDetailsIndividual,
+    prAddress = AddressDetails(
+      addressLine1 = testAddressLine1,
+      addressLine2 = testAddressLine2,
+      postcode = Some(testUkPostcode),
+      country = testCountry
+    )
+  )
+  val prDetailsOrganisation = PrDetails(
+    prChangeFlag = None,
+    typeOfPR = Organisation,
+    prContactDetails = prContactDetailsOrganisation,
+    prAddress = AddressDetails(
+      addressLine1 = "1 ABCDE Street",
+      addressLine2 = "FGHIJ Town",
+      postcode = Some("ZZ99 1AA"),
+      country = "GB"
+    )
+  )
+
+  val beneficiaryPersonalDetails = BeneficiaryPersonalDetails(
+    title = Some("Mr"),
+    firstForename = "Paul",
+    secondForename = Some("William"),
+    surname = "Doe",
+    ninoExist = Yes,
+    nino = None,
+    reasonNoNINO = None
+  )
+
+  val beneficiaryContactDetails = BeneficiaryContactDetails(
+    beneficiaryPersonalDetails = beneficiaryPersonalDetails,
+    beneficiaryAddress = AddressDetails(
+      addressLine1 = testAddressLine1,
+      addressLine2 = testAddressLine2,
+      postcode = Some(testUkPostcode),
+      country = testCountry
+    )
+  )
+
+  val beneficiaryPaymentDetails = BeneficiaryPaymentDetails(
+    beneficiaryIHTPayable = "TODO",
+    beneficiaryInterestPayable = "TODO",
+    beneficiaryTotal = "TODO"
+  )
+
+  val declarations = Declarations(
+    submittedBy = "PSA",
+    submitterID = "TODO",
+    psaDeclaration = Some(PsaDeclaration("true", "true")),
+    pspDeclaration = Some(PspDeclaration("true", "true", "TODO"))
+  )
+
+  val testReportSubmissionRequestBody = IhtpPaymentNoticeSubmission(
     ReportDetails(
-      pstr = "S2400000001"
+      pstr = "S2400000001",
+      ihtPaymentReference = "A123459/25A"
     ),
-    DeceasedDetails(
-      inheritanceTaxReference = "A123456/25A",
-      title = Some("Mr"),
-      firstForename = "John",
-      secondForename = Some("William"),
-      surname = "Doe",
-      dateOfBirth = testDateOfBirth,
-      dateOfDeath = testDateOfDeath,
-      ninoExist = Yes,
-      nino = Some(testNino),
-      reasonNoNINO = None
+    deceased,
+    prDetailsIndividual,
+    IhTaxInformation(
+      ihTaxChangeFlag = None,
+      dateNoticeReceived = testPaymentNoticeDate,
+      noticeSubmittedByPR = Yes,
+      knownBeneficiaries = Some(No),
+      totalIHTPayable = Some("1000.00"),
+      totalInterestPayable = Some("50.00"),
+      total = Some("1050.00")
     ),
-    PrDetails(
-      individual = None,
-      organisation = Some(
-        OrganisationDetails(
-          info = OrganisationInfo(
-            organisationName = "Test Organisation",
-            title = Some("Ms"),
-            firstForename = "Jane",
-            secondForename = Some("Ann"),
-            surname = "Doe"
-          ),
-          address = AddressDetails(
-            addressLine1 = "1 ABCDE Street",
-            addressLine2 = "FGHIJ Town",
-            ukPostcode = Some("ZZ99 1AA"),
-            country = "GB"
-          )
-        )
-      )
+    beneficiaries = None,
+    declarations = declarations
+  )
+
+  val testReportSubmissionRequestBodyOrganisation = IhtpPaymentNoticeSubmission(
+    ReportDetails(
+      pstr = "S2400000001",
+      ihtPaymentReference = "A123459/25A"
     ),
-    IhtTaxInformation(
-      dateThePensionSchemeReceivedNoticeToPay = testPaymentNoticeDate,
-      didThePersonalRepresentativeSubmitTheNotice = Yes
+    deceased,
+    prDetailsOrganisation,
+    IhTaxInformation(
+      ihTaxChangeFlag = None,
+      dateNoticeReceived = testPaymentNoticeDate,
+      noticeSubmittedByPR = Yes,
+      knownBeneficiaries = Some(No),
+      totalIHTPayable = Some("1000.00"),
+      totalInterestPayable = Some("50.00"),
+      total = Some("1050.00")
     ),
     Some(
       Seq(
         BeneficiaryDetails(
-          individual = Some(
-            IndividualName(
-              title = Some("Mr"),
-              firstForename = "Paul",
-              secondForename = Some("William"),
-              surname = "Doe"
-            )
-          )
+          beneficiaryType = IorTIndividual,
+          beneficiaryContactDetails = beneficiaryContactDetails,
+          beneficiaryPaymentDetails = beneficiaryPaymentDetails
         )
       )
-    )
+    ),
+    declarations = declarations
   )
 
-  val testReportSubmissionResponse: IhtpReportSubmissionResponse =
-    IhtpReportSubmissionResponse(Instant.now(clock), "910000000000", "123456789")
+  val testReportSubmissionResponse = IhtpPaymentNoticeResponse("910000000000", "123456789")
 
   val testUserAnswerJson: JsObject = Json.obj(
     "inheritanceTaxReference" -> "A123459/25A",

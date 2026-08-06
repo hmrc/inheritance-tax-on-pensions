@@ -17,7 +17,7 @@
 package uk.gov.hmrc.inheritancetaxonpensions.models
 
 object PiiFields {
-  // TODO: Add further fields here and in the spec as we progress the journey
+  // Add further fields both here and in the spec as we progress the journey
   private val piiFields: Set[String] = Set(
     "nameOfDeceased.firstForename",
     "nameOfDeceased.secondForename",

@@ -21,10 +21,6 @@ auth:bearer {
   token: {{bearer_token}}
 }
 
-script:pre-request {
-  bru.setVar("last_updated_epoch_millis", Date.now().toString());
-}
-
 body:json {
   {
     "_id": "{{user_answers_id}}",
@@ -60,7 +56,8 @@ body:json {
       "ihtTaxInformation": {
         "dateThePensionSchemeReceivedNoticeToPay": "2026-03-27"
       },
-      "didPrSubmit": true
+      "didPrSubmit": true,
+      "areBeneficiariesKnown": false
     },
     "lastUpdated": {
       "$date": {
@@ -70,11 +67,15 @@ body:json {
   }
 }
 
+script:pre-request {
+  bru.setVar("last_updated_epoch_millis", Date.now().toString());
+}
+
 tests {
   test("Status code is 200", function () {
       expect(res.getStatus()).to.equal(200);
   });
-
+  
   test("Response contains the saved user answers identifiers", function () {
       expect(res.body._id).to.equal(bru.getEnvVar("user_answers_id"));
       expect(res.body.srn).to.equal(bru.getEnvVar("srn"));
