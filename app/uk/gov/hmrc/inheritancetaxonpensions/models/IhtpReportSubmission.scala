@@ -26,7 +26,7 @@ import java.time.Instant
 // TODO - Review this model against the IHTP EPIDs when we get them!
 case class IhtpReportSubmission(
   reportDetails: ReportDetails,
-  deceasedDetails: DeceasedDetails,
+  deceasedPersonalDetails: DeceasedDetails,
   prDetails: PrDetails,
   ihtTaxInformation: IhtTaxInformation,
   beneficiaries: Option[Seq[BeneficiaryDetails]]
@@ -49,7 +49,7 @@ object ReportDetails {
 case class DeceasedDetails(
   inheritanceTaxReference: String,
   title: Option[String],
-  firstForename: String,
+  deceasedFFname: String,
   secondForename: Option[String],
   surname: String,
   dateOfBirth: String,

@@ -97,7 +97,7 @@ class ReportSubmissionService @Inject() (
     val deceasedDetails = DeceasedDetails(
       inheritanceTaxReference = inheritanceTaxReferenceNumber,
       title = deceasedTitle,
-      firstForename = deceasedFirstForename,
+      deceasedFFname = deceasedFirstForename,
       secondForename = deceasedSecondForename,
       surname = deceasedSurname,
       dateOfBirth = birthDeathDates.dateOfBirth,
