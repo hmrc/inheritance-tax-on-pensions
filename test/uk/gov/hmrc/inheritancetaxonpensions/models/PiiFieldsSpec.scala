@@ -30,7 +30,7 @@ class PiiFieldsSpec extends AnyFreeSpec with Matchers {
         "nameOfDeceased.surname",
         "nameOfDeceased.dateOfBirth",
         "nameOfDeceased.dateOfDeath",
-        "ninoOrReason.nino",
+        "nino",
         "birthDeathDates.dateOfBirth",
         "birthDeathDates.dateOfDeath",
         "prDetails.individual.firstForename",
@@ -85,7 +85,7 @@ class PiiFieldsSpec extends AnyFreeSpec with Matchers {
     "must be case sensitive" in {
       PiiFields.isPiiField("nameofdeceased.firstforename") mustBe false
       PiiFields.isPiiField("NAMEOFDECEASED.FIRSTFORENAME") mustBe false
-      PiiFields.isPiiField("ninoOrReason.NINO") mustBe false
+      PiiFields.isPiiField("NINO") mustBe false
     }
 
     "must require exact field match" in {

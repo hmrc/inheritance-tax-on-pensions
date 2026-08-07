@@ -27,8 +27,8 @@ import org.mockito.Mockito._
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.IhtpReportConnector
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.BeforeAndAfterEach
-import play.api.libs.json.Json
-import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.YesNo.Yes
+import play.api.libs.json.{JsObject, Json}
+import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.YesNo.{No, Yes}
 import org.scalatest.concurrent.ScalaFutures.convertScalaFuture
 import org.mockito.ArgumentCaptor
 import org.scalatestplus.mockito.MockitoSugar
@@ -50,6 +50,20 @@ class ReportSubmissionServiceSpec
   private val mockUserAnswersRepository: UserAnswersRepository = mock[UserAnswersRepository]
   private val mockIhtpReportConnector: IhtpReportConnector = mock[IhtpReportConnector]
   private val service = new ReportSubmissionService(mockUserAnswersRepository, mockIhtpReportConnector)
+
+  private def userAnswersWithNinoData(ninoData: JsObject): UserAnswers =
+    UserAnswers(
+      testUserAnswersId,
+      srn,
+      uuid,
+      Json.obj(
+        "inheritanceTaxReference" -> "A123459/25A",
+        "nameOfDeceased" -> Json.obj(
+          "firstForename" -> "John",
+          "surname" -> "Doe"
+        )
+      ) ++ ninoData
+    )
 
   "submitReport" - {
     "return Right when submission is successful with a nino in the payload" in {
@@ -82,9 +96,8 @@ class ReportSubmissionServiceSpec
               "country" -> "GB"
             )
           ),
-          "ninoOrReason" -> Json.obj(
-            "nino" -> testNino
-          ),
+          "hasNino" -> true,
+          "nino" -> testNino,
           "ihtTaxInformation" -> Json.obj(
             "dateThePensionSchemeReceivedNoticeToPay" -> testPaymentNoticeDate
           ),
@@ -111,8 +124,9 @@ class ReportSubmissionServiceSpec
           surname = "Doe",
           dateOfBirth = testDateOfBirth,
           dateOfDeath = testDateOfDeath,
+          ninoExist = Yes,
           nino = Some(testNino),
-          reasonForNoNino = None
+          reasonNoNINO = None
         ),
         PrDetails(
           individual = Some(
@@ -139,6 +153,11 @@ class ReportSubmissionServiceSpec
         ),
         beneficiaries = None
       )
+      val deceasedDetailsJson = Json.toJson(payloadCaptor.getValue.deceasedDetails)
+      (deceasedDetailsJson \ "ninoExist").as[String] mustBe "Yes"
+      (deceasedDetailsJson \ "nino").as[String] mustBe testNino
+      (deceasedDetailsJson \ "reasonNoNINO").toOption mustBe None
+      (deceasedDetailsJson \ "reasonForNoNino").toOption mustBe None
       Json.toJson(payloadCaptor.getValue.prDetails.individual.get) mustBe Json.obj(
         "title" -> "Mr",
         "firstForename" -> "John",
@@ -181,9 +200,8 @@ class ReportSubmissionServiceSpec
               "country" -> "GB"
             )
           ),
-          "ninoOrReason" -> Json.obj(
-            "nino" -> testNino
-          ),
+          "hasNino" -> true,
+          "nino" -> testNino,
           "ihtTaxInformation" -> Json.obj(
             "dateThePensionSchemeReceivedNoticeToPay" -> testPaymentNoticeDate,
             "didThePersonalRepresentativeSubmitTheNotice" -> "Yes"
@@ -254,9 +272,8 @@ class ReportSubmissionServiceSpec
               "organisationName" -> "Test Organisation"
             )
           ),
-          "ninoOrReason" -> Json.obj(
-            "nino" -> testNino
-          )
+          "hasNino" -> true,
+          "nino" -> testNino
         )
       )
 
@@ -273,6 +290,42 @@ class ReportSubmissionServiceSpec
 
       val result = service.submitReport(testUserAnswersId, testPstr).futureValue
       result mustBe Left(ErrorCodes.entityNotFound)
+      verify(mockIhtpReportConnector, never).submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]())
+    }
+
+    "fail before submission when the deceased NINO answer is missing" in {
+      val testUserAnswers = userAnswersWithNinoData(Json.obj())
+
+      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
+
+      val result = service.submitReport(testUserAnswersId, testPstr).failed.futureValue
+
+      result mustBe a[IllegalArgumentException]
+      result.getMessage must include("hasNino")
+      verify(mockIhtpReportConnector, never).submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]())
+    }
+
+    "fail before submission when NINO is selected but the NINO is missing" in {
+      val testUserAnswers = userAnswersWithNinoData(Json.obj("hasNino" -> true))
+
+      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
+
+      val result = service.submitReport(testUserAnswersId, testPstr).failed.futureValue
+
+      result mustBe a[IllegalArgumentException]
+      result.getMessage must include("nino")
+      verify(mockIhtpReportConnector, never).submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]())
+    }
+
+    "fail before submission when no NINO is selected but the reason is missing" in {
+      val testUserAnswers = userAnswersWithNinoData(Json.obj("hasNino" -> false))
+
+      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
+
+      val result = service.submitReport(testUserAnswersId, testPstr).failed.futureValue
+
+      result mustBe a[IllegalArgumentException]
+      result.getMessage must include("reasonForNoNino")
       verify(mockIhtpReportConnector, never).submitReport(any[IhtpReportSubmission]())(any[HeaderCarrier]())
     }
 
@@ -302,9 +355,8 @@ class ReportSubmissionServiceSpec
               "country" -> "GB"
             )
           ),
-          "ninoOrReason" -> Json.obj(
-            "nino" -> testNino
-          )
+          "hasNino" -> true,
+          "nino" -> testNino
         )
       )
 
@@ -344,9 +396,8 @@ class ReportSubmissionServiceSpec
               "country" -> "GB"
             )
           ),
-          "ninoOrReason" -> Json.obj(
-            "nino" -> testNino
-          ),
+          "hasNino" -> true,
+          "nino" -> testNino,
           "didPrSubmit" -> true
         )
       )
@@ -389,9 +440,8 @@ class ReportSubmissionServiceSpec
               "country" -> "GB"
             )
           ),
-          "ninoOrReason" -> Json.obj(
-            "reasonForNoNino" -> "The deceased was not a UK citizen"
-          ),
+          "hasNino" -> false,
+          "reasonForNoNino" -> "The deceased was not a UK citizen",
           "ihtTaxInformation" -> Json.obj(
             "dateThePensionSchemeReceivedNoticeToPay" -> testPaymentNoticeDate
           ),
@@ -418,8 +468,9 @@ class ReportSubmissionServiceSpec
           surname = "Doe",
           dateOfBirth = testDateOfBirth,
           dateOfDeath = testDateOfDeath,
+          ninoExist = No,
           nino = None,
-          reasonForNoNino = Some("The deceased was not a UK citizen")
+          reasonNoNINO = Some("The deceased was not a UK citizen")
         ),
         PrDetails(
           individual = Some(
@@ -446,6 +497,11 @@ class ReportSubmissionServiceSpec
         ),
         beneficiaries = None
       )
+      val deceasedDetailsJson = Json.toJson(payloadCaptor.getValue.deceasedDetails)
+      (deceasedDetailsJson \ "ninoExist").as[String] mustBe "No"
+      (deceasedDetailsJson \ "nino").toOption mustBe None
+      (deceasedDetailsJson \ "reasonNoNINO").as[String] mustBe "The deceased was not a UK citizen"
+      (deceasedDetailsJson \ "reasonForNoNino").toOption mustBe None
     }
 
     "return Right when submission is successful with a beneficiary in the payload" in {
@@ -492,9 +548,8 @@ class ReportSubmissionServiceSpec
               )
             )
           ),
-          "ninoOrReason" -> Json.obj(
-            "nino" -> testNino
-          ),
+          "hasNino" -> true,
+          "nino" -> testNino,
           "ihtTaxInformation" -> Json.obj(
             "dateThePensionSchemeReceivedNoticeToPay" -> testPaymentNoticeDate
           ),
@@ -521,8 +576,9 @@ class ReportSubmissionServiceSpec
           surname = "Doe",
           dateOfBirth = testDateOfBirth,
           dateOfDeath = testDateOfDeath,
+          ninoExist = Yes,
           nino = Some(testNino),
-          reasonForNoNino = None
+          reasonNoNINO = None
         ),
         PrDetails(
           individual = None,

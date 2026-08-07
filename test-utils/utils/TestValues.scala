@@ -83,8 +83,9 @@ trait TestValues extends Generators {
       surname = "Doe",
       dateOfBirth = testDateOfBirth,
       dateOfDeath = testDateOfDeath,
+      ninoExist = Yes,
       nino = Some(testNino),
-      reasonForNoNino = None
+      reasonNoNINO = None
     ),
     PrDetails(
       individual = Some(
@@ -124,8 +125,9 @@ trait TestValues extends Generators {
       surname = "Doe",
       dateOfBirth = testDateOfBirth,
       dateOfDeath = testDateOfDeath,
+      ninoExist = Yes,
       nino = Some(testNino),
-      reasonForNoNino = None
+      reasonNoNINO = None
     ),
     PrDetails(
       individual = None,
