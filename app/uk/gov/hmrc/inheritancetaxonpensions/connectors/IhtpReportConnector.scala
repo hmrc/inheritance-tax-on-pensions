@@ -21,6 +21,7 @@ import uk.gov.hmrc.inheritancetaxonpensions.config.{AppConfig, Constants}
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.IhtpReportConnector.RetryableReportResponse
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.helpers.HIPHeaders
 import org.apache.pekko.actor.ActorSystem
+import models.IhtpOverviewResponse
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.inheritancetaxonpensions.models._
@@ -51,10 +52,10 @@ class IhtpReportConnector @Inject() (
 
   def getOverview(pstr: String, dateFrom: String, dateTo: String, status: Option[String])(implicit
     hc: HeaderCarrier
-  ): Future[Either[ErrorResponse, JsValue]] = {
+  ): Future[Either[ErrorResponse, IhtpOverviewResponse]] = {
     val url: String = overviewUrl(pstr, dateFrom, dateTo, status)
 
-    retryFor[Either[ErrorResponse, JsValue]]("IHTP Report overview") {
+    retryFor[Either[ErrorResponse, IhtpOverviewResponse]]("IHTP Report overview") {
       case UpstreamErrorResponse.WithStatusCode(status) if Constants.TransientErrorStatusCodes.contains(status) => true
     } {
       val startTime = Instant.now()
@@ -65,7 +66,7 @@ class IhtpReportConnector @Inject() (
         .map {
           case response if response.status == OK =>
             logger.info("[IhtpReportConnector][getOverview] IHTP Report overview retrieved successfully")
-            Right(response.json)
+            Right(response.json.as[IhtpOverviewResponse])
           case response if response.status == BAD_REQUEST =>
             logger.warn("[IhtpReportConnector][getOverview] Bad request returned for overview")
             Left(ErrorCodes.badRequest)

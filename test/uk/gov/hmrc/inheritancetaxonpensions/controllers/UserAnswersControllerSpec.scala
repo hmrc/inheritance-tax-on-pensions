@@ -46,8 +46,6 @@ class UserAnswersControllerSpec extends BaseSpec with TestValues:
   private val mockUserAnswersRepository: UserAnswersRepository = mock[UserAnswersRepository]
   private val mockSessionSchemeDetailsRepository: SessionSchemeDetailsRepository = mock[SessionSchemeDetailsRepository]
 
-  val emptyUserAnswers: UserAnswers = UserAnswers(s"$srn-$uuid", srn, uuid)
-
   override def beforeEach(): Unit = {
     reset(
       mockAuthConnector,

@@ -46,6 +46,11 @@ object Constants {
   val deceasedSecondForename = "secondForename"
   val deceasedSurname = "surname"
 
+  val ihtTaxInformationPath = "ihtTaxInformation"
+  val noticeToPayDatePath = "dateThePensionSchemeReceivedNoticeToPay"
+
+  val dueDateDifferenceInDays = 35
+
   val TransientErrorStatusCodes: Set[Int] = Set(
     INTERNAL_SERVER_ERROR,
     BAD_GATEWAY,
