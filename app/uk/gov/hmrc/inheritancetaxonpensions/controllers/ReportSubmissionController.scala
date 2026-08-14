@@ -64,7 +64,7 @@ class ReportSubmissionController @Inject() (
             case Some(ua0) =>
               for {
                 ua1 <- Future.fromTry(
-                  UserAnswersHelper.set(ua0, JsPath \ "processingDate", Instant.now())
+                  UserAnswersHelper.set(ua0, JsPath \ "processingDateTime", Instant.now())
                 )
                 ua2 <- Future.fromTry(
                   UserAnswersHelper.set(ua1, JsPath \ "ihtPaymentReference", submissionResponse.paymentReference)

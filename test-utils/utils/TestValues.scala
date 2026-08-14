@@ -69,7 +69,7 @@ trait TestValues extends Generators {
   val testPstr = "12345678"
   val emptyUserAnswers: UserAnswers = UserAnswers(s"$srn-$uuid", srn, uuid)
   val testSubmissionResponse: IhtpReportSubmissionResponse = IhtpReportSubmissionResponse(
-    processingDate = Instant.now(),
+    processingDateTime = Instant.now(),
     formBundleNumber = "910000000000",
     paymentReference = "123456781"
   )
@@ -208,7 +208,7 @@ trait TestValues extends Generators {
     "didPrSubmit" -> true,
     "ihtPaymentReference" -> "A123456/25A629671",
     "formBundleNo" -> "000012345678",
-    "processingDate" -> "2026-08-12T16:26:37"
+    "processingDateTime" -> "2026-08-12T16:26:37"
   )
 
   val testOverviewResponse: JsArray = Json.arr(
