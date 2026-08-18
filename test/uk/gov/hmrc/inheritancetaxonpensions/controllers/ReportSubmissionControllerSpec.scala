@@ -22,7 +22,7 @@ import play.api.http.Status
 import uk.gov.hmrc.auth.core.retrieve.~
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.BadRequestException
-import uk.gov.hmrc.inheritancetaxonpensions.repositories.SessionSchemeDetailsRepository
+import uk.gov.hmrc.inheritancetaxonpensions.repositories.{SessionSchemeDetailsRepository, UserAnswersRepository}
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
 import uk.gov.hmrc.inheritancetaxonpensions.models._
 import org.mockito.ArgumentMatchers.any
@@ -44,13 +44,15 @@ class ReportSubmissionControllerSpec extends BaseSpec with TestValues:
   private val mockSchemeDetailsConnector: SchemeDetailsConnector = mock[SchemeDetailsConnector]
   private val mockSessionSchemeDetailsRepository: SessionSchemeDetailsRepository = mock[SessionSchemeDetailsRepository]
   private val sessionService = new SessionService(mockSessionSchemeDetailsRepository)
+  private val mockUserAnswersRepository = mock[UserAnswersRepository]
 
   private val controller = new ReportSubmissionController(
     reportSubmissionService = mockReportSubmissionService,
     cc = stubControllerComponents(),
     authConnector = mockAuthConnector,
     schemeDetailsConnector = mockSchemeDetailsConnector,
-    sessionService = sessionService
+    sessionService = sessionService,
+    userAnswersRepository = mockUserAnswersRepository
   )
 
   override def beforeEach(): Unit = {
@@ -84,6 +86,8 @@ class ReportSubmissionControllerSpec extends BaseSpec with TestValues:
       authoriseUser()
       when(mockReportSubmissionService.submitReport(any(), any())(any()))
         .thenReturn(Future.successful(Right(testSubmissionResponse)))
+      when(mockUserAnswersRepository.get(any()))
+        .thenReturn(Future.successful(None))
 
       val result = controller.submitReport(testPstr, testUserAnswersId)(
         requestWithRequiredHeaders

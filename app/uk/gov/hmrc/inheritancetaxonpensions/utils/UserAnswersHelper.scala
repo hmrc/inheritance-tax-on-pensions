@@ -16,8 +16,11 @@
 
 package uk.gov.hmrc.inheritancetaxonpensions.utils
 
-import play.api.libs.json.Reads
+import play.api.libs.json._
+import models.RichJsObject
 import uk.gov.hmrc.inheritancetaxonpensions.models.UserAnswers
+
+import scala.util.{Failure, Success, Try}
 
 object UserAnswersHelper {
 
@@ -43,6 +46,14 @@ object UserAnswersHelper {
     result.flatMap(_.asOpt[String])
   }
 
+  def getOptionalAs[A: Reads](userAnswers: UserAnswers, path: String): Option[A] = {
+    val parts = path.split("\\.")
+    val result = parts.foldLeft(Option(userAnswers.data: play.api.libs.json.JsValue)) { (optJson, part) =>
+      optJson.flatMap(json => (json \ part).asOpt[play.api.libs.json.JsValue])
+    }
+    result.flatMap(_.asOpt[A])
+  }
+
   def getMandatoryAs[A: Reads](userAnswers: UserAnswers, path: String): A =
     path
       .split("\\.")
@@ -55,4 +66,12 @@ object UserAnswersHelper {
       .getOrElse(
         throw new IllegalArgumentException(s"A mandatory field: '$path' was not found in user answers")
       )
+
+  def set[A](userAnswers: UserAnswers, path: JsPath, value: A)(implicit writes: Writes[A]): Try[UserAnswers] =
+    userAnswers.data.setObject(path, Json.toJson(value)) match {
+      case JsSuccess(jsValue, _) =>
+        Success(userAnswers.copy(data = jsValue))
+      case JsError(errors) =>
+        Failure(JsResultException(errors))
+    }
 }

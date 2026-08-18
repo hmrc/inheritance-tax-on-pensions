@@ -17,10 +17,13 @@
 package uk.gov.hmrc.inheritancetaxonpensions.utils
 
 import org.scalatest.matchers.must.Matchers
-import play.api.libs.json.Json
+import play.api.libs.json.{JsPath, JsResultException, Json}
 import uk.gov.hmrc.inheritancetaxonpensions.models.UserAnswers
 import utils.TestValues
 import org.scalatest.freespec.AnyFreeSpec
+
+import scala.language.postfixOps
+import scala.util.Failure
 
 class UserAnswersHelperSpec extends AnyFreeSpec with Matchers with TestValues {
 
@@ -55,6 +58,19 @@ class UserAnswersHelperSpec extends AnyFreeSpec with Matchers with TestValues {
         )
       }
     }
+    "getMandatoryAs" - {
+      "return the mandatory field value" in {
+        val result = UserAnswersHelper.getMandatoryAs[String](userAnswers, "mandatoryField")
+        result mustBe "mandatoryValue"
+      }
+
+      "Throw an IllegalArgumentException when the mandatory field is not present" - {
+        an[IllegalArgumentException] must be thrownBy UserAnswersHelper.getMandatoryAs[String](
+          userAnswersWithoutFields,
+          "mandatoryField"
+        )
+      }
+    }
 
     "getOptional" - {
       "return the optional field value" in {
@@ -65,6 +81,17 @@ class UserAnswersHelperSpec extends AnyFreeSpec with Matchers with TestValues {
       "return None when the optional field is not present" in {
         val result = UserAnswersHelper.getOptional(userAnswersWithoutFields, "optionalField")
         result mustBe None
+      }
+    }
+    "set" - {
+      "should return the optional field value" in {
+        val result = UserAnswersHelper.set(userAnswers, JsPath \ "addedField", "value")
+        val savedValue = (result.get.data \ "addedField").get.as[String]
+        savedValue mustBe "value"
+      }
+      "should handle error" in {
+        val result = UserAnswersHelper.set(userAnswers, JsPath \ "mandatoryField" \ "addedField", "value")
+        result mustBe a[Failure[JsResultException]]
       }
     }
   }

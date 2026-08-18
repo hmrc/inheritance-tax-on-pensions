@@ -17,23 +17,26 @@
 package uk.gov.hmrc.inheritancetaxonpensions.controllers
 
 import play.api.test.{FakeRequest, Helpers}
-import uk.gov.hmrc.inheritancetaxonpensions.connectors.{IhtpReportConnector, SchemeDetailsConnector}
+import uk.gov.hmrc.inheritancetaxonpensions.connectors.SchemeDetailsConnector
 import play.api.http.Status
 import play.api.inject.bind
-import uk.gov.hmrc.auth.core.{AuthConnector, Enrolments}
 import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier}
+import models.{IhtpOverviewResponse, IhtpOverviewSuccess}
 import uk.gov.hmrc.inheritancetaxonpensions.repositories.SessionSchemeDetailsRepository
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
+import uk.gov.hmrc.inheritancetaxonpensions.models.ErrorCodes
 import org.mockito.ArgumentMatchers.{any, eq => eqTo}
 import play.api.test.Helpers._
 import org.mockito.Mockito._
 import utils.BaseSpec
 import play.api.inject.guice.{GuiceApplicationBuilder, GuiceableModule}
+import uk.gov.hmrc.inheritancetaxonpensions.services.ReportRetrievalService
+import uk.gov.hmrc.auth.core.{AuthConnector, Enrolments}
 import play.api.Application
 import play.api.libs.json.Json
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class GetSubmissionListControllerSpec extends BaseSpec:
 
@@ -42,14 +45,14 @@ class GetSubmissionListControllerSpec extends BaseSpec:
   private val fakeRequest = FakeRequest("GET", "/")
   private val mockAuthConnector: AuthConnector = mock[AuthConnector]
   private val mockSchemeDetailsConnector: SchemeDetailsConnector = mock[SchemeDetailsConnector]
-  private val mockIhtpReportConnector: IhtpReportConnector = mock[IhtpReportConnector]
+  private val mockReportRetrievalService: ReportRetrievalService = mock[ReportRetrievalService]
   private val mockSessionSchemeDetailsRepository: SessionSchemeDetailsRepository = mock[SessionSchemeDetailsRepository]
 
   override def beforeEach(): Unit = {
     reset(
       mockAuthConnector,
       mockSchemeDetailsConnector,
-      mockIhtpReportConnector,
+      mockReportRetrievalService,
       mockSessionSchemeDetailsRepository
     )
 
@@ -59,7 +62,7 @@ class GetSubmissionListControllerSpec extends BaseSpec:
     Seq(
       bind[AuthConnector].toInstance(mockAuthConnector),
       bind[SchemeDetailsConnector].toInstance(mockSchemeDetailsConnector),
-      bind[IhtpReportConnector].toInstance(mockIhtpReportConnector),
+      bind[ReportRetrievalService].toInstance(mockReportRetrievalService),
       bind[SessionSchemeDetailsRepository].toInstance(mockSessionSchemeDetailsRepository)
     )
 
@@ -85,24 +88,17 @@ class GetSubmissionListControllerSpec extends BaseSpec:
     requestWithRequiredHeaders("/?dateFrom=2026-01-01&dateTo=2026-12-31")
 
   "GET submission list" must {
-    "return 200" in {
+    "should return 200" in {
       when(mockAuthConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any()))
         .thenReturn(
           Future.successful(new ~(Some(externalId), enrolments))
         )
       when(mockSchemeDetailsConnector.checkAssociation(any(), any(), any())(any(), any()))
         .thenReturn(Future.successful(true))
-      when(mockIhtpReportConnector.getOverview(any(), any(), any(), any())(any()))
+      when(mockReportRetrievalService.getOverview(any(), any(), any(), any(), any())(any(), any()))
         .thenReturn(
           Future.successful(
-            Right(
-              Json.obj(
-                "success" -> Json.obj(
-                  "pstr" -> pstr,
-                  "ihtpOverview" -> Json.arr()
-                )
-              )
-            )
+            Right(IhtpOverviewResponse(IhtpOverviewSuccess(Seq())))
           )
         )
 
@@ -113,23 +109,24 @@ class GetSubmissionListControllerSpec extends BaseSpec:
       status(result) mustEqual Status.OK
       contentAsJson(result) mustEqual Json.obj(
         "success" -> Json.obj(
-          "pstr" -> pstr,
           "ihtpOverview" -> Json.arr()
         )
       )
       verify(mockAuthConnector, times(1)).authorise(any(), any())(any(), any())
       verify(mockSchemeDetailsConnector, times(1)).checkAssociation(any(), any(), any())(any(), any())
-      verify(mockIhtpReportConnector, times(1)).getOverview(
+      verify(mockReportRetrievalService, times(1)).getOverview(
         eqTo(pstr),
+        eqTo(srn),
         eqTo("2026-01-01"),
         eqTo("2026-12-31"),
         eqTo(None)
       )(
-        any[HeaderCarrier]()
+        any[HeaderCarrier](),
+        any[ExecutionContext]()
       )
     }
 
-    "return 400 when dateFrom is missing" in {
+    "should return 400 when dateFrom is missing" in {
       when(mockAuthConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any()))
         .thenReturn(
           Future.successful(new ~(Some(externalId), enrolments))
@@ -145,10 +142,10 @@ class GetSubmissionListControllerSpec extends BaseSpec:
         )
       }
 
-      verify(mockIhtpReportConnector, never).getOverview(any(), any(), any(), any())(any())
+      verify(mockReportRetrievalService, never).getOverview(any(), any(), any(), any(), any())(any(), any())
     }
 
-    "return 400 when dateTo is missing" in {
+    "should return 400 when dateTo is missing" in {
       when(mockAuthConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any()))
         .thenReturn(
           Future.successful(new ~(Some(externalId), enrolments))
@@ -164,17 +161,17 @@ class GetSubmissionListControllerSpec extends BaseSpec:
         )
       }
 
-      verify(mockIhtpReportConnector, never).getOverview(any(), any(), any(), any())(any())
+      verify(mockReportRetrievalService, never).getOverview(any(), any(), any(), any(), any())(any(), any())
     }
 
-    "return 400 when non of required headers exist" in {
+    "should return 400 when non of required headers exist" in {
       intercept[BadRequestException] {
         await(controller.getSubmissionList(pstr)(fakeRequest))
       }
       verify(mockAuthConnector, never).authorise(any(), any())(any(), any())
       verify(mockSchemeDetailsConnector, never).checkAssociation(any(), any(), any())(any(), any())
     }
-    "return 400 when some of required headers don't exist" in {
+    "should return 400 when some of required headers don't exist" in {
       intercept[BadRequestException] {
         await(
           controller.getSubmissionList(pstr)(
@@ -185,4 +182,41 @@ class GetSubmissionListControllerSpec extends BaseSpec:
       verify(mockAuthConnector, never).authorise(any(), any())(any(), any())
       verify(mockSchemeDetailsConnector, never).checkAssociation(any(), any(), any())(any(), any())
     }
+
+    "should return 500 when service returns unexpected error" in {
+      when(mockAuthConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any()))
+        .thenReturn(
+          Future.successful(new ~(Some(externalId), enrolments))
+        )
+      when(mockSchemeDetailsConnector.checkAssociation(any(), any(), any())(any(), any()))
+        .thenReturn(Future.successful(true))
+      when(mockReportRetrievalService.getOverview(any(), any(), any(), any(), any())(any(), any()))
+        .thenReturn(
+          Future.successful(
+            Left(ErrorCodes.unexpectedResponse)
+          )
+        )
+
+      val result = controller.getSubmissionList(pstr)(
+        requestWithRequiredHeadersAndDates
+      )
+
+      status(result) mustEqual Status.INTERNAL_SERVER_ERROR
+      contentAsJson(result) mustEqual Json.obj(
+        "message" -> "Unexpected Response"
+      )
+      verify(mockAuthConnector, times(1)).authorise(any(), any())(any(), any())
+      verify(mockSchemeDetailsConnector, times(1)).checkAssociation(any(), any(), any())(any(), any())
+      verify(mockReportRetrievalService, times(1)).getOverview(
+        eqTo(pstr),
+        eqTo(srn),
+        eqTo("2026-01-01"),
+        eqTo("2026-12-31"),
+        eqTo(None)
+      )(
+        any[HeaderCarrier](),
+        any[ExecutionContext]()
+      )
+    }
+
   }

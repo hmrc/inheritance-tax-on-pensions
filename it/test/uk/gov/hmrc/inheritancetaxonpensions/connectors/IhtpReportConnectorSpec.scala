@@ -18,9 +18,10 @@ package uk.gov.hmrc.inheritancetaxonpensions.connectors
 
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.*
+import models.{IhtpOverviewResponse, IhtpOverviewSuccess}
 import org.scalatest.time.{Millis, Seconds, Span}
 import play.api.Application
-import play.api.http.Status._
+import play.api.http.Status.*
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import uk.gov.hmrc.http.*
@@ -264,7 +265,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
           )
         )
 
-        result mustBe Right(response)
+        result mustBe Right(IhtpOverviewResponse(IhtpOverviewSuccess(Seq())))
       }
     }
 
@@ -288,7 +289,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
           )
         )
 
-        result mustBe Right(response)
+        result mustBe Right(IhtpOverviewResponse(IhtpOverviewSuccess(Seq())))
       }
     }
 
@@ -312,7 +313,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
           )
         )
 
-        result mustBe Right(response)
+        result mustBe Right(IhtpOverviewResponse(IhtpOverviewSuccess(Seq())))
       }
     }
 
