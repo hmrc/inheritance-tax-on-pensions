@@ -181,14 +181,12 @@ class ReportSubmissionService @Inject() (
           "didPrSubmit"
         )
       ),
-      knownBeneficiaries = Some(
-        YesNo(
-          UserAnswersHelper.getMandatoryAs[Boolean](
-            userAnswers,
-            "areBeneficiariesKnown"
-          )
+      knownBeneficiaries = UserAnswersHelper
+        .getOptionalAs[Boolean](
+          userAnswers,
+          "areBeneficiariesKnown"
         )
-      ),
+        .map(YesNo.apply),
       totalIHTPayable = UserAnswersHelper.getOptional(
         userAnswers,
         "ihtTaxInformation.totalIHTPayable"

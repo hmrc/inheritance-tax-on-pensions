@@ -118,8 +118,6 @@ class ReportSubmissionServiceSpec
 
   private val ihTaxInformationJson = Json.obj(
     "dateThePensionSchemeReceivedNoticeToPay" -> testPaymentNoticeDate,
-    "noticeSubmittedByPR" -> true,
-    "knownBeneficiaries" -> false,
     "totalIHTPayable" -> "1000.00",
     "totalInterestPayable" -> "50.00",
     "total" -> "1050.00"
