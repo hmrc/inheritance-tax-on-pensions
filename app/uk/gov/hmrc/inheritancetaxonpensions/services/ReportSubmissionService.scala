@@ -22,11 +22,11 @@ import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 import uk.gov.hmrc.inheritancetaxonpensions.repositories.UserAnswersRepository
 import uk.gov.hmrc.inheritancetaxonpensions.utils.UserAnswersHelper
 import uk.gov.hmrc.inheritancetaxonpensions.models._
-import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.YesNo
+import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.{IndividualOrOrg, IndividualOrTrust, YesNo}
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants
 import com.google.inject.{Inject, Singleton}
 import play.api.Logging
-import play.api.libs.json.JsObject
+import play.api.libs.json.{JsObject, JsValue}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -39,7 +39,7 @@ class ReportSubmissionService @Inject() (
 
   def submitReport(userAnswersId: String, pstr: String)(implicit
     hc: HeaderCarrier
-  ): Future[Either[ErrorResponse, IhtpReportSubmissionResponse]] =
+  ): Future[Either[ErrorResponse, IhtpPaymentNoticeResponse]] =
     for {
       userAnswersOpt <- userAnswersRepository.get(userAnswersId)
       result <- userAnswersOpt match {
@@ -53,30 +53,27 @@ class ReportSubmissionService @Inject() (
       }
     } yield result
 
-  private def buildSubmissionPayload(userAnswers: UserAnswers, pstr: String): IhtpReportSubmission = {
-    val inheritanceTaxReferenceNumber = UserAnswersHelper.getMandatory(
-      userAnswers,
-      Constants.inheritanceTaxReferenceNumberPath
-    )
-
-    val deceasedDetailsPath = Constants.deceasedDetailsPath
-
+  private def buildSubmissionPayload(userAnswers: UserAnswers, pstr: String): IhtpPaymentNoticeSubmission = {
+    val inheritanceTaxReferenceNumber =
+      UserAnswersHelper.getMandatory(userAnswers, Constants.inheritanceTaxReferenceNumberPath)
+    val deceasedChangeFlag = UserAnswersHelper.getOptionalAs[YesNo](userAnswers, Constants.deceasedChangeFlag)
     val deceasedTitle = UserAnswersHelper.getOptional(
       userAnswers,
-      s"$deceasedDetailsPath.${Constants.deceasedTitle}"
+      s"${Constants.nameOfDeceasedPath}.${Constants.deceasedTitle}"
     )
     val deceasedFirstForename = UserAnswersHelper.getMandatory(
       userAnswers,
-      s"$deceasedDetailsPath.${Constants.deceasedFirstForename}"
+      s"${Constants.nameOfDeceasedPath}.${Constants.deceasedFirstForename}"
     )
     val deceasedSecondForename = UserAnswersHelper.getOptional(
       userAnswers,
-      s"$deceasedDetailsPath.${Constants.deceasedSecondForename}"
+      s"${Constants.nameOfDeceasedPath}.${Constants.deceasedSecondForename}"
     )
     val deceasedSurname = UserAnswersHelper.getMandatory(
       userAnswers,
-      s"$deceasedDetailsPath.${Constants.deceasedSurname}"
+      s"${Constants.nameOfDeceasedPath}.${Constants.deceasedSurname}"
     )
+
     val hasNino = UserAnswersHelper.getMandatoryAs[Boolean](userAnswers, Constants.hasNinoPath)
     val (nino, reasonForNoNino) =
       if (hasNino) {
@@ -84,68 +81,127 @@ class ReportSubmissionService @Inject() (
       } else {
         (None, Some(UserAnswersHelper.getMandatory(userAnswers, Constants.reasonForNoNinoPath)))
       }
+
     val birthDeathDates = UserAnswersHelper.getMandatoryAs[BirthDeathDates](
       userAnswers,
       Constants.birthDeathDatesPath
     )
-    val prType = UserAnswersHelper.getMandatory(userAnswers, "prType")
-    val prDetails = buildPrDetails(userAnswers, prType)
+    val prDetails = buildPrDetails(userAnswers)
 
     val beneficiaryList = buildBeneficiaryList(userAnswers)
+    val declarations = buildDeclarations()
 
     val reportDetails = ReportDetails(
-      pstr = pstr
+      pstr = pstr,
+      ihtPaymentReference = inheritanceTaxReferenceNumber
     )
 
-    val deceasedDetails = DeceasedDetails(
-      inheritanceTaxReference = inheritanceTaxReferenceNumber,
-      title = deceasedTitle,
-      firstForename = deceasedFirstForename,
-      secondForename = deceasedSecondForename,
-      surname = deceasedSurname,
-      dateOfBirth = birthDeathDates.dateOfBirth,
-      dateOfDeath = birthDeathDates.dateOfDeath,
-      ninoExist = YesNo(hasNino),
-      nino = nino,
-      reasonNoNINO = reasonForNoNino
+    val deceased = Deceased(
+      deceasedChangeFlag = deceasedChangeFlag match {
+        case Some(changeFlag) => Some(changeFlag)
+        case _ => None
+      },
+      deceasedPersonalDetails = DeceasedPersonalDetails(
+        title = deceasedTitle,
+        firstForename = deceasedFirstForename,
+        secondForename = deceasedSecondForename,
+        surname = deceasedSurname,
+        ninoExist = YesNo(hasNino),
+        nino = nino match {
+          case Some(ni) => Some(ni)
+          case _ => None
+        },
+        reasonNoNINO = reasonForNoNino match {
+          case Some(reason) => Some(reason)
+          case _ => None
+        }
+      ),
+      deceasedDetails = DeceasedDetails(
+        deceasedsDOB = birthDeathDates.dateOfBirth,
+        deceasedsDOD = birthDeathDates.dateOfDeath,
+        ihtRefNumber = inheritanceTaxReferenceNumber
+      )
     )
 
-    IhtpReportSubmission(
+    IhtpPaymentNoticeSubmission(
       reportDetails,
-      deceasedDetails,
+      deceased,
       prDetails,
-      buildIhtTaxInformation(userAnswers),
-      beneficiaryList
+      buildIhTaxInformation(userAnswers),
+      beneficiaryList,
+      declarations
     )
   }
 
-  private def buildPrDetails(userAnswers: UserAnswers, prType: String): PrDetails =
-    prType match {
+  private def buildPrDetails(userAnswers: UserAnswers): PrDetails =
+    val prChangeFlag = UserAnswersHelper.getOptionalAs[YesNo](userAnswers, "prDetails.prChangeFlag")
+    val prType = UserAnswersHelper.getMandatory(userAnswers, "prType")
+    val (prContactDetails, prAddress) = prType match {
       case "organisation" =>
-        val organisationDetails = UserAnswersHelper.getMandatoryAs[OrganisationDetails](
-          userAnswers,
-          "prDetails.organisation"
+        val organisationDetails =
+          UserAnswersHelper.getMandatoryAs[OrganisationDetails](userAnswers, "prDetails.organisation")
+        (
+          PrContactDetails(
+            orgName = Some(organisationDetails.info.organisationName),
+            title = organisationDetails.info.title,
+            firstForename = organisationDetails.info.firstForename,
+            secondForename = organisationDetails.info.secondForename,
+            surname = organisationDetails.info.surname
+          ),
+          organisationDetails.address.copy(postcode =
+            UserAnswersHelper.getOptionalAs[String](userAnswers, "prDetails.organisation.ukPostcode")
+          )
         )
-        PrDetails(None, Some(organisationDetails))
       case "individual" =>
         val individualDetails = UserAnswersHelper.getMandatoryAs[IndividualDetails](
           userAnswers,
           "prDetails.individual"
         )
-        PrDetails(Some(individualDetails), None)
+        (
+          PrContactDetails(
+            title = individualDetails.name.title,
+            firstForename = individualDetails.name.firstForename,
+            secondForename = individualDetails.name.secondForename,
+            surname = individualDetails.name.surname
+          ),
+          individualDetails.address.copy(postcode =
+            UserAnswersHelper.getOptionalAs[String](userAnswers, "prDetails.individual.ukPostcode")
+          )
+        )
     }
 
-  private def buildIhtTaxInformation(userAnswers: UserAnswers): IhtTaxInformation =
-    IhtTaxInformation(
-      dateThePensionSchemeReceivedNoticeToPay = UserAnswersHelper.getMandatory(
+    PrDetails(prChangeFlag, IndividualOrOrg(prType), prContactDetails, prAddress)
+
+  private def buildIhTaxInformation(userAnswers: UserAnswers): IhTaxInformation =
+    IhTaxInformation(
+      ihTaxChangeFlag = UserAnswersHelper.getOptionalAs[YesNo](userAnswers, "ihtTaxInformation.ihTaxChangeFlag"),
+      dateNoticeReceived = UserAnswersHelper.getMandatory(
         userAnswers,
         "ihtTaxInformation.dateThePensionSchemeReceivedNoticeToPay"
       ),
-      didThePersonalRepresentativeSubmitTheNotice = YesNo(
+      noticeSubmittedByPR = YesNo(
         UserAnswersHelper.getMandatoryAs[Boolean](
           userAnswers,
           "didPrSubmit"
         )
+      ),
+      knownBeneficiaries = UserAnswersHelper
+        .getOptionalAs[Boolean](
+          userAnswers,
+          "areBeneficiariesKnown"
+        )
+        .map(YesNo.apply),
+      totalIHTPayable = UserAnswersHelper.getOptional(
+        userAnswers,
+        "ihtTaxInformation.totalIHTPayable"
+      ),
+      totalInterestPayable = UserAnswersHelper.getOptional(
+        userAnswers,
+        "ihtTaxInformation.totalInterestPayable"
+      ),
+      total = UserAnswersHelper.getOptional(
+        userAnswers,
+        "ihtTaxInformation.total"
       )
     )
 
@@ -157,7 +213,38 @@ class ReportSubmissionService @Inject() (
         beneficiaryType match {
           case "individual" =>
             val individualName = (beneficiary \ "beneficiaryDetails" \ "individual").as[IndividualName]
-            Some(BeneficiaryDetails(Some(individualName)))
+            Some(
+              BeneficiaryDetails(
+                beneficiaryChangeFlag = None,
+                beneficiaryType = IndividualOrTrust(beneficiaryType),
+                beneficiaryContactDetails = BeneficiaryContactDetails(
+                  None,
+                  BeneficiaryPersonalDetails(
+                    title = individualName.title,
+                    firstForename = individualName.firstForename,
+                    secondForename = individualName.secondForename,
+                    surname = individualName.surname,
+                    ninoExist = YesNo.Yes,
+                    // TODO update once beneficiary nino or reason for no nino are captured
+                    nino = None,
+                    reasonNoNINO = None
+                  ),
+                  beneficiaryAddress = AddressDetails(
+                    // TODO update once beneficiary address details are captured
+                    addressLine1 = "1 ABCDE Street",
+                    addressLine2 = "FGHIJ Town",
+                    postcode = Some("ZZ99 1AA"),
+                    country = "GB"
+                  )
+                ),
+                beneficiaryPaymentDetails = BeneficiaryPaymentDetails(
+                  // TODO update once beneficiary payment details are captured
+                  beneficiaryIHTPayable = "TODO",
+                  beneficiaryInterestPayable = "TODO",
+                  beneficiaryTotal = "TODO"
+                )
+              )
+            )
           case _ => None
         }
       })
@@ -165,4 +252,25 @@ class ReportSubmissionService @Inject() (
       None
     }
   }
+
+  private def buildDeclarations(): Declarations =
+    // TODO finish off declaration when the UI declaration ticket is done
+    logger.warn("TODO - Hardcoded declaration section in the payload")
+    Declarations(
+      submittedBy = "PSA",
+      submitterID = "TODO",
+      psaDeclaration = Some(
+        PsaDeclaration(
+          psaDeclaration1 = "true",
+          psaDeclaration2 = "true"
+        )
+      ),
+      pspDeclaration = Some(
+        PspDeclaration(
+          pspDeclaration1 = "true",
+          pspDeclaration2 = "true",
+          psaid = "TODO"
+        )
+      )
+    )
 }

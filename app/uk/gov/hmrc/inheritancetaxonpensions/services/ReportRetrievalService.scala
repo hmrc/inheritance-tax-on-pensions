@@ -82,11 +82,11 @@ class ReportRetrievalService @Inject() (
               inheritanceTaxReference = UserAnswersHelper.getMandatoryAs[String](ua, inheritanceTaxReferenceNumberPath),
               paymentReference = None,
               title = None, // likely not in final version of ETMP payload
-              firstForename = UserAnswersHelper.getOptional(ua, s"${deceasedDetailsPath}.${deceasedFirstForename}"),
+              firstForename = UserAnswersHelper.getOptional(ua, s"${nameOfDeceasedPath}.${deceasedFirstForename}"),
               secondForename = None, // likely not in final version of ETMP payload
               surname = Some(
                 UserAnswersHelper
-                  .getOptional(ua, s"${deceasedDetailsPath}.${deceasedSurname}")
+                  .getOptional(ua, s"${nameOfDeceasedPath}.${deceasedSurname}")
                   .getOrElse(
                     // fallback if only the first page of the journey was saved
                     UserAnswersHelper.getOptional(ua, Constants.inheritanceTaxReferenceNumberPath).getOrElse("")

@@ -40,11 +40,12 @@ object Constants {
   val birthDeathDatesPath = "birthDeathDates"
   val prDetailsPath = "prDetails"
 
-  val deceasedDetailsPath = "nameOfDeceased"
+  val nameOfDeceasedPath = "nameOfDeceased"
   val deceasedTitle = "title"
   val deceasedFirstForename = "firstForename"
   val deceasedSecondForename = "secondForename"
   val deceasedSurname = "surname"
+  val deceasedChangeFlag = s"deceasedChangeFlag" // not yet implemented
 
   val ihtTaxInformationPath = "ihtTaxInformation"
   val noticeToPayDatePath = "dateThePensionSchemeReceivedNoticeToPay"
