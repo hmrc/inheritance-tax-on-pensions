@@ -148,7 +148,9 @@ class ReportSubmissionService @Inject() (
             secondForename = organisationDetails.info.secondForename,
             surname = organisationDetails.info.surname
           ),
-          organisationDetails.address
+          organisationDetails.address.copy(postcode =
+            UserAnswersHelper.getOptionalAs[String](userAnswers, "prDetails.organisation.ukPostcode")
+          )
         )
       case "individual" =>
         val individualDetails = UserAnswersHelper.getMandatoryAs[IndividualDetails](
@@ -162,7 +164,9 @@ class ReportSubmissionService @Inject() (
             secondForename = individualDetails.name.secondForename,
             surname = individualDetails.name.surname
           ),
-          individualDetails.address
+          individualDetails.address.copy(postcode =
+            UserAnswersHelper.getOptionalAs[String](userAnswers, "prDetails.individual.ukPostcode")
+          )
         )
     }
 

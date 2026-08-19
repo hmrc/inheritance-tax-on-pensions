@@ -85,7 +85,7 @@ class ReportSubmissionServiceSpec
       "surname" -> "Doe",
       "addressLine1" -> "1 ABCDE Street",
       "addressLine2" -> "FGHIJ Town",
-      "postcode" -> "ZZ99 1AA",
+      "ukPostcode" -> "ZZ99 1AA",
       "country" -> "GB"
     )
   )
@@ -111,7 +111,7 @@ class ReportSubmissionServiceSpec
       "surname" -> "Doe",
       "addressLine1" -> "1 ABCDE Street",
       "addressLine2" -> "FGHIJ Town",
-      "postcode" -> "ZZ99 1AA",
+      "ukPostcode" -> "ZZ99 1AA",
       "country" -> "GB"
     )
   )
@@ -229,7 +229,7 @@ class ReportSubmissionServiceSpec
               "surname" -> "Doe",
               "addressLine1" -> "1 ABCDE Street",
               "addressLine2" -> "FGHIJ Town",
-              "postcode" -> "ZZ99 1AA",
+              "ukPostcode" -> "ZZ99 1AA",
               "country" -> "GB"
             )
           ),
