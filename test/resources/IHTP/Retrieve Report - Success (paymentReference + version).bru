@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{ihtp_url}}/ihtp?pstr=24000001IN&paymentReferenceNumber=A123456/25A-629671&versionNumber=001
+  url: {{ihtp_url}}/ihtp?pstr=24000001IN&paymentReferenceNumber=A123456/25A629671&versionNumber=001
   body: none
   auth: bearer
 }
@@ -31,8 +31,8 @@ tests {
   test("Status code is 200", function () {
       expect(res.getStatus()).to.equal(200);
   });
-
+  
   test("Response contains the requested PSTR", function () {
-      expect(res.body.success.pstr).to.equal("24000001IN");
+      expect(res.body.success.schemeDetails.pstr).to.equal("24000001IN");
   });
 }
