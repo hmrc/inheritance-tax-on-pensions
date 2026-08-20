@@ -59,7 +59,7 @@ class ReportSubmissionServiceSpec
     "country" -> "GB"
   )
 
-  private val deceasedPersonalDetailsJohnDoeJson = Json.obj(
+  private val deceasedPersonalDetailsJohnDoeUaJson = Json.obj(
     "title" -> "Mr",
     "firstForename" -> "John",
     "secondForename" -> "William",
@@ -77,7 +77,7 @@ class ReportSubmissionServiceSpec
     "prAddress" -> testAddress
   )
 
-  private val individualPrDetailsJson = Json.obj(
+  private val individualPrDetailsUaJson = Json.obj(
     "individual" -> Json.obj(
       "title" -> "Mr",
       "firstForename" -> "John",
@@ -102,7 +102,7 @@ class ReportSubmissionServiceSpec
     "prAddress" -> testAddress
   )
 
-  private val organisationPrDetailsJson = Json.obj(
+  private val organisationPrDetailsUaJson = Json.obj(
     "organisation" -> Json.obj(
       "organisationName" -> "Test Organisation",
       "title" -> "Ms",
@@ -116,14 +116,14 @@ class ReportSubmissionServiceSpec
     )
   )
 
-  private val ihTaxInformationJson = Json.obj(
+  private val ihTaxInformationUaJson = Json.obj(
     "dateThePensionSchemeReceivedNoticeToPay" -> testPaymentNoticeDate,
     "totalIHTPayable" -> "1000.00",
     "totalInterestPayable" -> "50.00",
     "total" -> "1050.00"
   )
 
-  private val declarationJson = Json.obj(
+  private val declarationUaJson = Json.obj(
     "submittedBy" -> "PSA",
     "submitterID" -> "TODO",
     "psaDeclaration" -> Json.obj(
@@ -159,7 +159,7 @@ class ReportSubmissionServiceSpec
         uuid,
         Json.obj(
           "inheritanceTaxReference" -> "A123459/25A",
-          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeJson,
+          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeUaJson,
           "hasNino" -> true,
           "nino" -> testNino,
           "birthDeathDates" -> Json.obj(
@@ -168,10 +168,10 @@ class ReportSubmissionServiceSpec
           ),
           "prType" -> "individual",
           "didPrSubmit" -> true,
-          "prDetails" -> individualPrDetailsJson,
+          "prDetails" -> individualPrDetailsUaJson,
           "areBeneficiariesKnown" -> false,
-          "ihtTaxInformation" -> ihTaxInformationJson,
-          "declarations" -> declarationJson
+          "ihtTaxInformation" -> ihTaxInformationUaJson,
+          "declarations" -> declarationUaJson
         )
       )
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
@@ -188,8 +188,8 @@ class ReportSubmissionServiceSpec
           pstr = testPstr,
           ihtPaymentReference = "A123459/25A"
         ),
-        deceased,
-        prDetailsIndividual,
+        deceasedPayloadSection,
+        prDetailsIndividualPayloadSection,
         IhTaxInformation(
           ihTaxChangeFlag = None,
           dateNoticeReceived = testPaymentNoticeDate,
@@ -200,7 +200,7 @@ class ReportSubmissionServiceSpec
           total = Some("1050.00")
         ),
         beneficiaries = None,
-        declarations = declarations
+        declarations = declarationsPayloadSection
       )
       Json.toJson(payloadCaptor.getValue.personalRep) mustBe individualPersonalRepResponseJson
     }
@@ -212,7 +212,7 @@ class ReportSubmissionServiceSpec
         uuid,
         Json.obj(
           "inheritanceTaxReference" -> "A123459/25A",
-          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeJson,
+          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeUaJson,
           "hasNino" -> true,
           "nino" -> testNino,
           "birthDeathDates" -> Json.obj(
@@ -235,8 +235,8 @@ class ReportSubmissionServiceSpec
           ),
           "didPrSubmit" -> true,
           "areBeneficiariesKnown" -> false,
-          "ihtTaxInformation" -> ihTaxInformationJson,
-          "declarations" -> declarationJson
+          "ihtTaxInformation" -> ihTaxInformationUaJson,
+          "declarations" -> declarationUaJson
         )
       )
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
@@ -248,7 +248,7 @@ class ReportSubmissionServiceSpec
       val payloadCaptor: ArgumentCaptor[IhtpPaymentNoticeSubmission] =
         ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
       verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
-      payloadCaptor.getValue.personalRep mustBe prDetailsOrganisation
+      payloadCaptor.getValue.personalRep mustBe prDetailsOrganisationPayloadSection
       Json.toJson(payloadCaptor.getValue.personalRep) mustBe organisationPersonalRepResponseJson
     }
 
@@ -295,7 +295,7 @@ class ReportSubmissionServiceSpec
         uuid,
         Json.obj(
           "inheritanceTaxReference" -> "A123459/25A",
-          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeJson,
+          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeUaJson,
           "hasNino" -> true,
           "nino" -> testNino,
           "birthDeathDates" -> Json.obj(
@@ -341,7 +341,7 @@ class ReportSubmissionServiceSpec
         srn,
         uuid,
         Json.obj(
-          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeJson,
+          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeUaJson,
           "inheritanceTaxReference" -> "A123459/25A",
           "hasNino" -> true,
           "nino" -> testNino,
@@ -362,7 +362,7 @@ class ReportSubmissionServiceSpec
               "country" -> "GB"
             )
           ),
-          "ihtTaxInformation" -> ihTaxInformationJson
+          "ihtTaxInformation" -> ihTaxInformationUaJson
         )
       )
 
@@ -381,7 +381,7 @@ class ReportSubmissionServiceSpec
         uuid,
         Json.obj(
           "inheritanceTaxReference" -> "A123459/25A",
-          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeJson,
+          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeUaJson,
           "hasNino" -> true,
           "nino" -> testNino,
           "birthDeathDates" -> Json.obj(
@@ -391,10 +391,10 @@ class ReportSubmissionServiceSpec
           "prType" -> "individual",
           "didPrSubmit" -> true,
           "areBeneficiariesKnown" -> false,
-          "prDetails" -> individualPrDetailsJson,
+          "prDetails" -> individualPrDetailsUaJson,
           "ihtTaxInformation" -> Json.obj(
           ),
-          "declarations" -> declarationJson
+          "declarations" -> declarationUaJson
         )
       )
 
@@ -425,11 +425,11 @@ class ReportSubmissionServiceSpec
             "dateOfDeath" -> testDateOfDeath
           ),
           "prType" -> "individual",
-          "prDetails" -> individualPrDetailsJson,
+          "prDetails" -> individualPrDetailsUaJson,
           "didPrSubmit" -> true,
           "areBeneficiariesKnown" -> false,
-          "ihtTaxInformation" -> ihTaxInformationJson,
-          "declarations" -> declarationJson
+          "ihtTaxInformation" -> ihTaxInformationUaJson,
+          "declarations" -> declarationUaJson
         )
       )
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
@@ -438,7 +438,7 @@ class ReportSubmissionServiceSpec
 
       val result = service.submitReport(testUserAnswersId, testPstr).futureValue
       result.isLeft mustBe true
-      val deceasedJaneDoe = deceased.copy(
+      val deceasedJaneDoe = deceasedPayloadSection.copy(
         deceasedPersonalDetails = DeceasedPersonalDetails(
           title = Some("Mrs"),
           firstForename = "Jane",
@@ -458,7 +458,7 @@ class ReportSubmissionServiceSpec
           ihtPaymentReference = "A123459/25A"
         ),
         deceasedJaneDoe,
-        prDetailsIndividual,
+        prDetailsIndividualPayloadSection,
         IhTaxInformation(
           ihTaxChangeFlag = None,
           dateNoticeReceived = testPaymentNoticeDate,
@@ -469,7 +469,7 @@ class ReportSubmissionServiceSpec
           total = Some("1050.00")
         ),
         beneficiaries = None,
-        declarations = declarations
+        declarations = declarationsPayloadSection
       )
     }
 
@@ -479,7 +479,7 @@ class ReportSubmissionServiceSpec
         srn,
         uuid,
         Json.obj(
-          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeJson,
+          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeUaJson,
           "inheritanceTaxReference" -> "A123459/25A",
           "hasNino" -> true,
           "nino" -> testNino,
@@ -489,7 +489,7 @@ class ReportSubmissionServiceSpec
           ),
           "prType" -> "organisation",
           "didPrSubmit" -> true,
-          "prDetails" -> organisationPrDetailsJson,
+          "prDetails" -> organisationPrDetailsUaJson,
           "ihtTaxInformation" -> Json.obj(
             "dateThePensionSchemeReceivedNoticeToPay" -> testPaymentNoticeDate
           ),
@@ -525,8 +525,8 @@ class ReportSubmissionServiceSpec
           pstr = testPstr,
           ihtPaymentReference = "A123459/25A"
         ),
-        deceased,
-        prDetailsOrganisation,
+        deceasedPayloadSection,
+        prDetailsOrganisationPayloadSection,
         IhTaxInformation(
           ihTaxChangeFlag = None,
           dateNoticeReceived = testPaymentNoticeDate,
@@ -540,12 +540,12 @@ class ReportSubmissionServiceSpec
           Seq(
             BeneficiaryDetails(
               beneficiaryType = IndividualOrTrust.Individual,
-              beneficiaryContactDetails = beneficiaryContactDetails,
-              beneficiaryPaymentDetails = beneficiaryPaymentDetails
+              beneficiaryContactDetails = beneficiaryContactDetailsPayloadSection,
+              beneficiaryPaymentDetails = beneficiaryPaymentDetailsPayloadSection
             )
           )
         ),
-        declarations = declarations
+        declarations = declarationsPayloadSection
       )
       Json.toJson(
         payloadCaptor.getValue.beneficiaries.get.head.beneficiaryContactDetails.beneficiaryPersonalDetails

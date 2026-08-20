@@ -70,12 +70,14 @@ trait TestValues extends Generators {
   val testUserAnswersId = "testUserAnswersId"
   val testPstr = "12345678"
   val emptyUserAnswers: UserAnswers = UserAnswers(s"$srn-$uuid", srn, uuid)
-  val testSubmissionResponse = IhtpPaymentNoticeResponse(
+  val testIhtPaymentReference: String = "A123456/25A629671"
+
+  val testSubmissionResponse: IhtpPaymentNoticeResponse = IhtpPaymentNoticeResponse(
     formBundleNo = "910000000000",
-    ihtPaymentReference = "A123459/25A"
+    ihtPaymentReference = testIhtPaymentReference
   )
 
-  val deceasedPersonalDetails = DeceasedPersonalDetails(
+  private val deceasedPersonalDetailsPayloadSection = DeceasedPersonalDetails(
     title = Some("Mr"),
     firstForename = "John",
     secondForename = Some("William"),
@@ -85,25 +87,25 @@ trait TestValues extends Generators {
     reasonNoNINO = None
   )
 
-  val deceasedDetails = DeceasedDetails(
+  private val deceasedDetailsPayloadSection = DeceasedDetails(
     deceasedsDOB = testDateOfBirth,
     deceasedsDOD = testDateOfDeath,
     ihtRefNumber = "A123459/25A"
   )
 
-  val deceased = Deceased(
-    deceasedPersonalDetails = deceasedPersonalDetails,
-    deceasedDetails = deceasedDetails
+  val deceasedPayloadSection: Deceased = Deceased(
+    deceasedPersonalDetails = deceasedPersonalDetailsPayloadSection,
+    deceasedDetails = deceasedDetailsPayloadSection
   )
 
-  val prContactDetailsIndividual = PrContactDetails(
+  private val prContactDetailsIndividualPayloadSection = PrContactDetails(
     title = Some("Mr"),
     firstForename = "John",
     secondForename = Some("William"),
     surname = "Doe"
   )
 
-  val prContactDetailsOrganisation = PrContactDetails(
+  private val prContactDetailsOrganisationPayloadSection = PrContactDetails(
     orgName = Some("Test Organisation"),
     title = Some("Ms"),
     firstForename = "Jane",
@@ -111,10 +113,10 @@ trait TestValues extends Generators {
     surname = "Doe"
   )
 
-  val prDetailsIndividual = PrDetails(
+  val prDetailsIndividualPayloadSection: PrDetails = PrDetails(
     prChangeFlag = None,
     typeOfPR = IorOIndividual,
-    prContactDetails = prContactDetailsIndividual,
+    prContactDetails = prContactDetailsIndividualPayloadSection,
     prAddress = AddressDetails(
       addressLine1 = testAddressLine1,
       addressLine2 = testAddressLine2,
@@ -122,10 +124,10 @@ trait TestValues extends Generators {
       country = testCountry
     )
   )
-  val prDetailsOrganisation = PrDetails(
+  val prDetailsOrganisationPayloadSection: PrDetails = PrDetails(
     prChangeFlag = None,
     typeOfPR = Organisation,
-    prContactDetails = prContactDetailsOrganisation,
+    prContactDetails = prContactDetailsOrganisationPayloadSection,
     prAddress = AddressDetails(
       addressLine1 = "1 ABCDE Street",
       addressLine2 = "FGHIJ Town",
@@ -134,7 +136,7 @@ trait TestValues extends Generators {
     )
   )
 
-  val beneficiaryPersonalDetails = BeneficiaryPersonalDetails(
+  private val beneficiaryPersonalDetails = BeneficiaryPersonalDetails(
     title = Some("Mr"),
     firstForename = "Paul",
     secondForename = Some("William"),
@@ -144,7 +146,7 @@ trait TestValues extends Generators {
     reasonNoNINO = None
   )
 
-  val beneficiaryContactDetails = BeneficiaryContactDetails(
+  val beneficiaryContactDetailsPayloadSection: BeneficiaryContactDetails = BeneficiaryContactDetails(
     beneficiaryPersonalDetails = beneficiaryPersonalDetails,
     beneficiaryAddress = AddressDetails(
       addressLine1 = testAddressLine1,
@@ -154,26 +156,26 @@ trait TestValues extends Generators {
     )
   )
 
-  val beneficiaryPaymentDetails = BeneficiaryPaymentDetails(
+  val beneficiaryPaymentDetailsPayloadSection: BeneficiaryPaymentDetails = BeneficiaryPaymentDetails(
     beneficiaryIHTPayable = "TODO",
     beneficiaryInterestPayable = "TODO",
     beneficiaryTotal = "TODO"
   )
 
-  val declarations = Declarations(
+  val declarationsPayloadSection = Declarations(
     submittedBy = "PSA",
     submitterID = "TODO",
     psaDeclaration = Some(PsaDeclaration("true", "true")),
     pspDeclaration = Some(PspDeclaration("true", "true", "TODO"))
   )
 
-  val testReportSubmissionRequestBody = IhtpPaymentNoticeSubmission(
+  val testReportSubmissionRequestBody: IhtpPaymentNoticeSubmission = IhtpPaymentNoticeSubmission(
     ReportDetails(
       pstr = "S2400000001",
-      ihtPaymentReference = "A123459/25A"
+      ihtPaymentReference = testIhtPaymentReference
     ),
-    deceased,
-    prDetailsIndividual,
+    deceasedPayloadSection,
+    prDetailsIndividualPayloadSection,
     IhTaxInformation(
       ihTaxChangeFlag = None,
       dateNoticeReceived = testPaymentNoticeDate,
@@ -184,16 +186,16 @@ trait TestValues extends Generators {
       total = Some("1050.00")
     ),
     beneficiaries = None,
-    declarations = declarations
+    declarations = declarationsPayloadSection
   )
 
-  val testReportSubmissionRequestBodyOrganisation = IhtpPaymentNoticeSubmission(
+  val testReportSubmissionRequestBodyOrganisation: IhtpPaymentNoticeSubmission = IhtpPaymentNoticeSubmission(
     ReportDetails(
       pstr = "S2400000001",
       ihtPaymentReference = "A123459/25A"
     ),
-    deceased,
-    prDetailsOrganisation,
+    deceasedPayloadSection,
+    prDetailsOrganisationPayloadSection,
     IhTaxInformation(
       ihTaxChangeFlag = None,
       dateNoticeReceived = testPaymentNoticeDate,
@@ -207,15 +209,15 @@ trait TestValues extends Generators {
       Seq(
         BeneficiaryDetails(
           beneficiaryType = IorTIndividual,
-          beneficiaryContactDetails = beneficiaryContactDetails,
-          beneficiaryPaymentDetails = beneficiaryPaymentDetails
+          beneficiaryContactDetails = beneficiaryContactDetailsPayloadSection,
+          beneficiaryPaymentDetails = beneficiaryPaymentDetailsPayloadSection
         )
       )
     ),
-    declarations = declarations
+    declarations = declarationsPayloadSection
   )
 
-  val testReportSubmissionResponse = IhtpPaymentNoticeResponse("910000000000", "123456789")
+  val testReportSubmissionResponse: IhtpPaymentNoticeResponse = IhtpPaymentNoticeResponse("910000000000", "123456789")
 
   val testUserAnswerJson: JsObject = Json.obj(
     "inheritanceTaxReference" -> "A123459/25A",
@@ -248,7 +250,7 @@ trait TestValues extends Generators {
       "dateThePensionSchemeReceivedNoticeToPay" -> "2026-03-27"
     ),
     "didPrSubmit" -> true,
-    "ihtPaymentReference" -> "A123456/25A629671",
+    "ihtPaymentReference" -> testIhtPaymentReference,
     "formBundleNo" -> "000012345678",
     "processingDateTime" -> "2026-08-12T16:26:37"
   )
@@ -260,7 +262,7 @@ trait TestValues extends Generators {
       "paymentDueDate" -> "2026-10-10",
       "ihtpVersion" -> "001",
       "inheritanceTaxReference" -> "A123456/25A",
-      "paymentReference" -> "A123456/25A629671",
+      "paymentReference" -> testIhtPaymentReference,
       "title" -> "Dr",
       "firstForename" -> "John",
       "secondForename" -> "E",
@@ -273,7 +275,7 @@ trait TestValues extends Generators {
       "paymentDueDate" -> "2026-10-10",
       "ihtpVersion" -> "002",
       "inheritanceTaxReference" -> "A123456/25A",
-      "paymentReference" -> "A123456/25A629671",
+      "paymentReference" -> testIhtPaymentReference,
       "title" -> "Dr",
       "firstForename" -> "John",
       "secondForename" -> "E",
