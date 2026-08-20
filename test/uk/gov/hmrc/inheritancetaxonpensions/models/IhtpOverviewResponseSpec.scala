@@ -145,6 +145,31 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
       success.productPrefix mustBe "IhtpOverviewSuccess"
       success.toString must include("IhtpOverviewSuccess")
     }
+
+    "must retain only the highest numerical version for each payment reference" in {
+      val versionOne = report.copy(ihtpVersion = "001")
+      val versionTwo = report.copy(ihtpVersion = "002", fbNumber = Some("119000004321"))
+      val otherReport = report.copy(
+        paymentReference = Some("F654321/25B629671"),
+        inheritanceTaxReference = "F654321/25B"
+      )
+
+      val result = IhtpOverviewSuccess.filterForHighestVersion(
+        List(versionOne, otherReport, versionTwo),
+        Nil
+      )
+
+      result.ihtpOverview must contain theSameElementsAs Seq(versionTwo, otherReport)
+    }
+
+    "must retain reports that do not have a payment reference" in {
+      val firstDraft = report.copy(uuid = Some("first-draft"), paymentReference = None, ihtpVersion = "000")
+      val secondDraft = report.copy(uuid = Some("second-draft"), paymentReference = None, ihtpVersion = "000")
+
+      val result = IhtpOverviewSuccess.filterForHighestVersion(List(firstDraft, secondDraft), Nil)
+
+      result.ihtpOverview mustBe Seq(firstDraft, secondDraft)
+    }
   }
 
   "IhtpOverviewReport" - {

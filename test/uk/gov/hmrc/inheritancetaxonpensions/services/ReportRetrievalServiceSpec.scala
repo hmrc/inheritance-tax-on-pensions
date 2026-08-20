@@ -54,7 +54,7 @@ class ReportRetrievalServiceSpec
   private val service = new ReportRetrievalService(mockUserAnswersRepository, mockIhtpReportConnector)
 
   "getOverview" - {
-    "returns all reports that are coming from the connector in the response" in {
+    "returns only the latest version of each report coming from the connector" in {
 
       when(mockIhtpReportConnector.getOverview(any(), any(), any(), any())(any()))
         .thenReturn(
@@ -75,7 +75,10 @@ class ReportRetrievalServiceSpec
       result match {
         case Left(value) => fail("unexpected")
         case Right(value) =>
-          value.success.ihtpOverview must have size 3
+          value.success.ihtpOverview must have size 2
+          value.success.ihtpOverview
+            .filter(_.paymentReference.contains(testIhtPaymentReference))
+            .map(_.ihtpVersion) mustBe Seq("002")
       }
     }
     "returns all coming from both the connector and from user answers" in {
@@ -106,7 +109,7 @@ class ReportRetrievalServiceSpec
       result match {
         case Left(value) => fail("unexpected")
         case Right(value) =>
-          value.success.ihtpOverview must have size 4
+          value.success.ihtpOverview must have size 3
       }
     }
     "returns all coming from both the connector and complete ua" in {
@@ -134,7 +137,7 @@ class ReportRetrievalServiceSpec
       result match {
         case Left(value) => fail("unexpected")
         case Right(value) =>
-          value.success.ihtpOverview must have size 4
+          value.success.ihtpOverview must have size 3
       }
     }
     "filters out reports that are not updated after the submission" in {
@@ -162,7 +165,7 @@ class ReportRetrievalServiceSpec
       result match {
         case Left(value) => fail("unexpected")
         case Right(value) =>
-          value.success.ihtpOverview must have size 3
+          value.success.ihtpOverview must have size 2
       }
     }
     "errors out when connector errors out" in {
