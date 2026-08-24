@@ -78,7 +78,7 @@ class ReportRetrievalServiceSpec
           value.success.ihtpOverview must have size 2
           value.success.ihtpOverview
             .filter(_.paymentReference.contains(testIhtPaymentReference))
-            .map(_.ihtpVersion) mustBe Seq("002")
+            .map(_.ihtVersion) mustBe Seq("002")
       }
     }
     "returns all coming from both the connector and from user answers" in {

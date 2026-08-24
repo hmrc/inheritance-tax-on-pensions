@@ -34,7 +34,7 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
     fbNumber = Some("119000004320"),
     submissionDate = Some(submissionDate),
     paymentDueDate = Some(paymentDueDate),
-    ihtpVersion = "001",
+    ihtVersion = "001",
     inheritanceTaxReference = "A123456/25A",
     paymentReference = Some("A123456/25A629671"),
     title = Some("Dr"),
@@ -61,7 +61,7 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
               "fbNumber" -> "119000004320",
               "submissionDate" -> "2026-04-10T16:12:49Z",
               "paymentDueDate" -> "2026-02-02",
-              "ihtpVersion" -> "001",
+              "ihtVersion" -> "001",
               "inheritanceTaxReference" -> "A123456/25A",
               "paymentReference" -> "A123456/25A629671",
               "title" -> "Dr",
@@ -84,7 +84,7 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
       (json \ "success" \ "ihtpOverview" \ 0 \ "fbNumber").as[String] mustBe "119000004320"
       (json \ "success" \ "ihtpOverview" \ 0 \ "submissionDate").as[String] mustBe "2026-04-10T16:12:49Z"
       (json \ "success" \ "ihtpOverview" \ 0 \ "paymentDueDate").as[String] mustBe "2026-02-02"
-      (json \ "success" \ "ihtpOverview" \ 0 \ "ihtpVersion").as[String] mustBe "001"
+      (json \ "success" \ "ihtpOverview" \ 0 \ "ihtVersion").as[String] mustBe "001"
       (json \ "success" \ "ihtpOverview" \ 0 \ "inheritanceTaxReference").as[String] mustBe "A123456/25A"
       (json \ "success" \ "ihtpOverview" \ 0 \ "paymentReference").as[String] mustBe "A123456/25A629671"
       (json \ "success" \ "ihtpOverview" \ 0 \ "title").as[String] mustBe "Dr"
@@ -147,8 +147,8 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
     }
 
     "must retain only the highest numerical version for each payment reference" in {
-      val versionOne = report.copy(ihtpVersion = "001")
-      val versionTwo = report.copy(ihtpVersion = "002", fbNumber = Some("119000004321"))
+      val versionOne = report.copy(ihtVersion = "001")
+      val versionTwo = report.copy(ihtVersion = "002", fbNumber = Some("119000004321"))
       val otherReport = report.copy(
         paymentReference = Some("F654321/25B629671"),
         inheritanceTaxReference = "F654321/25B"
@@ -163,8 +163,8 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
     }
 
     "must retain reports that do not have a payment reference" in {
-      val firstDraft = report.copy(uuid = Some("first-draft"), paymentReference = None, ihtpVersion = "000")
-      val secondDraft = report.copy(uuid = Some("second-draft"), paymentReference = None, ihtpVersion = "000")
+      val firstDraft = report.copy(uuid = Some("first-draft"), paymentReference = None, ihtVersion = "000")
+      val secondDraft = report.copy(uuid = Some("second-draft"), paymentReference = None, ihtVersion = "000")
 
       val result = IhtpOverviewSuccess.filterForHighestVersion(List(firstDraft, secondDraft), Nil)
 
@@ -179,7 +179,7 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
         "fbNumber" -> "119000004320",
         "submissionDate" -> "2026-04-10T16:12:49Z",
         "paymentDueDate" -> "2026-02-02",
-        "ihtpVersion" -> "001",
+        "ihtVersion" -> "001",
         "inheritanceTaxReference" -> "A123456/25A",
         "paymentReference" -> "A123456/25A629671",
         "title" -> "Dr",
@@ -201,7 +201,7 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
 
     "must handle missing optional fields when reading from json" in {
       val json = Json.obj(
-        "ihtpVersion" -> "000",
+        "ihtVersion" -> "000",
         "inheritanceTaxReference" -> "F654321/25B",
         "ihtpStatus" -> "In progress"
       )
@@ -212,7 +212,7 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
           fbNumber = None,
           submissionDate = None,
           paymentDueDate = None,
-          ihtpVersion = "000",
+          ihtVersion = "000",
           inheritanceTaxReference = "F654321/25B",
           paymentReference = None,
           title = None,
@@ -260,7 +260,7 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
           "fbNumber" -> "119000004320",
           "submissionDate" -> "not-a-date",
           "paymentDueDate" -> "not-a-date",
-          "ihtpVersion" -> "001",
+          "ihtVersion" -> "001",
           "inheritanceTaxReference" -> "A123456/25A",
           "firstForename" -> "John",
           "surname" -> "Doe",
@@ -273,7 +273,7 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
       report.fbNumber mustBe Some("119000004320")
       report.submissionDate mustBe Some(submissionDate)
       report.paymentDueDate mustBe Some(paymentDueDate)
-      report.ihtpVersion mustBe "001"
+      report.ihtVersion mustBe "001"
       report.inheritanceTaxReference mustBe "A123456/25A"
       report.paymentReference mustBe Some("A123456/25A629671")
       report.title mustBe Some("Dr")
@@ -286,7 +286,7 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
         fbNumber = report.fbNumber,
         submissionDate = report.submissionDate,
         paymentDueDate = report.paymentDueDate,
-        ihtpVersion = report.ihtpVersion,
+        ihtVersion = report.ihtVersion,
         inheritanceTaxReference = report.inheritanceTaxReference,
         paymentReference = report.paymentReference,
         title = report.title,

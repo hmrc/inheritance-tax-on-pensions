@@ -47,7 +47,7 @@ object IhtpOverviewSuccess {
           head.paymentReference match {
             case Some(paymentReference) =>
               val allVersions = curr.filter(item => item.paymentReference.contains(paymentReference))
-              val sorted = allVersions.sortWith(_.ihtpVersion.toInt > _.ihtpVersion.toInt)
+              val sorted = allVersions.sortWith(_.ihtVersion.toInt > _.ihtVersion.toInt)
               val removeDuplicates = tail.filterNot(item => item.paymentReference.contains(paymentReference))
 
               filterForHighestVersion(removeDuplicates, acc :+ sorted.head)
@@ -63,7 +63,7 @@ case class IhtpOverviewReport(
   fbNumber: Option[String],
   submissionDate: Option[Instant],
   paymentDueDate: Option[LocalDate],
-  ihtpVersion: String,
+  ihtVersion: String,
   inheritanceTaxReference: String,
   paymentReference: Option[String],
   title: Option[String],
