@@ -55,11 +55,13 @@ class ReportRetrievalService @Inject() (
       inProgress <- inProgressF
     } yield dsEither match {
       case Right(ds) =>
+        val latestSubmittedReports =
+          IhtpOverviewSuccess.filterForHighestVersion(ds.success.ihtpOverview.toList, Nil).ihtpOverview
         val filtered = inProgress
           .filter(ua =>
             val draftPaymentReference = UserAnswersHelper.getOptional(ua, "ihtPaymentReference").getOrElse("fail")
             val draftLastUpdated = ua.lastUpdated
-            !ds.success.ihtpOverview.exists(item =>
+            !latestSubmittedReports.exists(item =>
               (item.paymentReference.getOrElse("test") == draftPaymentReference) &&
                 item.submissionDate
                   .getOrElse(Instant.EPOCH)
@@ -96,7 +98,7 @@ class ReportRetrievalService @Inject() (
               ihtpStatus = "In progress" // fixed value
             )
           )
-        Right(IhtpOverviewResponse(IhtpOverviewSuccess(mappedInProgress ++ ds.success.ihtpOverview)))
+        Right(IhtpOverviewResponse(IhtpOverviewSuccess(mappedInProgress ++ latestSubmittedReports)))
       case Left(e) =>
         Left(e)
     }

@@ -18,6 +18,8 @@ package models
 
 import play.api.libs.json.{Json, OFormat}
 
+import scala.annotation.tailrec
+
 import java.time.{Instant, LocalDate}
 
 case class IhtpOverviewResponse(success: IhtpOverviewSuccess)
@@ -30,6 +32,30 @@ case class IhtpOverviewSuccess(ihtpOverview: Seq[IhtpOverviewReport])
 
 object IhtpOverviewSuccess {
   implicit val formats: OFormat[IhtpOverviewSuccess] = Json.format[IhtpOverviewSuccess]
+
+  @tailrec
+  def filterForHighestVersion(
+    curr: List[IhtpOverviewReport],
+    acc: List[IhtpOverviewReport]
+  ): IhtpOverviewSuccess =
+    curr match {
+      case Nil => IhtpOverviewSuccess(acc)
+      case head :: tail =>
+        if (tail.isEmpty) {
+          filterForHighestVersion(tail, acc :+ head)
+        } else {
+          head.paymentReference match {
+            case Some(paymentReference) =>
+              val allVersions = curr.filter(item => item.paymentReference.contains(paymentReference))
+              val sorted = allVersions.sortWith(_.ihtpVersion.toInt > _.ihtpVersion.toInt)
+              val removeDuplicates = tail.filterNot(item => item.paymentReference.contains(paymentReference))
+
+              filterForHighestVersion(removeDuplicates, acc :+ sorted.head)
+            case None =>
+              filterForHighestVersion(tail, acc :+ head)
+          }
+        }
+    }
 }
 
 case class IhtpOverviewReport(
