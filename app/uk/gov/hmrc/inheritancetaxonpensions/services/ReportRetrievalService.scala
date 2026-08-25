@@ -80,7 +80,7 @@ class ReportRetrievalService @Inject() (
                   .getOrElse(LocalDate.now())
                   .plusDays(dueDateDifferenceInDays)
               ),
-              ihtpVersion = "000", // fixed value
+              ihtVersion = "000", // fixed value
               inheritanceTaxReference = UserAnswersHelper.getMandatoryAs[String](ua, inheritanceTaxReferenceNumberPath),
               paymentReference = None,
               title = None, // likely not in final version of ETMP payload
