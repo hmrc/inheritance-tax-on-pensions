@@ -53,8 +53,8 @@ class ReportSubmissionController @Inject() (
     val Seq(userName, schemeName, srnS, requestRole) =
       requiredHeaders(HEADER_KEY_USER_NAME, HEADER_KEY_SCHEME_NAME, HEADER_KEY_SRN, HEADER_KEY_REQUEST_ROLE)
 
-    authorisedAsIhtpUser(srnS) { _ =>
-      reportSubmissionService.submitReport(userAnswersId, pstr).map {
+    authorisedAsIhtpUser(srnS) { ihtpAuthContext =>
+      reportSubmissionService.submitReport(userAnswersId, pstr, ihtpAuthContext).map {
         case Right(submissionResponse) =>
           val uaOptionF = userAnswersRepository.get(userAnswersId)
           uaOptionF.map {

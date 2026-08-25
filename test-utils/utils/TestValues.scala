@@ -16,15 +16,20 @@
 
 package utils
 
+import play.api.mvc.Request
+import uk.gov.hmrc.inheritancetaxonpensions.config.Constants
 import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.IndividualOrOrg.{Individual => IorOIndividual, Organisation}
-import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.IndividualOrTrust.{Individual => IorTIndividual}
 import generators.Generators
 import uk.gov.hmrc.auth.core.{Enrolment, EnrolmentIdentifier, Enrolments}
 import play.api.libs.json.{JsArray, JsObject, Json}
+import com.networknt.schema
 import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.YesNo.{No, Yes}
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants.psaEnrolmentKey
 import uk.gov.hmrc.inheritancetaxonpensions.models._
+import com.networknt.schema.path.{NodePath, PathType}
 import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.YesNo
+import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.IndividualOrTrust.{Individual => IorTIndividual}
+import uk.gov.hmrc.inheritancetaxonpensions.auth.IhtpAuthContext
 
 import java.time._
 
@@ -141,9 +146,9 @@ trait TestValues extends Generators {
     firstForename = "Paul",
     secondForename = Some("William"),
     surname = "Doe",
-    ninoExist = Yes,
+    ninoExist = No,
     nino = None,
-    reasonNoNINO = None
+    reasonNoNINO = Some("TODO")
   )
 
   val beneficiaryContactDetailsPayloadSection: BeneficiaryContactDetails = BeneficiaryContactDetails(
@@ -157,22 +162,29 @@ trait TestValues extends Generators {
   )
 
   val beneficiaryPaymentDetailsPayloadSection: BeneficiaryPaymentDetails = BeneficiaryPaymentDetails(
-    beneficiaryIHTPayable = "TODO",
-    beneficiaryInterestPayable = "TODO",
-    beneficiaryTotal = "TODO"
+    beneficiaryIHTPayable = 99.99,
+    beneficiaryInterestPayable = 99.99,
+    beneficiaryTotal = 99.99
   )
 
-  val declarationsPayloadSection = Declarations(
+  val declarationsPayloadSection: Declarations = Declarations(
     submittedBy = "PSA",
-    submitterID = "TODO",
+    submitterID = psaId,
     psaDeclaration = Some(PsaDeclaration("true", "true")),
+    pspDeclaration = None
+  )
+
+  val declarationsPspPayloadSection: Declarations = Declarations(
+    submittedBy = "PSP",
+    submitterID = pspId,
+    psaDeclaration = None,
     pspDeclaration = Some(PspDeclaration("true", "true", "TODO"))
   )
 
   val testReportSubmissionRequestBody: IhtpPaymentNoticeSubmission = IhtpPaymentNoticeSubmission(
     ReportDetails(
-      pstr = "S2400000001",
-      ihtPaymentReference = testIhtPaymentReference
+      pstr = "24000001IN",
+      ihtPaymentReference = None
     ),
     deceasedPayloadSection,
     prDetailsIndividualPayloadSection,
@@ -181,9 +193,9 @@ trait TestValues extends Generators {
       dateNoticeReceived = testPaymentNoticeDate,
       noticeSubmittedByPR = Yes,
       knownBeneficiaries = Some(No),
-      totalIHTPayable = Some("1000.00"),
-      totalInterestPayable = Some("50.00"),
-      total = Some("1050.00")
+      totalIHTPayable = Some(1000.00),
+      totalInterestPayable = Some(50.00),
+      total = Some(1050.00)
     ),
     beneficiaries = None,
     declarations = declarationsPayloadSection
@@ -191,8 +203,8 @@ trait TestValues extends Generators {
 
   val testReportSubmissionRequestBodyOrganisation: IhtpPaymentNoticeSubmission = IhtpPaymentNoticeSubmission(
     ReportDetails(
-      pstr = "S2400000001",
-      ihtPaymentReference = "A123459/25A"
+      pstr = "24000001IN",
+      ihtPaymentReference = None
     ),
     deceasedPayloadSection,
     prDetailsOrganisationPayloadSection,
@@ -201,9 +213,9 @@ trait TestValues extends Generators {
       dateNoticeReceived = testPaymentNoticeDate,
       noticeSubmittedByPR = Yes,
       knownBeneficiaries = Some(No),
-      totalIHTPayable = Some("1000.00"),
-      totalInterestPayable = Some("50.00"),
-      total = Some("1050.00")
+      totalIHTPayable = Some(1000.00),
+      totalInterestPayable = Some(50.00),
+      total = Some(1050.00)
     ),
     Some(
       Seq(
@@ -218,6 +230,26 @@ trait TestValues extends Generators {
   )
 
   val testReportSubmissionResponse: IhtpPaymentNoticeResponse = IhtpPaymentNoticeResponse("910000000000", "123456789")
+
+  val testSchemaValidationError: schema.Error = schema.Error
+    .builder()
+    .instanceLocation(NodePath(PathType.JSON_PATH).append("testPath"))
+    .message("customMessage")
+    .build()
+
+  def testIhtpAuthContext[A](req: Request[A]): IhtpAuthContext[A] = IhtpAuthContext[A](
+    externalId = externalId,
+    psaPspId = psaId,
+    credentialRole = Constants.psaId,
+    request = req
+  )
+
+  def testPspIhtpAuthContext[A](req: Request[A]): IhtpAuthContext[A] = IhtpAuthContext[A](
+    externalId = externalId,
+    psaPspId = pspId,
+    credentialRole = Constants.pspId,
+    request = req
+  )
 
   val testUserAnswerJson: JsObject = Json.obj(
     "inheritanceTaxReference" -> "A123459/25A",

@@ -16,6 +16,9 @@
 
 package uk.gov.hmrc.inheritancetaxonpensions.services
 
+import play.api.test.FakeRequest
+import com.networknt.schema.Error
+import play.api.mvc.AnyContentAsEmpty
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 import uk.gov.hmrc.inheritancetaxonpensions.repositories.UserAnswersRepository
@@ -25,6 +28,7 @@ import org.scalatest.freespec.AnyFreeSpec
 import org.mockito.Mockito._
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.IhtpReportConnector
 import org.scalatest.matchers.must.Matchers
+import uk.gov.hmrc.inheritancetaxonpensions.validators.{JSONSchemaValidator, SchemaValidationResult}
 import org.scalatest.BeforeAndAfterEach
 import play.api.libs.json.{JsObject, Json}
 import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.YesNo.{No, Yes}
@@ -49,8 +53,10 @@ class ReportSubmissionServiceSpec
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
 
   private val mockUserAnswersRepository: UserAnswersRepository = mock[UserAnswersRepository]
+  private val mockJSONSchemaValidator: JSONSchemaValidator = mock[JSONSchemaValidator]
   private val mockIhtpReportConnector: IhtpReportConnector = mock[IhtpReportConnector]
-  private val service = new ReportSubmissionService(mockUserAnswersRepository, mockIhtpReportConnector)
+  private val service =
+    new ReportSubmissionService(mockUserAnswersRepository, mockJSONSchemaValidator, mockIhtpReportConnector)
 
   private val testAddress = Json.obj(
     "addressLine1" -> "1 ABCDE Street",
@@ -118,9 +124,9 @@ class ReportSubmissionServiceSpec
 
   private val ihTaxInformationUaJson = Json.obj(
     "dateThePensionSchemeReceivedNoticeToPay" -> testPaymentNoticeDate,
-    "totalIHTPayable" -> "1000.00",
-    "totalInterestPayable" -> "50.00",
-    "total" -> "1050.00"
+    "totalIHTPayable" -> 1000.00,
+    "totalInterestPayable" -> 50.00,
+    "total" -> 1050.00
   )
 
   private val declarationUaJson = Json.obj(
@@ -151,34 +157,40 @@ class ReportSubmissionServiceSpec
       ) ++ ninoData
     )
 
+  private val validUserAnswers = UserAnswers(
+    testUserAnswersId,
+    srn,
+    uuid,
+    Json.obj(
+      "inheritanceTaxReference" -> "A123459/25A",
+      "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeUaJson,
+      "hasNino" -> true,
+      "nino" -> testNino,
+      "birthDeathDates" -> Json.obj(
+        "dateOfBirth" -> testDateOfBirth,
+        "dateOfDeath" -> testDateOfDeath
+      ),
+      "prType" -> "individual",
+      "didPrSubmit" -> true,
+      "prDetails" -> individualPrDetailsUaJson,
+      "areBeneficiariesKnown" -> false,
+      "ihtTaxInformation" -> ihTaxInformationUaJson,
+      "declarations" -> declarationUaJson
+    )
+  )
+
+  private implicit val rq: FakeRequest[AnyContentAsEmpty.type] = FakeRequest()
+
   "submitReport" - {
     "return Right when submission is successful with a nino in the payload" in {
-      val testUserAnswers = UserAnswers(
-        testUserAnswersId,
-        srn,
-        uuid,
-        Json.obj(
-          "inheritanceTaxReference" -> "A123459/25A",
-          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeUaJson,
-          "hasNino" -> true,
-          "nino" -> testNino,
-          "birthDeathDates" -> Json.obj(
-            "dateOfBirth" -> testDateOfBirth,
-            "dateOfDeath" -> testDateOfDeath
-          ),
-          "prType" -> "individual",
-          "didPrSubmit" -> true,
-          "prDetails" -> individualPrDetailsUaJson,
-          "areBeneficiariesKnown" -> false,
-          "ihtTaxInformation" -> ihTaxInformationUaJson,
-          "declarations" -> declarationUaJson
-        )
-      )
-      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
+
+      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(validUserAnswers)))
       when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))
         .thenReturn(Future.successful(Right(testSubmissionResponse)))
+      when(mockJSONSchemaValidator.validatePayload(any(), any()))
+        .thenReturn(SchemaValidationResult(Set.empty))
 
-      val result = service.submitReport(testUserAnswersId, testPstr).futureValue
+      val result = service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).futureValue
       result.isRight mustBe true
       val payloadCaptor: ArgumentCaptor[IhtpPaymentNoticeSubmission] =
         ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
@@ -186,7 +198,7 @@ class ReportSubmissionServiceSpec
       payloadCaptor.getValue mustBe IhtpPaymentNoticeSubmission(
         ReportDetails(
           pstr = testPstr,
-          ihtPaymentReference = "A123459/25A"
+          ihtPaymentReference = None
         ),
         deceasedPayloadSection,
         prDetailsIndividualPayloadSection,
@@ -195,12 +207,49 @@ class ReportSubmissionServiceSpec
           dateNoticeReceived = testPaymentNoticeDate,
           noticeSubmittedByPR = Yes,
           knownBeneficiaries = Some(No),
-          totalIHTPayable = Some("1000.00"),
-          totalInterestPayable = Some("50.00"),
-          total = Some("1050.00")
+          totalIHTPayable = Some(1000.00),
+          totalInterestPayable = Some(50.00),
+          total = Some(1050.00)
         ),
         beneficiaries = None,
         declarations = declarationsPayloadSection
+      )
+      Json.toJson(payloadCaptor.getValue.personalRep) mustBe individualPersonalRepResponseJson
+    }
+
+    "return Right when submission is successful when PSP fills in the declaration" in {
+
+      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(validUserAnswers)))
+      when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Right(testSubmissionResponse)))
+      when(mockJSONSchemaValidator.validatePayload(any(), any()))
+        .thenReturn(SchemaValidationResult(Set.empty))
+
+      // auth context as PSP:
+      val result = service.submitReport(testUserAnswersId, testPstr, testPspIhtpAuthContext(rq)).futureValue
+
+      result.isRight mustBe true
+      val payloadCaptor: ArgumentCaptor[IhtpPaymentNoticeSubmission] =
+        ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
+      verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
+      payloadCaptor.getValue mustBe IhtpPaymentNoticeSubmission(
+        ReportDetails(
+          pstr = testPstr,
+          ihtPaymentReference = None
+        ),
+        deceasedPayloadSection,
+        prDetailsIndividualPayloadSection,
+        IhTaxInformation(
+          ihTaxChangeFlag = None,
+          dateNoticeReceived = testPaymentNoticeDate,
+          noticeSubmittedByPR = Yes,
+          knownBeneficiaries = Some(No),
+          totalIHTPayable = Some(1000.00),
+          totalInterestPayable = Some(50.00),
+          total = Some(1050.00)
+        ),
+        beneficiaries = None,
+        declarations = declarationsPspPayloadSection
       )
       Json.toJson(payloadCaptor.getValue.personalRep) mustBe individualPersonalRepResponseJson
     }
@@ -243,7 +292,7 @@ class ReportSubmissionServiceSpec
       when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))
         .thenReturn(Future.successful(Right(testSubmissionResponse)))
 
-      val result = service.submitReport(testUserAnswersId, testPstr).futureValue
+      val result = service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).futureValue
       result.isRight mustBe true
       val payloadCaptor: ArgumentCaptor[IhtpPaymentNoticeSubmission] =
         ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
@@ -257,7 +306,7 @@ class ReportSubmissionServiceSpec
 
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
 
-      val result = service.submitReport(testUserAnswersId, testPstr).failed.futureValue
+      val result = service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).failed.futureValue
 
       result mustBe a[IllegalArgumentException]
       result.getMessage must include("hasNino")
@@ -269,7 +318,7 @@ class ReportSubmissionServiceSpec
 
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
 
-      val result = service.submitReport(testUserAnswersId, testPstr).failed.futureValue
+      val result = service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).failed.futureValue
 
       result mustBe a[IllegalArgumentException]
       result.getMessage must include("nino")
@@ -281,7 +330,7 @@ class ReportSubmissionServiceSpec
 
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
 
-      val result = service.submitReport(testUserAnswersId, testPstr).failed.futureValue
+      val result = service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).failed.futureValue
 
       result mustBe a[IllegalArgumentException]
       result.getMessage must include("reasonForNoNino")
@@ -321,7 +370,7 @@ class ReportSubmissionServiceSpec
 
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
 
-      val result = service.submitReport(testUserAnswersId, testPstr).failed.futureValue
+      val result = service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).failed.futureValue
       result mustBe a[IllegalArgumentException]
       result.getMessage must include("prDetails.organisation")
       verify(mockIhtpReportConnector, never).submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]())
@@ -330,7 +379,7 @@ class ReportSubmissionServiceSpec
     "return Left when the user answers are not found" in {
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(None))
 
-      val result = service.submitReport(testUserAnswersId, testPstr).futureValue
+      val result = service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).futureValue
       result mustBe Left(ErrorCodes.entityNotFound)
       verify(mockIhtpReportConnector, never).submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]())
     }
@@ -368,7 +417,7 @@ class ReportSubmissionServiceSpec
 
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
 
-      val result = service.submitReport(testUserAnswersId, testPstr).failed.futureValue
+      val result = service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).failed.futureValue
       result mustBe a[IllegalArgumentException]
       result.getMessage must include("prDetails.individual")
       verify(mockIhtpReportConnector, never).submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]())
@@ -400,7 +449,7 @@ class ReportSubmissionServiceSpec
 
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
 
-      val result = service.submitReport(testUserAnswersId, testPstr).failed.futureValue
+      val result = service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).failed.futureValue
       result mustBe a[IllegalArgumentException]
       result.getMessage must include("ihtTaxInformation.dateThePensionSchemeReceivedNoticeToPay")
       verify(mockIhtpReportConnector, never).submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]())
@@ -436,7 +485,7 @@ class ReportSubmissionServiceSpec
       when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))
         .thenReturn(Future.successful(Left(ErrorCodes.badRequest)))
 
-      val result = service.submitReport(testUserAnswersId, testPstr).futureValue
+      val result = service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).futureValue
       result.isLeft mustBe true
       val deceasedJaneDoe = deceasedPayloadSection.copy(
         deceasedPersonalDetails = DeceasedPersonalDetails(
@@ -455,7 +504,7 @@ class ReportSubmissionServiceSpec
       payloadCaptor.getValue mustBe IhtpPaymentNoticeSubmission(
         ReportDetails(
           pstr = testPstr,
-          ihtPaymentReference = "A123459/25A"
+          ihtPaymentReference = None // as it is not submitted yet
         ),
         deceasedJaneDoe,
         prDetailsIndividualPayloadSection,
@@ -464,9 +513,9 @@ class ReportSubmissionServiceSpec
           dateNoticeReceived = testPaymentNoticeDate,
           noticeSubmittedByPR = Yes,
           knownBeneficiaries = Some(No),
-          totalIHTPayable = Some("1000.00"),
-          totalInterestPayable = Some("50.00"),
-          total = Some("1050.00")
+          totalIHTPayable = Some(1000.00),
+          totalInterestPayable = Some(50.00),
+          total = Some(1050.00)
         ),
         beneficiaries = None,
         declarations = declarationsPayloadSection
@@ -515,7 +564,7 @@ class ReportSubmissionServiceSpec
       when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))
         .thenReturn(Future.successful(Right(testSubmissionResponse)))
 
-      val result = service.submitReport(testUserAnswersId, testPstr).futureValue
+      val result = service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).futureValue
       result.isRight mustBe true
       val payloadCaptor: ArgumentCaptor[IhtpPaymentNoticeSubmission] =
         ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
@@ -523,7 +572,7 @@ class ReportSubmissionServiceSpec
       payloadCaptor.getValue mustBe IhtpPaymentNoticeSubmission(
         ReportDetails(
           pstr = testPstr,
-          ihtPaymentReference = "A123459/25A"
+          ihtPaymentReference = None
         ),
         deceasedPayloadSection,
         prDetailsOrganisationPayloadSection,
@@ -554,8 +603,24 @@ class ReportSubmissionServiceSpec
         "firstForename" -> "Paul",
         "secondForename" -> "William",
         "surname" -> "Doe",
-        "ninoExist" -> "Yes"
+        "ninoExist" -> "No",
+        "reasonNoNINO" -> "TODO"
       )
     }
+
+    "should throw SchemaValidationFailureException with validation error details when schema validation fails" in {
+      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(validUserAnswers)))
+      when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Right(testSubmissionResponse)))
+      when(mockJSONSchemaValidator.validatePayload(any(), any()))
+        .thenReturn(SchemaValidationResult(Set(testSchemaValidationError)))
+
+      val result = service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).failed.futureValue
+
+      result mustBe a[SchemaValidationFailureException]
+      result.getMessage must include("testPath: customMessage")
+      verify(mockIhtpReportConnector, never).submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]())
+    }
+
   }
 }
