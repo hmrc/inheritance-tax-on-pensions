@@ -37,7 +37,7 @@ object IhtpPaymentNoticeSubmission {
 
 case class ReportDetails(
   pstr: String,
-  ihtPaymentReference: String
+  ihtPaymentReference: Option[String]
 )
 
 object ReportDetails {
@@ -205,9 +205,9 @@ object BeneficiaryPersonalDetails {
 }
 
 case class BeneficiaryPaymentDetails(
-  beneficiaryIHTPayable: String,
-  beneficiaryInterestPayable: String,
-  beneficiaryTotal: String
+  beneficiaryIHTPayable: Double,
+  beneficiaryInterestPayable: Double,
+  beneficiaryTotal: Double
 )
 
 object BeneficiaryPaymentDetails {
@@ -241,9 +241,9 @@ case class IhTaxInformation(
   dateNoticeReceived: String,
   noticeSubmittedByPR: YesNo,
   knownBeneficiaries: Option[YesNo],
-  totalIHTPayable: Option[String],
-  totalInterestPayable: Option[String],
-  total: Option[String]
+  totalIHTPayable: Option[Double],
+  totalInterestPayable: Option[Double],
+  total: Option[Double]
 )
 
 object IhTaxInformation {

@@ -84,7 +84,7 @@ class ReportSubmissionControllerSpec extends BaseSpec with TestValues:
   "submitReport" must {
     "return OK (200) when report submission is successful" in {
       authoriseUser()
-      when(mockReportSubmissionService.submitReport(any(), any())(any()))
+      when(mockReportSubmissionService.submitReport(any(), any(), any())(any()))
         .thenReturn(Future.successful(Right(testSubmissionResponse)))
       when(mockUserAnswersRepository.get(any()))
         .thenReturn(Future.successful(None))
@@ -97,12 +97,12 @@ class ReportSubmissionControllerSpec extends BaseSpec with TestValues:
       contentAsJson(result) mustBe Json.toJson(testSubmissionResponse)
       verify(mockAuthConnector, times(1)).authorise(any(), any())(any(), any())
       verify(mockSchemeDetailsConnector, times(1)).checkAssociation(any(), any(), any())(any(), any())
-      verify(mockReportSubmissionService, times(1)).submitReport(any(), any())(any())
+      verify(mockReportSubmissionService, times(1)).submitReport(any(), any(), any())(any())
     }
 
     "return error response when service returns Left" in {
       authoriseUser()
-      when(mockReportSubmissionService.submitReport(any(), any())(any()))
+      when(mockReportSubmissionService.submitReport(any(), any(), any())(any()))
         .thenReturn(Future.successful(Left(ErrorCodes.badRequest)))
 
       val result = controller.submitReport(testPstr, testUserAnswersId)(
@@ -110,7 +110,7 @@ class ReportSubmissionControllerSpec extends BaseSpec with TestValues:
       )
 
       status(result) mustEqual Status.BAD_REQUEST
-      verify(mockReportSubmissionService, times(1)).submitReport(any(), any())(any())
+      verify(mockReportSubmissionService, times(1)).submitReport(any(), any(), any())(any())
     }
 
     "not submit the report when the user is not authorised" in {
@@ -122,7 +122,7 @@ class ReportSubmissionControllerSpec extends BaseSpec with TestValues:
       }
 
       verify(mockSchemeDetailsConnector, never).checkAssociation(any(), any(), any())(any(), any())
-      verify(mockReportSubmissionService, never).submitReport(any(), any())(any())
+      verify(mockReportSubmissionService, never).submitReport(any(), any(), any())(any())
     }
 
     "return BAD_REQUEST (400) when none of the headers exist" in {
@@ -130,6 +130,6 @@ class ReportSubmissionControllerSpec extends BaseSpec with TestValues:
         await(controller.submitReport(testPstr, testUserAnswersId)(fakeRequest))
       }
       verify(mockAuthConnector, never).authorise(any(), any())(any(), any())
-      verify(mockReportSubmissionService, never).submitReport(any(), any())(any())
+      verify(mockReportSubmissionService, never).submitReport(any(), any(), any())(any())
     }
   }

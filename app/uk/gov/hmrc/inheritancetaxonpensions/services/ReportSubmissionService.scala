@@ -16,44 +16,60 @@
 
 package uk.gov.hmrc.inheritancetaxonpensions.services
 
-import uk.gov.hmrc.inheritancetaxonpensions.connectors.IhtpReportConnector
+import uk.gov.hmrc.inheritancetaxonpensions.auth.IhtpAuthContext
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 import uk.gov.hmrc.inheritancetaxonpensions.repositories.UserAnswersRepository
 import uk.gov.hmrc.inheritancetaxonpensions.utils.UserAnswersHelper
 import uk.gov.hmrc.inheritancetaxonpensions.models._
 import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.{IndividualOrOrg, IndividualOrTrust, YesNo}
+import uk.gov.hmrc.inheritancetaxonpensions.connectors.IhtpReportConnector
+import uk.gov.hmrc.inheritancetaxonpensions.validators.{JSONSchemaValidator, SchemaPaths}
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants
 import com.google.inject.{Inject, Singleton}
 import play.api.Logging
-import play.api.libs.json.{JsObject, JsValue}
+import play.api.libs.json.{JsObject, JsValue, Json}
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class ReportSubmissionService @Inject() (
   userAnswersRepository: UserAnswersRepository,
+  jsonPayloadSchemaValidator: JSONSchemaValidator,
   ihtpReportConnector: IhtpReportConnector
 )(implicit ec: ExecutionContext)
     extends Logging {
 
-  def submitReport(userAnswersId: String, pstr: String)(implicit
+  def submitReport(userAnswersId: String, pstr: String, ihtpAuthContext: IhtpAuthContext[Any])(implicit
     hc: HeaderCarrier
   ): Future[Either[ErrorResponse, IhtpPaymentNoticeResponse]] =
     for {
       userAnswersOpt <- userAnswersRepository.get(userAnswersId)
       result <- userAnswersOpt match {
         case Some(userAnswers) =>
-          val submissionPayLoad = buildSubmissionPayload(userAnswers, pstr)
-          ihtpReportConnector.submitReport(submissionPayLoad)
-
+          val submissionPayLoad = buildSubmissionPayload(userAnswers, pstr, ihtpAuthContext)
+          val payloadAsJson = Json.toJson(submissionPayLoad)
+          val schema = SchemaPaths.INTERNAL_v0_16
+          val validationResult = jsonPayloadSchemaValidator.validatePayload(schema, payloadAsJson)
+          if (validationResult.hasErrors) {
+            throw SchemaValidationFailureException(
+              s"Invalid payload - validationErrors:" +
+                s"${validationResult.toString}"
+            )
+          } else {
+            ihtpReportConnector.submitReport(submissionPayLoad)
+          }
         case None =>
           logger.warn(s"[ReportSubmissionService][submitReport] User answers not found for id: $userAnswersId")
           Future.successful(Left(ErrorCodes.entityNotFound))
       }
     } yield result
 
-  private def buildSubmissionPayload(userAnswers: UserAnswers, pstr: String): IhtpPaymentNoticeSubmission = {
+  private def buildSubmissionPayload(
+    userAnswers: UserAnswers,
+    pstr: String,
+    ihtpAuthContext: IhtpAuthContext[Any]
+  ): IhtpPaymentNoticeSubmission = {
     val inheritanceTaxReferenceNumber =
       UserAnswersHelper.getMandatory(userAnswers, Constants.inheritanceTaxReferenceNumberPath)
     val deceasedChangeFlag = UserAnswersHelper.getOptionalAs[YesNo](userAnswers, Constants.deceasedChangeFlag)
@@ -89,11 +105,11 @@ class ReportSubmissionService @Inject() (
     val prDetails = buildPrDetails(userAnswers)
 
     val beneficiaryList = buildBeneficiaryList(userAnswers)
-    val declarations = buildDeclarations()
+    val declarations = buildDeclarations(ihtpAuthContext)
 
     val reportDetails = ReportDetails(
       pstr = pstr,
-      ihtPaymentReference = inheritanceTaxReferenceNumber
+      ihtPaymentReference = None
     )
 
     val deceased = Deceased(
@@ -191,15 +207,15 @@ class ReportSubmissionService @Inject() (
           "areBeneficiariesKnown"
         )
         .map(YesNo.apply),
-      totalIHTPayable = UserAnswersHelper.getOptional(
+      totalIHTPayable = UserAnswersHelper.getOptionalAs[Double](
         userAnswers,
         "ihtTaxInformation.totalIHTPayable"
       ),
-      totalInterestPayable = UserAnswersHelper.getOptional(
+      totalInterestPayable = UserAnswersHelper.getOptionalAs[Double](
         userAnswers,
         "ihtTaxInformation.totalInterestPayable"
       ),
-      total = UserAnswersHelper.getOptional(
+      total = UserAnswersHelper.getOptionalAs[Double](
         userAnswers,
         "ihtTaxInformation.total"
       )
@@ -224,10 +240,10 @@ class ReportSubmissionService @Inject() (
                     firstForename = individualName.firstForename,
                     secondForename = individualName.secondForename,
                     surname = individualName.surname,
-                    ninoExist = YesNo.Yes,
+                    ninoExist = YesNo.No,
                     // TODO update once beneficiary nino or reason for no nino are captured
                     nino = None,
-                    reasonNoNINO = None
+                    reasonNoNINO = Some("TODO")
                   ),
                   beneficiaryAddress = AddressDetails(
                     // TODO update once beneficiary address details are captured
@@ -239,9 +255,9 @@ class ReportSubmissionService @Inject() (
                 ),
                 beneficiaryPaymentDetails = BeneficiaryPaymentDetails(
                   // TODO update once beneficiary payment details are captured
-                  beneficiaryIHTPayable = "TODO",
-                  beneficiaryInterestPayable = "TODO",
-                  beneficiaryTotal = "TODO"
+                  beneficiaryIHTPayable = 99.99, // TODO
+                  beneficiaryInterestPayable = 99.99, // TODO
+                  beneficiaryTotal = 99.99 // TODO
                 )
               )
             )
@@ -253,24 +269,32 @@ class ReportSubmissionService @Inject() (
     }
   }
 
-  private def buildDeclarations(): Declarations =
-    // TODO finish off declaration when the UI declaration ticket is done
-    logger.warn("TODO - Hardcoded declaration section in the payload")
-    Declarations(
-      submittedBy = "PSA",
-      submitterID = "TODO",
-      psaDeclaration = Some(
-        PsaDeclaration(
-          psaDeclaration1 = "true",
-          psaDeclaration2 = "true"
+  private def buildDeclarations(ihtpAuthContext: IhtpAuthContext[Any]): Declarations =
+    ihtpAuthContext.credentialRole match {
+      case Constants.pspId =>
+        Declarations(
+          submittedBy = Constants.HEADER_VALUE_PSP,
+          submitterID = ihtpAuthContext.psaPspId,
+          psaDeclaration = None,
+          pspDeclaration = Some(
+            PspDeclaration(
+              pspDeclaration1 = "true",
+              pspDeclaration2 = "true",
+              psaid = "TODO"
+            )
+          )
         )
-      ),
-      pspDeclaration = Some(
-        PspDeclaration(
-          pspDeclaration1 = "true",
-          pspDeclaration2 = "true",
-          psaid = "TODO"
+      case _ =>
+        Declarations(
+          submittedBy = Constants.HEADER_VALUE_PSA,
+          submitterID = ihtpAuthContext.psaPspId,
+          psaDeclaration = Some(
+            PsaDeclaration(
+              psaDeclaration1 = "true",
+              psaDeclaration2 = "true"
+            )
+          ),
+          pspDeclaration = None
         )
-      )
-    )
+    }
 }
