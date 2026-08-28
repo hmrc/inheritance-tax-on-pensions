@@ -84,9 +84,9 @@ trait TestValues extends Generators {
 
   private val deceasedPersonalDetailsPayloadSection = DeceasedPersonalDetails(
     title = Some("Mr"),
-    firstForename = "John",
-    secondForename = Some("William"),
-    surname = "Doe",
+    firstForename = "Firstname",
+    secondForename = Some("Middlenametwo"),
+    surname = "Surname",
     ninoExist = Yes,
     nino = Some(testNino),
     reasonNoNINO = None
@@ -105,17 +105,17 @@ trait TestValues extends Generators {
 
   private val prContactDetailsIndividualPayloadSection = PrContactDetails(
     title = Some("Mr"),
-    firstForename = "John",
-    secondForename = Some("William"),
-    surname = "Doe"
+    firstForename = "Firstname",
+    secondForename = Some("Middlenametwo"),
+    surname = "Surname"
   )
 
   private val prContactDetailsOrganisationPayloadSection = PrContactDetails(
     orgName = Some("Test Organisation"),
     title = Some("Ms"),
-    firstForename = "Jane",
-    secondForename = Some("Ann"),
-    surname = "Doe"
+    firstForename = "Firstnametwo",
+    secondForename = Some("Middlenametwo"),
+    surname = "Surname"
   )
 
   val prDetailsIndividualPayloadSection: PrDetails = PrDetails(
@@ -144,8 +144,8 @@ trait TestValues extends Generators {
   private val beneficiaryPersonalDetails = BeneficiaryPersonalDetails(
     title = Some("Mr"),
     firstForename = "Paul",
-    secondForename = Some("William"),
-    surname = "Doe",
+    secondForename = Some("Middlenametwo"),
+    surname = "Surname",
     ninoExist = No,
     nino = None,
     reasonNoNINO = Some("TODO")
@@ -255,9 +255,9 @@ trait TestValues extends Generators {
     "inheritanceTaxReference" -> "A123459/25A",
     "nameOfDeceased" -> Json.obj(
       "title" -> "Mr",
-      "firstForename" -> "John",
-      "secondForename" -> "William",
-      "surname" -> "Doe"
+      "firstForename" -> "Firstname",
+      "secondForename" -> "Middlenametwo",
+      "surname" -> "Surname"
     ),
     "birthDeathDates" -> Json.obj(
       "dateOfBirth" -> "1950-01-01",
@@ -267,9 +267,9 @@ trait TestValues extends Generators {
     "prDetails" -> Json.obj(
       "individual" -> Json.obj(
         "title" -> "Mr",
-        "firstForename" -> "John",
-        "secondForename" -> "William",
-        "surname" -> "Doe",
+        "firstForename" -> "Firstname",
+        "secondForename" -> "Middlenametwo",
+        "surname" -> "Surname",
         "addressLine1" -> "1 ABCDE Street",
         "addressLine2" -> "FGHIJ Town",
         "ukPostcode" -> "ZZ99 1AA",
@@ -296,9 +296,9 @@ trait TestValues extends Generators {
       "inheritanceTaxReference" -> "A123456/25A",
       "paymentReference" -> testIhtPaymentReference,
       "title" -> "Dr",
-      "firstForename" -> "John",
+      "firstForename" -> "Firstname",
       "secondForename" -> "E",
-      "surname" -> "Doe",
+      "surname" -> "Surname",
       "ihtpStatus" -> "Paid"
     ),
     Json.obj(
@@ -309,9 +309,9 @@ trait TestValues extends Generators {
       "inheritanceTaxReference" -> "A123456/25A",
       "paymentReference" -> testIhtPaymentReference,
       "title" -> "Dr",
-      "firstForename" -> "John",
+      "firstForename" -> "Firstname",
       "secondForename" -> "E",
-      "surname" -> "Doe",
+      "surname" -> "Surname",
       "ihtpStatus" -> "Not reconciled"
     ),
     Json.obj(
@@ -322,9 +322,9 @@ trait TestValues extends Generators {
       "inheritanceTaxReference" -> "A223456/25A",
       "paymentReference" -> "A223456/25A629671",
       "title" -> "Ms",
-      "firstForename" -> "Jane",
+      "firstForename" -> "Firstnametwo",
       "secondForename" -> "E",
-      "surname" -> "Doe",
+      "surname" -> "Surname",
       "ihtpStatus" -> "Not reconciled"
     )
   )
