@@ -608,6 +608,39 @@ class ReportSubmissionServiceSpec
       )
     }
 
+    "include an organisation or trust beneficiary name in the payload" in {
+      val testUserAnswers = validUserAnswers.copy(
+        data = validUserAnswers.data ++ Json.obj(
+          "areBeneficiariesKnown" -> true,
+          "beneficiaries" -> Json.arr(
+            Json.obj(
+              "beneficiaryType" -> "organisation",
+              "beneficiaryDetails" -> Json.obj(
+                "organisation" -> Json.obj(
+                  "beneficiaryTrstName" -> trustName
+                )
+              )
+            )
+          )
+        )
+      )
+      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
+      when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Right(testSubmissionResponse)))
+
+      val result = service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).futureValue
+
+      result.isRight mustBe true
+      val payloadCaptor: ArgumentCaptor[IhtpPaymentNoticeSubmission] =
+        ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
+      verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
+
+      val beneficiary = payloadCaptor.getValue.beneficiaries.get.head
+      beneficiary.beneficiaryType mustBe IndividualOrTrust.Trust
+      beneficiary.beneficiaryContactDetails.beneficiaryTrstName mustBe Some(trustName)
+      (Json.toJson(beneficiary).toString must not).include("hmrcReferenceNumber")
+    }
+
     "should throw SchemaValidationFailureException with validation error details when schema validation fails" in {
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(validUserAnswers)))
       when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))

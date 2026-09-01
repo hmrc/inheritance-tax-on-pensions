@@ -16,11 +16,11 @@
 
 package uk.gov.hmrc.inheritancetaxonpensions.services
 
-import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
-import utils.TestValues
 import uk.gov.hmrc.inheritancetaxonpensions.config.{Crypto, FakeCrypto}
 import play.api.libs.json.JsString
+import utils.TestValues
+import org.scalatest.freespec.AnyFreeSpec
 
 class EncryptionServiceSpec extends AnyFreeSpec with Matchers with TestValues {
   "EncryptionService" - {
