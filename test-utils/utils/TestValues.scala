@@ -143,7 +143,7 @@ trait TestValues extends Generators {
 
   private val beneficiaryPersonalDetails = BeneficiaryPersonalDetails(
     title = Some("Mr"),
-    firstForename = "Paul",
+    firstForename = "Firstnamethree",
     secondForename = Some("Middlenametwo"),
     surname = "Surname",
     ninoExist = No,
