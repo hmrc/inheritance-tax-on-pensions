@@ -277,7 +277,7 @@ trait TestValues extends Generators {
       )
     ),
     "hasNino" -> true,
-    "nino" -> "AB123456C",
+    "nino" -> testNino,
     "ihtTaxInformation" -> Json.obj(
       "dateThePensionSchemeReceivedNoticeToPay" -> "2026-03-27"
     ),

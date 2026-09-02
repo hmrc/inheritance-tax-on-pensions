@@ -549,7 +549,7 @@ class ReportSubmissionServiceSpec
               "beneficiaryDetails" -> Json.obj(
                 "individual" -> Json.obj(
                   "title" -> "Mr",
-                  "firstForename" -> "Paul",
+                  "firstForename" -> "Firstnamethree",
                   "secondForename" -> "Middlenametwo",
                   "surname" -> "Surname"
                 )
@@ -600,7 +600,7 @@ class ReportSubmissionServiceSpec
         payloadCaptor.getValue.beneficiaries.get.head.beneficiaryContactDetails.beneficiaryPersonalDetails
       ) mustBe Json.obj(
         "title" -> "Mr",
-        "firstForename" -> "Paul",
+        "firstForename" -> "Firstnamethree",
         "secondForename" -> "Middlenametwo",
         "surname" -> "Surname",
         "ninoExist" -> "No",

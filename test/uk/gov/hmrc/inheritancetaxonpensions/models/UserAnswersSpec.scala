@@ -93,8 +93,8 @@ class UserAnswersSpec extends AnyFreeSpec with Matchers with TestValues {
         val format = UserAnswers.encryptedFormat(service)
 
         val originalData = Json.obj(
-          "nameOfDeceased.firstForename" -> "Joe",
-          "nino" -> "AB123456C",
+          "nameOfDeceased.firstForename" -> "Forename",
+          "nino" -> testNino,
           "someOtherField" -> "non-PII data"
         )
 
@@ -105,13 +105,13 @@ class UserAnswersSpec extends AnyFreeSpec with Matchers with TestValues {
         result.isSuccess mustBe true
 
         val firstNameInJson = (json \ "data" \ "nameOfDeceased.firstForename").get.asOpt[String]
-        firstNameInJson must not be Some("Joe")
+        firstNameInJson must not be Some("Forename")
 
         val nonPiiInJson = (json \ "data" \ "someOtherField").get.asOpt[String]
         nonPiiInJson mustBe Some("non-PII data")
 
         val decryptedFirstName = (result.get.data \ "nameOfDeceased.firstForename").get.asOpt[String]
-        decryptedFirstName mustBe Some("Joe")
+        decryptedFirstName mustBe Some("Forename")
       }
 
       "must not encrypt non-PII fields" in {
@@ -138,8 +138,8 @@ class UserAnswersSpec extends AnyFreeSpec with Matchers with TestValues {
 
         val originalData = Json.obj(
           "nameOfDeceased" -> Json.obj(
-            "firstForename" -> "Joe",
-            "surname" -> "Bloggs"
+            "firstForename" -> "Forename",
+            "surname" -> "SurnameB"
           ),
           "nonPiiSection" -> Json.obj(
             "someField" -> "data"
@@ -151,12 +151,12 @@ class UserAnswersSpec extends AnyFreeSpec with Matchers with TestValues {
         val result = format.reads(json).get
 
         val encryptedName = (json \ "data" \ "nameOfDeceased" \ "firstForename").get.asOpt[String]
-        encryptedName must not be Some("Joe")
+        encryptedName must not be Some("Forename")
 
         val nonPiiField = (json \ "data" \ "nonPiiSection" \ "someField").get.asOpt[String]
         nonPiiField mustBe Some("data")
         val decryptedName = (result.data \ "nameOfDeceased" \ "firstForename").get.asOpt[String]
-        decryptedName mustBe Some("Joe")
+        decryptedName mustBe Some("Forename")
       }
 
       "must work with encryption disabled" in {
@@ -164,7 +164,7 @@ class UserAnswersSpec extends AnyFreeSpec with Matchers with TestValues {
         val format = UserAnswers.encryptedFormat(service)
 
         val originalData = Json.obj(
-          "nino" -> "AB123456C"
+          "nino" -> testNino
         )
 
         val userAnswers = UserAnswers(s"$srn-$uuid", srn, uuid, originalData, Instant.now())

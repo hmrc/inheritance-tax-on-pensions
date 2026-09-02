@@ -41,7 +41,7 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
     firstForename = Some("Firstname"),
     secondForename = Some("M"),
     surname = Some("Surname"),
-    nino = Some("AB123456C"),
+    nino = Some(testNino),
     ihtpStatus = "Not reconciled"
   )
 
@@ -68,7 +68,7 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
               "firstForename" -> "Firstname",
               "secondForename" -> "M",
               "surname" -> "Surname",
-              "nino" -> "AB123456C",
+              "nino" -> testNino,
               "ihtpStatus" -> "Not reconciled"
             )
           )
@@ -91,7 +91,7 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
       (json \ "success" \ "ihtpOverview" \ 0 \ "firstForename").as[String] mustBe "Firstname"
       (json \ "success" \ "ihtpOverview" \ 0 \ "secondForename").as[String] mustBe "M"
       (json \ "success" \ "ihtpOverview" \ 0 \ "surname").as[String] mustBe "Surname"
-      (json \ "success" \ "ihtpOverview" \ 0 \ "nino").as[String] mustBe "AB123456C"
+      (json \ "success" \ "ihtpOverview" \ 0 \ "nino").as[String] mustBe testNino
       (json \ "success" \ "ihtpOverview" \ 0 \ "ihtpStatus").as[String] mustBe "Not reconciled"
     }
 
@@ -186,7 +186,7 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
         "firstForename" -> "Firstname",
         "secondForename" -> "M",
         "surname" -> "Surname",
-        "nino" -> "AB123456C",
+        "nino" -> testNino,
         "ihtpStatus" -> "Not reconciled"
       )
 
@@ -280,7 +280,7 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
       report.firstForename mustBe Some("Firstname")
       report.secondForename mustBe Some("M")
       report.surname mustBe Some("Surname")
-      report.nino mustBe Some("AB123456C")
+      report.nino mustBe Some(testNino)
       report.ihtpStatus mustBe "Not reconciled"
       report.copy(
         fbNumber = report.fbNumber,
