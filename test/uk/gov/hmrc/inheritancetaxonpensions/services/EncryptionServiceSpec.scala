@@ -18,10 +18,11 @@ package uk.gov.hmrc.inheritancetaxonpensions.services
 
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.must.Matchers
+import utils.TestValues
 import uk.gov.hmrc.inheritancetaxonpensions.config.{Crypto, FakeCrypto}
 import play.api.libs.json.JsString
 
-class EncryptionServiceSpec extends AnyFreeSpec with Matchers {
+class EncryptionServiceSpec extends AnyFreeSpec with Matchers with TestValues {
   "EncryptionService" - {
 
     "when encryption is disabled" - {
@@ -29,20 +30,20 @@ class EncryptionServiceSpec extends AnyFreeSpec with Matchers {
 
       "must return original value for encryptField" in {
         val service = new EncryptionService(crypto)
-        val result = service.encryptField("nino", JsString("AB123456C"))
-        result mustBe JsString("AB123456C")
+        val result = service.encryptField("nino", JsString(testNino))
+        result mustBe JsString(testNino)
       }
 
       "must return original value for decryptField" in {
         val service = new EncryptionService(crypto)
-        val result = service.decryptField("nino", JsString("AB123456C"))
-        result mustBe JsString("AB123456C")
+        val result = service.decryptField("nino", JsString(testNino))
+        result mustBe JsString(testNino)
       }
 
       "must return original value for nonPii field when decrypting" in {
         val service = new EncryptionService(crypto)
-        val result = service.decryptField("someOtherField", JsString("AB123456C"))
-        result mustBe JsString("AB123456C")
+        val result = service.decryptField("someOtherField", JsString(testNino))
+        result mustBe JsString(testNino)
       }
     }
 
@@ -52,7 +53,7 @@ class EncryptionServiceSpec extends AnyFreeSpec with Matchers {
       "must encrypt and decrypt PII fields correctly" in {
         val service = new EncryptionService(crypto)
 
-        val original = JsString("Joe Bloggs")
+        val original = JsString("Forename SurnameB")
 
         val encrypted = service.encryptField("nameOfDeceased.firstForename", original)
         encrypted must not be original

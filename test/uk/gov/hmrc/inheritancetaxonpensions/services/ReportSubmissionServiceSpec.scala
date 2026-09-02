@@ -65,20 +65,20 @@ class ReportSubmissionServiceSpec
     "country" -> "GB"
   )
 
-  private val deceasedPersonalDetailsJohnDoeUaJson = Json.obj(
+  private val deceasedPersonalDetailsUaJson = Json.obj(
     "title" -> "Mr",
-    "firstForename" -> "John",
-    "secondForename" -> "William",
-    "surname" -> "Doe"
+    "firstForename" -> "Firstname",
+    "secondForename" -> "Middlenametwo",
+    "surname" -> "Surname"
   )
 
   private val individualPersonalRepResponseJson = Json.obj(
     "typeOfPR" -> "01",
     "prContactDetails" -> Json.obj(
       "title" -> "Mr",
-      "firstForename" -> "John",
-      "secondForename" -> "William",
-      "surname" -> "Doe"
+      "firstForename" -> "Firstname",
+      "secondForename" -> "Middlenametwo",
+      "surname" -> "Surname"
     ),
     "prAddress" -> testAddress
   )
@@ -86,9 +86,9 @@ class ReportSubmissionServiceSpec
   private val individualPrDetailsUaJson = Json.obj(
     "individual" -> Json.obj(
       "title" -> "Mr",
-      "firstForename" -> "John",
-      "secondForename" -> "William",
-      "surname" -> "Doe",
+      "firstForename" -> "Firstname",
+      "secondForename" -> "Middlenametwo",
+      "surname" -> "Surname",
       "addressLine1" -> "1 ABCDE Street",
       "addressLine2" -> "FGHIJ Town",
       "ukPostcode" -> "ZZ99 1AA",
@@ -101,9 +101,9 @@ class ReportSubmissionServiceSpec
     "prContactDetails" -> Json.obj(
       "orgName" -> "Test Organisation",
       "title" -> "Ms",
-      "firstForename" -> "Jane",
-      "secondForename" -> "Ann",
-      "surname" -> "Doe"
+      "firstForename" -> "Firstnametwo",
+      "secondForename" -> "Middlenametwo",
+      "surname" -> "Surname"
     ),
     "prAddress" -> testAddress
   )
@@ -112,9 +112,9 @@ class ReportSubmissionServiceSpec
     "organisation" -> Json.obj(
       "organisationName" -> "Test Organisation",
       "title" -> "Ms",
-      "firstForename" -> "Jane",
-      "secondForename" -> "Ann",
-      "surname" -> "Doe",
+      "firstForename" -> "Firstnametwo",
+      "secondForename" -> "Middlenametwo",
+      "surname" -> "Surname",
       "addressLine1" -> "1 ABCDE Street",
       "addressLine2" -> "FGHIJ Town",
       "ukPostcode" -> "ZZ99 1AA",
@@ -151,8 +151,8 @@ class ReportSubmissionServiceSpec
       Json.obj(
         "inheritanceTaxReference" -> "A123459/25A",
         "nameOfDeceased" -> Json.obj(
-          "firstForename" -> "John",
-          "surname" -> "Doe"
+          "firstForename" -> "Firstname",
+          "surname" -> "Surname"
         )
       ) ++ ninoData
     )
@@ -163,7 +163,7 @@ class ReportSubmissionServiceSpec
     uuid,
     Json.obj(
       "inheritanceTaxReference" -> "A123459/25A",
-      "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeUaJson,
+      "nameOfDeceased" -> deceasedPersonalDetailsUaJson,
       "hasNino" -> true,
       "nino" -> testNino,
       "birthDeathDates" -> Json.obj(
@@ -261,7 +261,7 @@ class ReportSubmissionServiceSpec
         uuid,
         Json.obj(
           "inheritanceTaxReference" -> "A123459/25A",
-          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeUaJson,
+          "nameOfDeceased" -> deceasedPersonalDetailsUaJson,
           "hasNino" -> true,
           "nino" -> testNino,
           "birthDeathDates" -> Json.obj(
@@ -273,9 +273,9 @@ class ReportSubmissionServiceSpec
             "organisation" -> Json.obj(
               "organisationName" -> "Test Organisation",
               "title" -> "Ms",
-              "firstForename" -> "Jane",
-              "secondForename" -> "Ann",
-              "surname" -> "Doe",
+              "firstForename" -> "Firstnametwo",
+              "secondForename" -> "Middlenametwo",
+              "surname" -> "Surname",
               "addressLine1" -> "1 ABCDE Street",
               "addressLine2" -> "FGHIJ Town",
               "ukPostcode" -> "ZZ99 1AA",
@@ -344,7 +344,7 @@ class ReportSubmissionServiceSpec
         uuid,
         Json.obj(
           "inheritanceTaxReference" -> "A123459/25A",
-          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeUaJson,
+          "nameOfDeceased" -> deceasedPersonalDetailsUaJson,
           "hasNino" -> true,
           "nino" -> testNino,
           "birthDeathDates" -> Json.obj(
@@ -357,8 +357,8 @@ class ReportSubmissionServiceSpec
             "organisation" -> Json.obj(
               "organisationName" -> "Test Organisation",
               "title" -> "Ms",
-              "secondForename" -> "Ann",
-              "surname" -> "Doe",
+              "secondForename" -> "Middlenametwo",
+              "surname" -> "Surname",
               "addressLine1" -> "1 ABCDE Street",
               "addressLine2" -> "FGHIJ Town",
               "postcode" -> "ZZ99 1AA",
@@ -390,7 +390,7 @@ class ReportSubmissionServiceSpec
         srn,
         uuid,
         Json.obj(
-          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeUaJson,
+          "nameOfDeceased" -> deceasedPersonalDetailsUaJson,
           "inheritanceTaxReference" -> "A123459/25A",
           "hasNino" -> true,
           "nino" -> testNino,
@@ -403,9 +403,9 @@ class ReportSubmissionServiceSpec
           "prDetails" -> Json.obj(
             "individual" -> Json.obj(
               "title" -> "Mr",
-              "firstForename" -> "John",
-              "secondForename" -> "William",
-              "surname" -> "Doe",
+              "firstForename" -> "Firstname",
+              "secondForename" -> "Middlenametwo",
+              "surname" -> "Surname",
               "addressLine2" -> "FGHIJ Town",
               "postcode" -> "ZZ99 1AA",
               "country" -> "GB"
@@ -430,7 +430,7 @@ class ReportSubmissionServiceSpec
         uuid,
         Json.obj(
           "inheritanceTaxReference" -> "A123459/25A",
-          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeUaJson,
+          "nameOfDeceased" -> deceasedPersonalDetailsUaJson,
           "hasNino" -> true,
           "nino" -> testNino,
           "birthDeathDates" -> Json.obj(
@@ -464,8 +464,8 @@ class ReportSubmissionServiceSpec
           "inheritanceTaxReference" -> "A123459/25A",
           "nameOfDeceased" -> Json.obj(
             "title" -> "Mrs",
-            "firstForename" -> "Jane",
-            "surname" -> "Doe"
+            "firstForename" -> "Firstnametwo",
+            "surname" -> "Surname"
           ),
           "hasNino" -> false,
           "reasonForNoNino" -> "The deceased was not a UK citizen",
@@ -487,12 +487,12 @@ class ReportSubmissionServiceSpec
 
       val result = service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).futureValue
       result.isLeft mustBe true
-      val deceasedJaneDoe = deceasedPayloadSection.copy(
+      val deceasedPerson = deceasedPayloadSection.copy(
         deceasedPersonalDetails = DeceasedPersonalDetails(
           title = Some("Mrs"),
-          firstForename = "Jane",
+          firstForename = "Firstnametwo",
           secondForename = None,
-          surname = "Doe",
+          surname = "Surname",
           ninoExist = No,
           nino = None,
           reasonNoNINO = Some("The deceased was not a UK citizen")
@@ -506,7 +506,7 @@ class ReportSubmissionServiceSpec
           pstr = testPstr,
           ihtPaymentReference = None // as it is not submitted yet
         ),
-        deceasedJaneDoe,
+        deceasedPerson,
         prDetailsIndividualPayloadSection,
         IhTaxInformation(
           ihTaxChangeFlag = None,
@@ -528,7 +528,7 @@ class ReportSubmissionServiceSpec
         srn,
         uuid,
         Json.obj(
-          "nameOfDeceased" -> deceasedPersonalDetailsJohnDoeUaJson,
+          "nameOfDeceased" -> deceasedPersonalDetailsUaJson,
           "inheritanceTaxReference" -> "A123459/25A",
           "hasNino" -> true,
           "nino" -> testNino,
@@ -549,9 +549,9 @@ class ReportSubmissionServiceSpec
               "beneficiaryDetails" -> Json.obj(
                 "individual" -> Json.obj(
                   "title" -> "Mr",
-                  "firstForename" -> "Paul",
-                  "secondForename" -> "William",
-                  "surname" -> "Doe"
+                  "firstForename" -> "Firstnamethree",
+                  "secondForename" -> "Middlenametwo",
+                  "surname" -> "Surname"
                 )
               )
             )
@@ -600,9 +600,9 @@ class ReportSubmissionServiceSpec
         payloadCaptor.getValue.beneficiaries.get.head.beneficiaryContactDetails.beneficiaryPersonalDetails
       ) mustBe Json.obj(
         "title" -> "Mr",
-        "firstForename" -> "Paul",
-        "secondForename" -> "William",
-        "surname" -> "Doe",
+        "firstForename" -> "Firstnamethree",
+        "secondForename" -> "Middlenametwo",
+        "surname" -> "Surname",
         "ninoExist" -> "No",
         "reasonNoNINO" -> "TODO"
       )

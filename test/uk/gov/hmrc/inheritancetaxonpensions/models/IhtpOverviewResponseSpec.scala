@@ -38,10 +38,10 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
     inheritanceTaxReference = "A123456/25A",
     paymentReference = Some("A123456/25A629671"),
     title = Some("Dr"),
-    firstForename = Some("John"),
+    firstForename = Some("Firstname"),
     secondForename = Some("M"),
-    surname = Some("Doe"),
-    nino = Some("AB123456C"),
+    surname = Some("Surname"),
+    nino = Some(testNino),
     ihtpStatus = "Not reconciled"
   )
 
@@ -65,10 +65,10 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
               "inheritanceTaxReference" -> "A123456/25A",
               "paymentReference" -> "A123456/25A629671",
               "title" -> "Dr",
-              "firstForename" -> "John",
+              "firstForename" -> "Firstname",
               "secondForename" -> "M",
-              "surname" -> "Doe",
-              "nino" -> "AB123456C",
+              "surname" -> "Surname",
+              "nino" -> testNino,
               "ihtpStatus" -> "Not reconciled"
             )
           )
@@ -88,10 +88,10 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
       (json \ "success" \ "ihtpOverview" \ 0 \ "inheritanceTaxReference").as[String] mustBe "A123456/25A"
       (json \ "success" \ "ihtpOverview" \ 0 \ "paymentReference").as[String] mustBe "A123456/25A629671"
       (json \ "success" \ "ihtpOverview" \ 0 \ "title").as[String] mustBe "Dr"
-      (json \ "success" \ "ihtpOverview" \ 0 \ "firstForename").as[String] mustBe "John"
+      (json \ "success" \ "ihtpOverview" \ 0 \ "firstForename").as[String] mustBe "Firstname"
       (json \ "success" \ "ihtpOverview" \ 0 \ "secondForename").as[String] mustBe "M"
-      (json \ "success" \ "ihtpOverview" \ 0 \ "surname").as[String] mustBe "Doe"
-      (json \ "success" \ "ihtpOverview" \ 0 \ "nino").as[String] mustBe "AB123456C"
+      (json \ "success" \ "ihtpOverview" \ 0 \ "surname").as[String] mustBe "Surname"
+      (json \ "success" \ "ihtpOverview" \ 0 \ "nino").as[String] mustBe testNino
       (json \ "success" \ "ihtpOverview" \ 0 \ "ihtpStatus").as[String] mustBe "Not reconciled"
     }
 
@@ -183,10 +183,10 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
         "inheritanceTaxReference" -> "A123456/25A",
         "paymentReference" -> "A123456/25A629671",
         "title" -> "Dr",
-        "firstForename" -> "John",
+        "firstForename" -> "Firstname",
         "secondForename" -> "M",
-        "surname" -> "Doe",
-        "nino" -> "AB123456C",
+        "surname" -> "Surname",
+        "nino" -> testNino,
         "ihtpStatus" -> "Not reconciled"
       )
 
@@ -247,8 +247,8 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
           "submissionDate" -> "2026-04-10T16:12:49Z",
           "paymentDueDate" -> "2026-02-02",
           "inheritanceTaxReference" -> "A123456/25A",
-          "firstForename" -> "John",
-          "surname" -> "Doe",
+          "firstForename" -> "Firstname",
+          "surname" -> "Surname",
           "ihtpStatus" -> "Not reconciled"
         )
         .validate[IhtpOverviewReport] mustBe a[JsError]
@@ -262,8 +262,8 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
           "paymentDueDate" -> "not-a-date",
           "ihtVersion" -> "001",
           "inheritanceTaxReference" -> "A123456/25A",
-          "firstForename" -> "John",
-          "surname" -> "Doe",
+          "firstForename" -> "Firstname",
+          "surname" -> "Surname",
           "ihtpStatus" -> "Not reconciled"
         )
         .validate[IhtpOverviewReport] mustBe a[JsError]
@@ -277,10 +277,10 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
       report.inheritanceTaxReference mustBe "A123456/25A"
       report.paymentReference mustBe Some("A123456/25A629671")
       report.title mustBe Some("Dr")
-      report.firstForename mustBe Some("John")
+      report.firstForename mustBe Some("Firstname")
       report.secondForename mustBe Some("M")
-      report.surname mustBe Some("Doe")
-      report.nino mustBe Some("AB123456C")
+      report.surname mustBe Some("Surname")
+      report.nino mustBe Some(testNino)
       report.ihtpStatus mustBe "Not reconciled"
       report.copy(
         fbNumber = report.fbNumber,
@@ -298,28 +298,33 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
       ) mustBe report
       report.productArity mustBe 13
       report.productPrefix mustBe "IhtpOverviewReport"
-      (report.productIterator.toSeq must contain).allOf(Some("119000004320"), "001", Some("John"), Some("Doe"))
+      (report.productIterator.toSeq must contain).allOf(
+        Some("119000004320"),
+        "001",
+        Some("Firstname"),
+        Some("Surname")
+      )
       report.toString must include("IhtpOverviewReport")
     }
 
     "must format deceasedName with title and second forename" in {
-      report.deceasedName mustBe "Dr John M Doe"
+      report.deceasedName mustBe "Dr Firstname M Surname"
     }
 
     "must format deceasedName without title" in {
-      report.copy(title = None).deceasedName mustBe "John M Doe"
+      report.copy(title = None).deceasedName mustBe "Firstname M Surname"
     }
 
     "must format deceasedName without second forename" in {
-      report.copy(secondForename = None).deceasedName mustBe "Dr John Doe"
+      report.copy(secondForename = None).deceasedName mustBe "Dr Firstname Surname"
     }
 
     "must format deceasedName with only required name fields" in {
-      report.copy(title = None, secondForename = None).deceasedName mustBe "John Doe"
+      report.copy(title = None, secondForename = None).deceasedName mustBe "Firstname Surname"
     }
 
     "must not add extra spaces when optional name fields are empty strings" in {
-      report.copy(title = Some(""), secondForename = Some("")).deceasedName mustBe "John Doe"
+      report.copy(title = Some(""), secondForename = Some("")).deceasedName mustBe "Firstname Surname"
     }
   }
 }
