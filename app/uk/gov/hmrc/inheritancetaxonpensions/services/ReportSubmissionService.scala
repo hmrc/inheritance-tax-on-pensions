@@ -230,34 +230,37 @@ class ReportSubmissionService @Inject() (
           case "individual" =>
             val individualName = (beneficiary \ "beneficiaryDetails" \ "individual").as[IndividualName]
             Some(
-              BeneficiaryDetails(
-                beneficiaryChangeFlag = None,
-                beneficiaryType = IndividualOrTrust(beneficiaryType),
-                beneficiaryContactDetails = BeneficiaryContactDetails(
-                  None,
-                  BeneficiaryPersonalDetails(
-                    title = individualName.title,
-                    firstForename = individualName.firstForename,
-                    secondForename = individualName.secondForename,
-                    surname = individualName.surname,
-                    ninoExist = YesNo.No,
-                    // TODO update once beneficiary nino or reason for no nino are captured
-                    nino = None,
-                    reasonNoNINO = Some("TODO")
-                  ),
-                  beneficiaryAddress = AddressDetails(
-                    // TODO update once beneficiary address details are captured
-                    addressLine1 = "1 ABCDE Street",
-                    addressLine2 = "FGHIJ Town",
-                    postcode = Some("ZZ99 1AA"),
-                    country = "GB"
-                  )
-                ),
-                beneficiaryPaymentDetails = BeneficiaryPaymentDetails(
-                  // TODO update once beneficiary payment details are captured
-                  beneficiaryIHTPayable = 99.99, // TODO
-                  beneficiaryInterestPayable = 99.99, // TODO
-                  beneficiaryTotal = 99.99 // TODO
+              buildBeneficiaryDetails(
+                beneficiaryType = beneficiaryType,
+                beneficiaryTrstName = None,
+                personalDetails = BeneficiaryPersonalDetails(
+                  title = individualName.title,
+                  firstForename = individualName.firstForename,
+                  secondForename = individualName.secondForename,
+                  surname = individualName.surname,
+                  ninoExist = YesNo.No,
+                  // TODO update once beneficiary nino or reason for no nino are captured
+                  nino = None,
+                  reasonNoNINO = Some("TODO")
+                )
+              )
+            )
+          case "organisation" =>
+            val beneficiaryTrstName =
+              (beneficiary \ "beneficiaryDetails" \ "organisation" \ "beneficiaryTrstName").as[String]
+            Some(
+              buildBeneficiaryDetails(
+                beneficiaryType = beneficiaryType,
+                beneficiaryTrstName = Some(beneficiaryTrstName),
+                // TODO update once the organisation beneficiary contact details are captured
+                personalDetails = BeneficiaryPersonalDetails(
+                  title = None,
+                  firstForename = "TODO",
+                  secondForename = None,
+                  surname = "TODO",
+                  ninoExist = YesNo.No,
+                  nino = None,
+                  reasonNoNINO = Some("TODO")
                 )
               )
             )
@@ -268,6 +271,33 @@ class ReportSubmissionService @Inject() (
       None
     }
   }
+
+  private def buildBeneficiaryDetails(
+    beneficiaryType: String,
+    beneficiaryTrstName: Option[String],
+    personalDetails: BeneficiaryPersonalDetails
+  ): BeneficiaryDetails =
+    BeneficiaryDetails(
+      beneficiaryChangeFlag = None,
+      beneficiaryType = IndividualOrTrust(beneficiaryType),
+      beneficiaryContactDetails = BeneficiaryContactDetails(
+        beneficiaryTrstName = beneficiaryTrstName,
+        beneficiaryPersonalDetails = personalDetails,
+        beneficiaryAddress = AddressDetails(
+          // TODO update once beneficiary address details are captured
+          addressLine1 = "1 ABCDE Street",
+          addressLine2 = "FGHIJ Town",
+          postcode = Some("ZZ99 1AA"),
+          country = "GB"
+        )
+      ),
+      beneficiaryPaymentDetails = BeneficiaryPaymentDetails(
+        // TODO update once beneficiary payment details are captured
+        beneficiaryIHTPayable = 99.99,
+        beneficiaryInterestPayable = 99.99,
+        beneficiaryTotal = 99.99
+      )
+    )
 
   private def buildDeclarations(ihtpAuthContext: IhtpAuthContext[Any]): Declarations =
     ihtpAuthContext.credentialRole match {
