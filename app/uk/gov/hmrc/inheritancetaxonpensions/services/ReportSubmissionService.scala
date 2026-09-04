@@ -245,14 +245,14 @@ class ReportSubmissionService @Inject() (
                 )
               )
             )
-          case "organisation" =>
+          case "trust" =>
             val beneficiaryTrstName =
-              (beneficiary \ "beneficiaryDetails" \ "organisation" \ "beneficiaryTrstName").as[String]
+              (beneficiary \ "beneficiaryDetails" \ "trust" \ "beneficiaryTrstName").as[String]
             Some(
               buildBeneficiaryDetails(
                 beneficiaryType = beneficiaryType,
                 beneficiaryTrstName = Some(beneficiaryTrstName),
-                // TODO update once the organisation beneficiary contact details are captured
+                // TODO update once the trust beneficiary contact details are captured
                 personalDetails = BeneficiaryPersonalDetails(
                   title = None,
                   firstForename = "TODO",
