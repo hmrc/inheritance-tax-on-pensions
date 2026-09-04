@@ -608,15 +608,15 @@ class ReportSubmissionServiceSpec
       )
     }
 
-    "include an organisation or trust beneficiary name in the payload" in {
+    "include a trust beneficiary name in the payload" in {
       val testUserAnswers = validUserAnswers.copy(
         data = validUserAnswers.data ++ Json.obj(
           "areBeneficiariesKnown" -> true,
           "beneficiaries" -> Json.arr(
             Json.obj(
-              "beneficiaryType" -> "organisation",
+              "beneficiaryType" -> "trust",
               "beneficiaryDetails" -> Json.obj(
-                "organisation" -> Json.obj(
+                "trust" -> Json.obj(
                   "beneficiaryTrstName" -> trustName
                 )
               )
