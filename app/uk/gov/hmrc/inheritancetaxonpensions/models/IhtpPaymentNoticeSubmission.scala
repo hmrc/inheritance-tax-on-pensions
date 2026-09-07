@@ -108,10 +108,10 @@ object PrContactDetails {
 }
 
 case class AddressDetails(
-  addressLine1: String,
-  addressLine2: String,
-  addressLine3: Option[String] = None,
-  addressLine4: Option[String] = None,
+  addressline1: String,
+  addressline2: String,
+  addressline3: Option[String] = None,
+  addressline4: Option[String] = None,
   postcode: Option[String] = None,
   country: String
 )

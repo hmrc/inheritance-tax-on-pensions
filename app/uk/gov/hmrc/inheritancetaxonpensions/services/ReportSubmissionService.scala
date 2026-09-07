@@ -285,8 +285,8 @@ class ReportSubmissionService @Inject() (
         beneficiaryPersonalDetails = personalDetails,
         beneficiaryAddress = AddressDetails(
           // TODO update once beneficiary address details are captured
-          addressLine1 = "1 ABCDE Street",
-          addressLine2 = "FGHIJ Town",
+          addressline1 = "1 ABCDE Street",
+          addressline2 = "FGHIJ Town",
           postcode = Some("ZZ99 1AA"),
           country = "GB"
         )

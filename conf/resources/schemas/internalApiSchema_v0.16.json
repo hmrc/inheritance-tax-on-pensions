@@ -370,21 +370,21 @@
     "prAddressType": {
       "type": "object",
       "required": [
-        "addressLine1",
-        "addressLine2",
+        "addressline1",
+        "addressline2",
         "country"
       ],
       "properties": {
-        "addressLine1": {
+        "addressline1": {
           "$ref": "#/definitions/AddressLineType"
         },
-        "addressLine2": {
+        "addressline2": {
           "$ref": "#/definitions/AddressLineType"
         },
-        "addressLine3": {
+        "addressline3": {
           "$ref": "#/definitions/AddressLineType"
         },
-        "addressLine4": {
+        "addressline4": {
           "$ref": "#/definitions/AddressLineType"
         },
         "postcode": {
@@ -530,21 +530,21 @@
     "beneficiaryAddressType": {
       "type": "object",
       "required": [
-        "addressLine1",
-        "addressLine2",
+        "addressline1",
+        "addressline2",
         "country"
       ],
       "properties": {
-        "addressLine1": {
+        "addressline1": {
           "$ref": "#/definitions/AddressLineType"
         },
-        "addressLine2": {
+        "addressline2": {
           "$ref": "#/definitions/AddressLineType"
         },
-        "addressLine3": {
+        "addressline3": {
           "$ref": "#/definitions/AddressLineType"
         },
-        "addressLine4": {
+        "addressline4": {
           "$ref": "#/definitions/AddressLineType"
         },
         "postcode": {
