@@ -20,19 +20,27 @@ import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.{IndividualOrOrg, IndividualOrTrust, YesNo}
 
-// TODO - Review this model against the IHTP EPIDs when we get them!
 case class IhtpPaymentNoticeSubmission(
-  reportDetails: ReportDetails,
-  deceased: Deceased,
-  personalRep: PrDetails,
-  ihTaxInformation: IhTaxInformation,
-  beneficiaries: Option[Seq[BeneficiaryDetails]],
-  declarations: Declarations
+  ihtNoticeRequest: IhtNoticeRequest
 )
 
 object IhtpPaymentNoticeSubmission {
   implicit val ihtpPaymentNoticeSubmissionFormat: OFormat[IhtpPaymentNoticeSubmission] =
     Json.format[IhtpPaymentNoticeSubmission]
+}
+
+case class IhtNoticeRequest(
+  reportDetails: ReportDetails,
+  deceased: Deceased,
+  personalRep: PrDetails,
+  ihTaxInformation: IhTaxInformation,
+  beneficiary: Option[Seq[BeneficiaryDetails]],
+  declarations: Declarations
+)
+
+object IhtNoticeRequest {
+  implicit val ihtNoticeRequestFormat: OFormat[IhtNoticeRequest] =
+    Json.format[IhtNoticeRequest]
 }
 
 case class ReportDetails(
@@ -72,8 +80,8 @@ object DeceasedPersonalDetails {
 }
 
 case class DeceasedDetails(
-  deceasedsDOB: String,
-  deceasedsDOD: String,
+  deceasedsDob: String,
+  deceasedsDod: String,
   ihtRefNumber: String
 )
 
@@ -84,7 +92,7 @@ object DeceasedDetails {
 
 case class PrDetails(
   prChangeFlag: Option[YesNo],
-  typeOfPR: IndividualOrOrg,
+  typeOfPr: IndividualOrOrg,
   prContactDetails: PrContactDetails,
   prAddress: AddressDetails
 )
@@ -179,7 +187,7 @@ object BeneficiaryDetails {
 }
 
 case class BeneficiaryContactDetails(
-  beneficiaryTrstName: Option[String] = None,
+  beneficiaryTrustName: Option[String] = None,
   beneficiaryPersonalDetails: BeneficiaryPersonalDetails,
   beneficiaryAddress: AddressDetails
 )
@@ -205,7 +213,7 @@ object BeneficiaryPersonalDetails {
 }
 
 case class BeneficiaryPaymentDetails(
-  beneficiaryIHTPayable: Double,
+  beneficiaryIhtPayable: Double,
   beneficiaryInterestPayable: Double,
   beneficiaryTotal: Double
 )
@@ -229,19 +237,33 @@ object BirthDeathDates {
     Json.format[BirthDeathDates]
 }
 
-case class IhtpPaymentNoticeResponse(formBundleNo: String, ihtPaymentReference: String)
+case class IhtpPaymentNoticeResponse(success: SuccessResponse)
 
 object IhtpPaymentNoticeResponse {
-  implicit val ihtpPaymentNoticeResponseFormat: OFormat[IhtpPaymentNoticeResponse] =
+  implicit val successResponseFormat: OFormat[IhtpPaymentNoticeResponse] =
     Json.format[IhtpPaymentNoticeResponse]
+}
+
+case class SuccessResponse(ihtResponse: IhtResponse)
+
+object SuccessResponse {
+  implicit val successResponseFormat: OFormat[SuccessResponse] =
+    Json.format[SuccessResponse]
+}
+
+case class IhtResponse(formBundleNo: String, ihtPaymentReference: String)
+
+object IhtResponse {
+  implicit val ihtResponseFormat: OFormat[IhtResponse] =
+    Json.format[IhtResponse]
 }
 
 case class IhTaxInformation(
   ihTaxChangeFlag: Option[YesNo] = None,
   dateNoticeReceived: String,
-  noticeSubmittedByPR: YesNo,
+  noticeSubmittedByPr: YesNo,
   knownBeneficiaries: Option[YesNo],
-  totalIHTPayable: Option[Double],
+  totalIhtPayable: Option[Double],
   totalInterestPayable: Option[Double],
   total: Option[Double]
 )
@@ -253,7 +275,7 @@ object IhTaxInformation {
 
 case class Declarations(
   submittedBy: String,
-  submitterID: String,
+  submitterId: String,
   psaDeclaration: Option[PsaDeclaration],
   pspDeclaration: Option[PspDeclaration]
 )
@@ -264,8 +286,8 @@ object Declarations {
 }
 
 case class PsaDeclaration(
-  psaDeclaration1: String,
-  psaDeclaration2: String
+  psaDeclaration1: Boolean,
+  psaDeclaration2: Boolean
 )
 
 object PsaDeclaration {
@@ -274,8 +296,8 @@ object PsaDeclaration {
 }
 
 case class PspDeclaration(
-  pspDeclaration1: String,
-  pspDeclaration2: String,
+  pspDeclaration1: Boolean,
+  pspDeclaration2: Boolean,
   psaid: String
 )
 

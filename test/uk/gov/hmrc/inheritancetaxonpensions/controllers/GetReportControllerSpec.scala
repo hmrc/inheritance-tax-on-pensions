@@ -127,7 +127,7 @@ class GetReportControllerSpec extends BaseSpec with TestValues:
 
       val result = controller.getReport()(
         requestWithRequiredHeaders(
-          "/ihtp?pstr=24000001IN&paymentReferenceNumber=PR000000001&versionNumber=001"
+          "/ihtp?pstr=24000001IN&ihtPaymentReference=PR000000001&versionNumber=001"
         )
       )
 
