@@ -49,7 +49,7 @@ class ReportSubmissionService @Inject() (
         case Some(userAnswers) =>
           val submissionPayLoad = buildSubmissionPayload(userAnswers, pstr, ihtpAuthContext)
           val payloadAsJson = Json.toJson(submissionPayLoad)
-          val schema = SchemaPaths.INTERNAL_v0_16
+          val schema = SchemaPaths.EPID1767_v0_1_adjusted
           val validationResult = jsonPayloadSchemaValidator.validatePayload(schema, payloadAsJson)
           if (validationResult.hasErrors) {
             throw SchemaValidationFailureException(
@@ -133,19 +133,21 @@ class ReportSubmissionService @Inject() (
         }
       ),
       deceasedDetails = DeceasedDetails(
-        deceasedsDOB = birthDeathDates.dateOfBirth,
-        deceasedsDOD = birthDeathDates.dateOfDeath,
+        deceasedsDob = birthDeathDates.dateOfBirth,
+        deceasedsDod = birthDeathDates.dateOfDeath,
         ihtRefNumber = inheritanceTaxReferenceNumber
       )
     )
 
     IhtpPaymentNoticeSubmission(
-      reportDetails,
-      deceased,
-      prDetails,
-      buildIhTaxInformation(userAnswers),
-      beneficiaryList,
-      declarations
+      IhtNoticeRequest(
+        reportDetails,
+        deceased,
+        prDetails,
+        buildIhTaxInformation(userAnswers),
+        beneficiaryList,
+        declarations
+      )
     )
   }
 
@@ -168,6 +170,7 @@ class ReportSubmissionService @Inject() (
             UserAnswersHelper.getOptionalAs[String](userAnswers, "prDetails.organisation.ukPostcode")
           )
         )
+
       case "individual" =>
         val individualDetails = UserAnswersHelper.getMandatoryAs[IndividualDetails](
           userAnswers,
@@ -195,7 +198,7 @@ class ReportSubmissionService @Inject() (
         userAnswers,
         "ihtTaxInformation.dateThePensionSchemeReceivedNoticeToPay"
       ),
-      noticeSubmittedByPR = YesNo(
+      noticeSubmittedByPr = YesNo(
         UserAnswersHelper.getMandatoryAs[Boolean](
           userAnswers,
           "didPrSubmit"
@@ -207,9 +210,9 @@ class ReportSubmissionService @Inject() (
           "areBeneficiariesKnown"
         )
         .map(YesNo.apply),
-      totalIHTPayable = UserAnswersHelper.getOptionalAs[Double](
+      totalIhtPayable = UserAnswersHelper.getOptionalAs[Double](
         userAnswers,
-        "ihtTaxInformation.totalIHTPayable"
+        "ihtTaxInformation.totalIhtPayable"
       ),
       totalInterestPayable = UserAnswersHelper.getOptionalAs[Double](
         userAnswers,
@@ -232,7 +235,7 @@ class ReportSubmissionService @Inject() (
             Some(
               buildBeneficiaryDetails(
                 beneficiaryType = beneficiaryType,
-                beneficiaryTrstName = None,
+                beneficiaryTrustName = None,
                 personalDetails = BeneficiaryPersonalDetails(
                   title = individualName.title,
                   firstForename = individualName.firstForename,
@@ -246,12 +249,12 @@ class ReportSubmissionService @Inject() (
               )
             )
           case "trust" =>
-            val beneficiaryTrstName =
-              (beneficiary \ "beneficiaryDetails" \ "trust" \ "beneficiaryTrstName").as[String]
+            val beneficiaryTrustName =
+              (beneficiary \ "beneficiaryDetails" \ "trust" \ "beneficiaryTrustName").as[String]
             Some(
               buildBeneficiaryDetails(
                 beneficiaryType = beneficiaryType,
-                beneficiaryTrstName = Some(beneficiaryTrstName),
+                beneficiaryTrustName = Some(beneficiaryTrustName),
                 // TODO update once the trust beneficiary contact details are captured
                 personalDetails = BeneficiaryPersonalDetails(
                   title = None,
@@ -274,14 +277,14 @@ class ReportSubmissionService @Inject() (
 
   private def buildBeneficiaryDetails(
     beneficiaryType: String,
-    beneficiaryTrstName: Option[String],
+    beneficiaryTrustName: Option[String],
     personalDetails: BeneficiaryPersonalDetails
   ): BeneficiaryDetails =
     BeneficiaryDetails(
       beneficiaryChangeFlag = None,
       beneficiaryType = IndividualOrTrust(beneficiaryType),
       beneficiaryContactDetails = BeneficiaryContactDetails(
-        beneficiaryTrstName = beneficiaryTrstName,
+        beneficiaryTrustName = beneficiaryTrustName,
         beneficiaryPersonalDetails = personalDetails,
         beneficiaryAddress = AddressDetails(
           // TODO update once beneficiary address details are captured
@@ -293,7 +296,7 @@ class ReportSubmissionService @Inject() (
       ),
       beneficiaryPaymentDetails = BeneficiaryPaymentDetails(
         // TODO update once beneficiary payment details are captured
-        beneficiaryIHTPayable = 99.99,
+        beneficiaryIhtPayable = 99.99,
         beneficiaryInterestPayable = 99.99,
         beneficiaryTotal = 99.99
       )
@@ -304,12 +307,12 @@ class ReportSubmissionService @Inject() (
       case Constants.pspId =>
         Declarations(
           submittedBy = Constants.HEADER_VALUE_PSP,
-          submitterID = ihtpAuthContext.psaPspId,
+          submitterId = ihtpAuthContext.psaPspId,
           psaDeclaration = None,
           pspDeclaration = Some(
             PspDeclaration(
-              pspDeclaration1 = "true",
-              pspDeclaration2 = "true",
+              pspDeclaration1 = true,
+              pspDeclaration2 = true,
               psaid = "TODO"
             )
           )
@@ -317,11 +320,11 @@ class ReportSubmissionService @Inject() (
       case _ =>
         Declarations(
           submittedBy = Constants.HEADER_VALUE_PSA,
-          submitterID = ihtpAuthContext.psaPspId,
+          submitterId = ihtpAuthContext.psaPspId,
           psaDeclaration = Some(
             PsaDeclaration(
-              psaDeclaration1 = "true",
-              psaDeclaration2 = "true"
+              psaDeclaration1 = true,
+              psaDeclaration2 = true
             )
           ),
           pspDeclaration = None

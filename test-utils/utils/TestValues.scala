@@ -79,8 +79,12 @@ trait TestValues extends Generators {
   val trustName: String = "Testdata Trust"
 
   val testSubmissionResponse: IhtpPaymentNoticeResponse = IhtpPaymentNoticeResponse(
-    formBundleNo = "910000000000",
-    ihtPaymentReference = testIhtPaymentReference
+    SuccessResponse(
+      IhtResponse(
+        formBundleNo = "910000000000",
+        ihtPaymentReference = testIhtPaymentReference
+      )
+    )
   )
 
   private val deceasedPersonalDetailsPayloadSection = DeceasedPersonalDetails(
@@ -94,8 +98,8 @@ trait TestValues extends Generators {
   )
 
   private val deceasedDetailsPayloadSection = DeceasedDetails(
-    deceasedsDOB = testDateOfBirth,
-    deceasedsDOD = testDateOfDeath,
+    deceasedsDob = testDateOfBirth,
+    deceasedsDod = testDateOfDeath,
     ihtRefNumber = "A123459/25A"
   )
 
@@ -121,7 +125,7 @@ trait TestValues extends Generators {
 
   val prDetailsIndividualPayloadSection: PrDetails = PrDetails(
     prChangeFlag = None,
-    typeOfPR = IorOIndividual,
+    typeOfPr = IorOIndividual,
     prContactDetails = prContactDetailsIndividualPayloadSection,
     prAddress = AddressDetails(
       addressline1 = testAddressLine1,
@@ -130,9 +134,10 @@ trait TestValues extends Generators {
       country = testCountry
     )
   )
+
   val prDetailsOrganisationPayloadSection: PrDetails = PrDetails(
     prChangeFlag = None,
-    typeOfPR = Organisation,
+    typeOfPr = Organisation,
     prContactDetails = prContactDetailsOrganisationPayloadSection,
     prAddress = AddressDetails(
       addressline1 = "1 ABCDE Street",
@@ -163,74 +168,80 @@ trait TestValues extends Generators {
   )
 
   val beneficiaryPaymentDetailsPayloadSection: BeneficiaryPaymentDetails = BeneficiaryPaymentDetails(
-    beneficiaryIHTPayable = 99.99,
+    beneficiaryIhtPayable = 99.99,
     beneficiaryInterestPayable = 99.99,
     beneficiaryTotal = 99.99
   )
 
   val declarationsPayloadSection: Declarations = Declarations(
     submittedBy = "PSA",
-    submitterID = psaId,
-    psaDeclaration = Some(PsaDeclaration("true", "true")),
+    submitterId = psaId,
+    psaDeclaration = Some(PsaDeclaration(true, true)),
     pspDeclaration = None
   )
 
   val declarationsPspPayloadSection: Declarations = Declarations(
     submittedBy = "PSP",
-    submitterID = pspId,
+    submitterId = pspId,
     psaDeclaration = None,
-    pspDeclaration = Some(PspDeclaration("true", "true", "TODO"))
+    pspDeclaration = Some(PspDeclaration(true, true, "TODO"))
   )
 
   val testReportSubmissionRequestBody: IhtpPaymentNoticeSubmission = IhtpPaymentNoticeSubmission(
-    ReportDetails(
-      pstr = "24000001IN",
-      ihtPaymentReference = None
-    ),
-    deceasedPayloadSection,
-    prDetailsIndividualPayloadSection,
-    IhTaxInformation(
-      ihTaxChangeFlag = None,
-      dateNoticeReceived = testPaymentNoticeDate,
-      noticeSubmittedByPR = Yes,
-      knownBeneficiaries = Some(No),
-      totalIHTPayable = Some(1000.00),
-      totalInterestPayable = Some(50.00),
-      total = Some(1050.00)
-    ),
-    beneficiaries = None,
-    declarations = declarationsPayloadSection
+    IhtNoticeRequest(
+      ReportDetails(
+        pstr = "24000001IN",
+        ihtPaymentReference = None
+      ),
+      deceasedPayloadSection,
+      prDetailsIndividualPayloadSection,
+      IhTaxInformation(
+        ihTaxChangeFlag = None,
+        dateNoticeReceived = testPaymentNoticeDate,
+        noticeSubmittedByPr = Yes,
+        knownBeneficiaries = Some(No),
+        totalIhtPayable = Some(1000.00),
+        totalInterestPayable = Some(50.00),
+        total = Some(1050.00)
+      ),
+      beneficiary = None,
+      declarations = declarationsPayloadSection
+    )
   )
 
   val testReportSubmissionRequestBodyOrganisation: IhtpPaymentNoticeSubmission = IhtpPaymentNoticeSubmission(
-    ReportDetails(
-      pstr = "24000001IN",
-      ihtPaymentReference = None
-    ),
-    deceasedPayloadSection,
-    prDetailsOrganisationPayloadSection,
-    IhTaxInformation(
-      ihTaxChangeFlag = None,
-      dateNoticeReceived = testPaymentNoticeDate,
-      noticeSubmittedByPR = Yes,
-      knownBeneficiaries = Some(No),
-      totalIHTPayable = Some(1000.00),
-      totalInterestPayable = Some(50.00),
-      total = Some(1050.00)
-    ),
-    Some(
-      Seq(
-        BeneficiaryDetails(
-          beneficiaryType = IorTIndividual,
-          beneficiaryContactDetails = beneficiaryContactDetailsPayloadSection,
-          beneficiaryPaymentDetails = beneficiaryPaymentDetailsPayloadSection
+    IhtNoticeRequest(
+      ReportDetails(
+        pstr = "24000001IN",
+        ihtPaymentReference = None
+      ),
+      deceasedPayloadSection,
+      prDetailsOrganisationPayloadSection,
+      IhTaxInformation(
+        ihTaxChangeFlag = None,
+        dateNoticeReceived = testPaymentNoticeDate,
+        noticeSubmittedByPr = Yes,
+        knownBeneficiaries = Some(No),
+        totalIhtPayable = Some(1000.00),
+        totalInterestPayable = Some(50.00),
+        total = Some(1050.00)
+      ),
+      Some(
+        Seq(
+          BeneficiaryDetails(
+            beneficiaryType = IorTIndividual,
+            beneficiaryContactDetails = beneficiaryContactDetailsPayloadSection,
+            beneficiaryPaymentDetails = beneficiaryPaymentDetailsPayloadSection
+          )
         )
-      )
-    ),
-    declarations = declarationsPayloadSection
+      ),
+      declarations = declarationsPayloadSection
+    )
   )
 
-  val testReportSubmissionResponse: IhtpPaymentNoticeResponse = IhtpPaymentNoticeResponse("910000000000", "123456789")
+  val testReportSubmissionResponse: IhtpPaymentNoticeResponse = IhtpPaymentNoticeResponse(
+    SuccessResponse(IhtResponse("910000000000", "123456789"))
+  )
 
   val testSchemaValidationError: schema.Error = schema.Error
     .builder()
