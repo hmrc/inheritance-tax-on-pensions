@@ -41,8 +41,12 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
 
   val app: Application = new GuiceApplicationBuilder()
     .configure("microservice.services.ihtp-report.port" -> wireMockPort)
-    .configure("microservice.services.ihtp-report.url.submitReport" -> "/etmp/RESTAdapter/pods/reports/ihtp")
-    .configure("microservice.services.ihtp-report.url.getReport" -> "/etmp/RESTAdapter/pods/reports/ihtp")
+    .configure(
+      "microservice.services.ihtp-report.url.submitReport" -> "/etmp/RESTAdapter/pods/reports/ihtp-payment-notice"
+    )
+    .configure(
+      "microservice.services.ihtp-report.url.getReport" -> "/etmp/RESTAdapter/pods/reports/ihtp-payment-notice"
+    )
     .configure("microservice.services.ihtp-report.url.getOverview" -> "/etmp/RESTAdapter/pods/reports/ihtp-overview")
     .configure("http-verbs.retries.intervals" -> Seq("10.millis", "20.millis", "30.millis", "40.millis", "50.millis"))
     .configure("mongodb.encryption.key" -> "test-key-for-integration-tests-only")
@@ -50,8 +54,8 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
 
   private lazy val connector: IhtpReportConnector = app.injector.instanceOf[IhtpReportConnector]
 
-  val submitReturnUrl: String = "/etmp/RESTAdapter/pods/reports/ihtp"
-  val reportUrl: String = "/etmp/RESTAdapter/pods/reports/ihtp"
+  val submitReturnUrl: String = "/etmp/RESTAdapter/pods/reports/ihtp-payment-notice"
+  val reportUrl: String = "/etmp/RESTAdapter/pods/reports/ihtp-payment-notice"
   val overviewUrl: String = "/etmp/RESTAdapter/pods/reports/ihtp-overview"
   val correlationId: String = "e4946bba-23f1-4a75-9207-b20b7741cf40"
   val unexpectedResponse = Json.obj(
@@ -68,9 +72,8 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
 
     "return a report retrieved by form bundle number with the required HIP headers" in {
       val response = Json.obj(
-        "success" -> Json.obj(
-          "pstr" -> "24000001IN",
-          "ihtpDetails" -> Json.obj("version" -> "001", "status" -> "In Progress")
+        "ihtNoticeResponse" -> Json.obj(
+          "foo" -> "bar"
         )
       )
       val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
@@ -99,8 +102,8 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
     }
 
     "return a report retrieved by an encoded payment reference number and version number" in {
-      val response = Json.obj("success" -> Json.obj("pstr" -> "24000001IN"))
-      val url = s"$reportUrl?pstr=24000001IN&paymentReferenceNumber=PR+000/001&versionNumber=001"
+      val response = Json.obj("ihtNoticeResponse" -> Json.obj("foo" -> "bar"))
+      val url = s"$reportUrl?pstr=24000001IN&ihtPaymentReference=PR+000/001&versionNumber=001"
 
       wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(ok(response.toString)))
 
@@ -389,13 +392,13 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
 
     reportSubmissionRequestBodyTestCases.foreach { requestBody =>
 
-      val reportType = requestBody.personalRep.typeOfPR
+      val reportType = requestBody.ihtNoticeRequest.personalRep.typeOfPr
 
       s"return a valid report submission response for a successful call (OK) for $reportType" in {
         stubPost(
           submitReturnUrl,
           Json.toJson(requestBody).toString,
-          ok(s"${Json.toJson(testReportSubmissionResponse)}")
+          created().withBody(s"${Json.toJson(testReportSubmissionResponse)}")
         )
 
         whenReady(connector.submitReport(requestBody)) { result =>
@@ -413,7 +416,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
         stubPost(
           submitReturnUrl,
           Json.toJson(requestBody).toString,
-          ok(s"${Json.toJson("foo")}")
+          created().withBody(s"${Json.toJson("foo")}")
         )
 
         whenReady(connector.submitReport(requestBody)) { result =>

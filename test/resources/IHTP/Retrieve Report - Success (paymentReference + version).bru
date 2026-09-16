@@ -5,14 +5,14 @@ meta {
 }
 
 get {
-  url: {{ihtp_url}}/ihtp?pstr=24000001IN&paymentReferenceNumber=A123456/25A629671&versionNumber=001
+  url: {{ihtp_url}}/ihtp?pstr=24000001IN&ihtPaymentReference=A123456/25A629671&versionNumber=001
   body: none
   auth: bearer
 }
 
 params:query {
   pstr: 24000001IN
-  paymentReferenceNumber: A123456/25A629671
+  ihtPaymentReference: A123456/25A629671
   versionNumber: 001
 }
 
@@ -33,6 +33,6 @@ tests {
   });
   
   test("Response contains the requested PSTR", function () {
-      expect(res.body.success.schemeDetails.pstr).to.equal("24000001IN");
+      expect(res.body.ihtNoticeResponse.schemeDetails.pstr).to.equal("24000001IN");
   });
 }

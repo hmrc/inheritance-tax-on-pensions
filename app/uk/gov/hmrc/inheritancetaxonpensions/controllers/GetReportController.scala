@@ -56,7 +56,7 @@ class GetReportController @Inject() (
         .getReport(
           pstr,
           request.getQueryString("fbNumber"),
-          request.getQueryString("paymentReferenceNumber"),
+          request.getQueryString("ihtPaymentReference"),
           request.getQueryString("versionNumber")
         )
         .map(toResult)

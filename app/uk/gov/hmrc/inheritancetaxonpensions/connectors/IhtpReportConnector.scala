@@ -107,10 +107,10 @@ class IhtpReportConnector @Inject() (
   def getReport(
     pstr: String,
     fbNumber: Option[String],
-    paymentReferenceNumber: Option[String],
+    ihtPaymentReference: Option[String],
     versionNumber: Option[String]
   )(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    val url: String = reportUrl(pstr, fbNumber, paymentReferenceNumber, versionNumber)
+    val url: String = reportUrl(pstr, fbNumber, ihtPaymentReference, versionNumber)
     val reportHeaders = headers.ihtpReportHeaders()
     val correlationId = reportHeaders
       .collectFirst { case (name, value) if name.equalsIgnoreCase(correlationIdHeader) => value }
@@ -157,7 +157,7 @@ class IhtpReportConnector @Inject() (
         .withBody(Json.toJson(ihtpPaymentNoticeSubmission))
         .execute[HttpResponse]
         .flatMap {
-          case response if response.status == OK =>
+          case response if response.status == CREATED =>
             Try(response.json.as[IhtpPaymentNoticeResponse]) match {
               case Success(submissionResponse) =>
                 logger.info(
@@ -170,6 +170,7 @@ class IhtpReportConnector @Inject() (
                 )
                 Future.successful(Left(ErrorCodes.unexpectedResponse))
             }
+          // TODO compare this with EPID error messages and log all possible information that cannot be PII for all error responses
           case response if response.status == BAD_REQUEST =>
             logger.warn(
               "[IhtpReportConnector][submitReport] Bad request returned for submission"
@@ -221,6 +222,7 @@ class IhtpReportConnector @Inject() (
             )
             unexpectedReportResponse(correlationId)
         }
+      // TODO compare this with EPID error messages and log all possible information that cannot be PII for all error responses
       case status if documentedReportStatusCodes.contains(status) =>
         logger.warn(s"[IhtpReportConnector][getReport] Error status returned for report retrieval: $status")
         withCorrelationId(response, correlationId)
@@ -272,13 +274,13 @@ class IhtpReportConnector @Inject() (
   private def reportUrl(
     pstr: String,
     fbNumber: Option[String],
-    paymentReferenceNumber: Option[String],
+    ihtPaymentReference: Option[String],
     versionNumber: Option[String]
   ): String = {
     val queryParams = Seq(
       Some("pstr" -> pstr),
       fbNumber.map("fbNumber" -> _),
-      paymentReferenceNumber.map("paymentReferenceNumber" -> _),
+      ihtPaymentReference.map("ihtPaymentReference" -> _),
       versionNumber.map("versionNumber" -> _)
     ).flatten
 

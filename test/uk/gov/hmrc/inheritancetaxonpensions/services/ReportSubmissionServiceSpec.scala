@@ -17,10 +17,8 @@
 package uk.gov.hmrc.inheritancetaxonpensions.services
 
 import play.api.test.FakeRequest
-import com.networknt.schema.Error
 import play.api.mvc.AnyContentAsEmpty
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 import uk.gov.hmrc.inheritancetaxonpensions.repositories.UserAnswersRepository
 import uk.gov.hmrc.inheritancetaxonpensions.models._
 import utils.TestValues
@@ -73,7 +71,7 @@ class ReportSubmissionServiceSpec
   )
 
   private val individualPersonalRepResponseJson = Json.obj(
-    "typeOfPR" -> "01",
+    "typeOfPr" -> "01",
     "prContactDetails" -> Json.obj(
       "title" -> "Mr",
       "firstForename" -> "Firstname",
@@ -97,7 +95,7 @@ class ReportSubmissionServiceSpec
   )
 
   private val organisationPersonalRepResponseJson = Json.obj(
-    "typeOfPR" -> "02",
+    "typeOfPr" -> "02",
     "prContactDetails" -> Json.obj(
       "orgName" -> "Test Organisation",
       "title" -> "Ms",
@@ -124,14 +122,14 @@ class ReportSubmissionServiceSpec
 
   private val ihTaxInformationUaJson = Json.obj(
     "dateThePensionSchemeReceivedNoticeToPay" -> testPaymentNoticeDate,
-    "totalIHTPayable" -> 1000.00,
+    "totalIhtPayable" -> 1000.00,
     "totalInterestPayable" -> 50.00,
     "total" -> 1050.00
   )
 
   private val declarationUaJson = Json.obj(
     "submittedBy" -> "PSA",
-    "submitterID" -> "TODO",
+    "submitterId" -> "TODO",
     "psaDeclaration" -> Json.obj(
       "psaDeclaration1" -> true,
       "psaDeclaration2" -> true
@@ -196,25 +194,27 @@ class ReportSubmissionServiceSpec
         ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
       verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
       payloadCaptor.getValue mustBe IhtpPaymentNoticeSubmission(
-        ReportDetails(
-          pstr = testPstr,
-          ihtPaymentReference = None
-        ),
-        deceasedPayloadSection,
-        prDetailsIndividualPayloadSection,
-        IhTaxInformation(
-          ihTaxChangeFlag = None,
-          dateNoticeReceived = testPaymentNoticeDate,
-          noticeSubmittedByPR = Yes,
-          knownBeneficiaries = Some(No),
-          totalIHTPayable = Some(1000.00),
-          totalInterestPayable = Some(50.00),
-          total = Some(1050.00)
-        ),
-        beneficiaries = None,
-        declarations = declarationsPayloadSection
+        IhtNoticeRequest(
+          ReportDetails(
+            pstr = testPstr,
+            ihtPaymentReference = None
+          ),
+          deceasedPayloadSection,
+          prDetailsIndividualPayloadSection,
+          IhTaxInformation(
+            ihTaxChangeFlag = None,
+            dateNoticeReceived = testPaymentNoticeDate,
+            noticeSubmittedByPr = Yes,
+            knownBeneficiaries = Some(No),
+            totalIhtPayable = Some(1000.00),
+            totalInterestPayable = Some(50.00),
+            total = Some(1050.00)
+          ),
+          beneficiary = None,
+          declarations = declarationsPayloadSection
+        )
       )
-      Json.toJson(payloadCaptor.getValue.personalRep) mustBe individualPersonalRepResponseJson
+      Json.toJson(payloadCaptor.getValue.ihtNoticeRequest.personalRep) mustBe individualPersonalRepResponseJson
     }
 
     "return Right when submission is successful when PSP fills in the declaration" in {
@@ -233,25 +233,27 @@ class ReportSubmissionServiceSpec
         ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
       verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
       payloadCaptor.getValue mustBe IhtpPaymentNoticeSubmission(
-        ReportDetails(
-          pstr = testPstr,
-          ihtPaymentReference = None
-        ),
-        deceasedPayloadSection,
-        prDetailsIndividualPayloadSection,
-        IhTaxInformation(
-          ihTaxChangeFlag = None,
-          dateNoticeReceived = testPaymentNoticeDate,
-          noticeSubmittedByPR = Yes,
-          knownBeneficiaries = Some(No),
-          totalIHTPayable = Some(1000.00),
-          totalInterestPayable = Some(50.00),
-          total = Some(1050.00)
-        ),
-        beneficiaries = None,
-        declarations = declarationsPspPayloadSection
+        IhtNoticeRequest(
+          ReportDetails(
+            pstr = testPstr,
+            ihtPaymentReference = None
+          ),
+          deceasedPayloadSection,
+          prDetailsIndividualPayloadSection,
+          IhTaxInformation(
+            ihTaxChangeFlag = None,
+            dateNoticeReceived = testPaymentNoticeDate,
+            noticeSubmittedByPr = Yes,
+            knownBeneficiaries = Some(No),
+            totalIhtPayable = Some(1000.00),
+            totalInterestPayable = Some(50.00),
+            total = Some(1050.00)
+          ),
+          beneficiary = None,
+          declarations = declarationsPspPayloadSection
+        )
       )
-      Json.toJson(payloadCaptor.getValue.personalRep) mustBe individualPersonalRepResponseJson
+      Json.toJson(payloadCaptor.getValue.ihtNoticeRequest.personalRep) mustBe individualPersonalRepResponseJson
     }
 
     "return Right when submission is successful with organisation prType" in {
@@ -291,14 +293,16 @@ class ReportSubmissionServiceSpec
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
       when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))
         .thenReturn(Future.successful(Right(testSubmissionResponse)))
+      when(mockJSONSchemaValidator.validatePayload(any(), any()))
+        .thenReturn(SchemaValidationResult(Set.empty))
 
       val result = service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).futureValue
       result.isRight mustBe true
       val payloadCaptor: ArgumentCaptor[IhtpPaymentNoticeSubmission] =
         ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
       verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
-      payloadCaptor.getValue.personalRep mustBe prDetailsOrganisationPayloadSection
-      Json.toJson(payloadCaptor.getValue.personalRep) mustBe organisationPersonalRepResponseJson
+      payloadCaptor.getValue.ihtNoticeRequest.personalRep mustBe prDetailsOrganisationPayloadSection
+      Json.toJson(payloadCaptor.getValue.ihtNoticeRequest.personalRep) mustBe organisationPersonalRepResponseJson
     }
 
     "fail before submission when the deceased NINO answer is missing" in {
@@ -502,23 +506,25 @@ class ReportSubmissionServiceSpec
         ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
       verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
       payloadCaptor.getValue mustBe IhtpPaymentNoticeSubmission(
-        ReportDetails(
-          pstr = testPstr,
-          ihtPaymentReference = None // as it is not submitted yet
-        ),
-        deceasedPerson,
-        prDetailsIndividualPayloadSection,
-        IhTaxInformation(
-          ihTaxChangeFlag = None,
-          dateNoticeReceived = testPaymentNoticeDate,
-          noticeSubmittedByPR = Yes,
-          knownBeneficiaries = Some(No),
-          totalIHTPayable = Some(1000.00),
-          totalInterestPayable = Some(50.00),
-          total = Some(1050.00)
-        ),
-        beneficiaries = None,
-        declarations = declarationsPayloadSection
+        IhtNoticeRequest(
+          ReportDetails(
+            pstr = testPstr,
+            ihtPaymentReference = None // as it is not submitted yet
+          ),
+          deceasedPerson,
+          prDetailsIndividualPayloadSection,
+          IhTaxInformation(
+            ihTaxChangeFlag = None,
+            dateNoticeReceived = testPaymentNoticeDate,
+            noticeSubmittedByPr = Yes,
+            knownBeneficiaries = Some(No),
+            totalIhtPayable = Some(1000.00),
+            totalInterestPayable = Some(50.00),
+            total = Some(1050.00)
+          ),
+          beneficiary = None,
+          declarations = declarationsPayloadSection
+        )
       )
     }
 
@@ -570,34 +576,36 @@ class ReportSubmissionServiceSpec
         ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
       verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
       payloadCaptor.getValue mustBe IhtpPaymentNoticeSubmission(
-        ReportDetails(
-          pstr = testPstr,
-          ihtPaymentReference = None
-        ),
-        deceasedPayloadSection,
-        prDetailsOrganisationPayloadSection,
-        IhTaxInformation(
-          ihTaxChangeFlag = None,
-          dateNoticeReceived = testPaymentNoticeDate,
-          noticeSubmittedByPR = Yes,
-          knownBeneficiaries = Some(Yes),
-          totalIHTPayable = None,
-          totalInterestPayable = None,
-          total = None
-        ),
-        Some(
-          Seq(
-            BeneficiaryDetails(
-              beneficiaryType = IndividualOrTrust.Individual,
-              beneficiaryContactDetails = beneficiaryContactDetailsPayloadSection,
-              beneficiaryPaymentDetails = beneficiaryPaymentDetailsPayloadSection
+        IhtNoticeRequest(
+          ReportDetails(
+            pstr = testPstr,
+            ihtPaymentReference = None
+          ),
+          deceasedPayloadSection,
+          prDetailsOrganisationPayloadSection,
+          IhTaxInformation(
+            ihTaxChangeFlag = None,
+            dateNoticeReceived = testPaymentNoticeDate,
+            noticeSubmittedByPr = Yes,
+            knownBeneficiaries = Some(Yes),
+            totalIhtPayable = None,
+            totalInterestPayable = None,
+            total = None
+          ),
+          Some(
+            Seq(
+              BeneficiaryDetails(
+                beneficiaryType = IndividualOrTrust.Individual,
+                beneficiaryContactDetails = beneficiaryContactDetailsPayloadSection,
+                beneficiaryPaymentDetails = beneficiaryPaymentDetailsPayloadSection
+              )
             )
-          )
-        ),
-        declarations = declarationsPayloadSection
+          ),
+          declarations = declarationsPayloadSection
+        )
       )
       Json.toJson(
-        payloadCaptor.getValue.beneficiaries.get.head.beneficiaryContactDetails.beneficiaryPersonalDetails
+        payloadCaptor.getValue.ihtNoticeRequest.beneficiary.get.head.beneficiaryContactDetails.beneficiaryPersonalDetails
       ) mustBe Json.obj(
         "title" -> "Mr",
         "firstForename" -> "Firstnamethree",
@@ -617,7 +625,7 @@ class ReportSubmissionServiceSpec
               "beneficiaryType" -> "trust",
               "beneficiaryDetails" -> Json.obj(
                 "trust" -> Json.obj(
-                  "beneficiaryTrstName" -> trustName
+                  "beneficiaryTrustName" -> trustName
                 )
               )
             )
@@ -635,9 +643,9 @@ class ReportSubmissionServiceSpec
         ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
       verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
 
-      val beneficiary = payloadCaptor.getValue.beneficiaries.get.head
+      val beneficiary = payloadCaptor.getValue.ihtNoticeRequest.beneficiary.get.head
       beneficiary.beneficiaryType mustBe IndividualOrTrust.Trust
-      beneficiary.beneficiaryContactDetails.beneficiaryTrstName mustBe Some(trustName)
+      beneficiary.beneficiaryContactDetails.beneficiaryTrustName mustBe Some(trustName)
       (Json.toJson(beneficiary).toString must not).include("hmrcReferenceNumber")
     }
 
@@ -654,6 +662,5 @@ class ReportSubmissionServiceSpec
       result.getMessage must include("testPath: customMessage")
       verify(mockIhtpReportConnector, never).submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]())
     }
-
   }
 }

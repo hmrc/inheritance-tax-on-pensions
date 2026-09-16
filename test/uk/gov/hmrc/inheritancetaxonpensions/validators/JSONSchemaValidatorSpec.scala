@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.inheritancetaxonpensions.validators
 
-import uk.gov.hmrc.inheritancetaxonpensions.validators.SchemaPaths.INTERNAL_v0_16
+import uk.gov.hmrc.inheritancetaxonpensions.validators.SchemaPaths.EPID1767_v0_1_adjusted
 import play.api.inject.bind
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.inheritancetaxonpensions.models.ReportDetails
@@ -41,35 +41,36 @@ class JSONSchemaValidatorSpec extends BaseSpec {
   private lazy val jsonPayloadSchemaValidator: JSONSchemaValidator = app.injector.instanceOf[JSONSchemaValidator]
 
   "json schema validator" must {
-    "should successfully validate json payload against internal schema version 0.16" in {
+    "should successfully validate json payload against EPIC1767 version 0.1 - adjusted schema" in {
       val json: JsValue = Json.toJson(testReportSubmissionRequestBody)
-      val result = jsonPayloadSchemaValidator.validatePayload(INTERNAL_v0_16, json)
+      val result = jsonPayloadSchemaValidator.validatePayload(EPID1767_v0_1_adjusted, json)
       result.hasErrors mustBe false
     }
 
-    "should successfully validate json payload with organisation against internal schema version 0.16" in {
+    "should successfully validate json payload with organisation against EPIC1767 version 0.1 - adjusted schema" in {
       val json: JsValue = Json.toJson(testReportSubmissionRequestBodyOrganisation)
-      val result = jsonPayloadSchemaValidator.validatePayload(INTERNAL_v0_16, json)
+      val result = jsonPayloadSchemaValidator.validatePayload(EPID1767_v0_1_adjusted, json)
       result.hasErrors mustBe false
     }
 
     "should identify invalid inputs" in {
       val json: JsValue = Json.toJson(
         testReportSubmissionRequestBody.copy(
-          reportDetails = ReportDetails(pstr = "Invalid", Some("invalid"))
+          ihtNoticeRequest = testReportSubmissionRequestBody.ihtNoticeRequest.copy(
+            reportDetails = ReportDetails(pstr = "Invalid", ihtPaymentReference = Some("a".repeat(18)))
+          )
         )
       )
-      val result = jsonPayloadSchemaValidator.validatePayload(INTERNAL_v0_16, json)
+      val result = jsonPayloadSchemaValidator.validatePayload(EPID1767_v0_1_adjusted, json)
       result.hasErrors mustBe true
 
       val actualErrors = result.errors.map(_.toString)
 
       val expectedErrors = Set(
-        "/reportDetails/pstr: does not match the regex pattern ^([0-9]{8}[A-Z]{2})$",
-        "/reportDetails/ihtPaymentReference: does not match the regex pattern ^([A,F]{1}[0-9]{6}/[0-9]{2}[A-Z]{1}[0-9]{3}[0-9,A-Z]{3})$"
+        "/ihtNoticeRequest/reportDetails/pstr: does not match the regex pattern ^[0-9]{8}[A-Z]{2}$",
+        "/ihtNoticeRequest/reportDetails/ihtPaymentReference: must be at most 17 characters long"
       )
 
-      actualErrors.equals(expectedErrors) mustBe true
       actualErrors mustEqual expectedErrors
     }
   }

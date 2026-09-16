@@ -27,7 +27,7 @@ tests {
   });
   
   test("Response contains the submission identifiers", function () {
-      expect(res.body.formBundleNo).to.be.a("string").and.not.be.empty;
-      expect(res.body.ihtPaymentReference).to.be.a("string").and.not.be.empty;
+      expect(res.body.success.ihtResponse.formBundleNo).to.be.a("string").and.not.be.empty;
+      expect(res.body.success.ihtResponse.ihtPaymentReference).to.be.a("string").and.not.be.empty;
   });
 }
