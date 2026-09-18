@@ -120,6 +120,7 @@ case class AddressDetails(
   addressline2: String,
   addressline3: Option[String] = None,
   addressline4: Option[String] = None,
+  addressline5: Option[String] = None,
   postcode: Option[String] = None,
   country: String
 )
