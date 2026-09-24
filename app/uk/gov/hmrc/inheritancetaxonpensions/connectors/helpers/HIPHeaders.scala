@@ -37,7 +37,6 @@ class HIPHeaders @Inject() (randomUUIDGenerator: RandomUUIDGenerator, appConfig:
   private val requestSubmitIHTPNotice = "SubmitIHTPNotice"
   private val pods = "PODS"
 
-  // TODO check these headers against the EPIDs when we get them!
   def ihtpReportHeaders(): Seq[(String, String)] =
     Seq(
       (HeaderNames.AUTHORIZATION, authorizationForIhtpReport()),
