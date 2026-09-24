@@ -116,12 +116,12 @@ object PrContactDetails {
 }
 
 case class AddressDetails(
-  addressline1: String,
-  addressline2: String,
-  addressline3: Option[String] = None,
-  addressline4: Option[String] = None,
-  addressline5: Option[String] = None,
-  postcode: Option[String] = None,
+  addressLine1: String,
+  addressLine2: Option[String] = None,
+  addressLine3: Option[String] = None,
+  addressLine4: Option[String] = None,
+  addressLine5: Option[String] = None,
+  postCode: Option[String] = None,
   country: String
 )
 

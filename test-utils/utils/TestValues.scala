@@ -128,9 +128,9 @@ trait TestValues extends Generators {
     typeOfPr = IorOIndividual,
     prContactDetails = prContactDetailsIndividualPayloadSection,
     prAddress = AddressDetails(
-      addressline1 = testAddressLine1,
-      addressline2 = testAddressLine2,
-      postcode = Some(testUkPostcode),
+      addressLine1 = testAddressLine1,
+      addressLine2 = Some(testAddressLine2),
+      postCode = Some(testUkPostcode),
       country = testCountry
     )
   )
@@ -140,9 +140,9 @@ trait TestValues extends Generators {
     typeOfPr = Organisation,
     prContactDetails = prContactDetailsOrganisationPayloadSection,
     prAddress = AddressDetails(
-      addressline1 = "1 ABCDE Street",
-      addressline2 = "FGHIJ Town",
-      postcode = Some("ZZ99 1AA"),
+      addressLine1 = "1 ABCDE Street",
+      addressLine2 = Some("FGHIJ Town"),
+      postCode = Some("ZZ99 1AA"),
       country = "GB"
     )
   )
@@ -160,9 +160,9 @@ trait TestValues extends Generators {
   val beneficiaryContactDetailsPayloadSection: BeneficiaryContactDetails = BeneficiaryContactDetails(
     beneficiaryPersonalDetails = beneficiaryPersonalDetails,
     beneficiaryAddress = AddressDetails(
-      addressline1 = testAddressLine1,
-      addressline2 = testAddressLine2,
-      postcode = Some(testUkPostcode),
+      addressLine1 = testAddressLine1,
+      addressLine2 = Some(testAddressLine2),
+      postCode = Some(testUkPostcode),
       country = testCountry
     )
   )
@@ -282,9 +282,9 @@ trait TestValues extends Generators {
         "firstForename" -> "Firstname",
         "secondForename" -> "Middlenametwo",
         "surname" -> "Surname",
-        "addressline1" -> "1 ABCDE Street",
-        "addressline2" -> "FGHIJ Town",
-        "ukPostcode" -> "ZZ99 1AA",
+        "addressLine1" -> "1 ABCDE Street",
+        "addressLine2" -> "FGHIJ Town",
+        "postCode" -> "ZZ99 1AA",
         "country" -> "GB"
       )
     ),
