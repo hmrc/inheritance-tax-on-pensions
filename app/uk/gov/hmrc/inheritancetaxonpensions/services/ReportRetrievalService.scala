@@ -89,10 +89,7 @@ class ReportRetrievalService @Inject() (
               surname = Some(
                 UserAnswersHelper
                   .getOptional(ua, s"${nameOfDeceasedPath}.${deceasedSurname}")
-                  .getOrElse(
-                    // fallback if only the first page of the journey was saved
-                    UserAnswersHelper.getOptional(ua, Constants.inheritanceTaxReferenceNumberPath).getOrElse("")
-                  )
+                  .getOrElse("Enter name") // fallback if only the first page of the journey was saved
               ),
               nino = None,
               ihtpStatus = "In progress" // fixed value
