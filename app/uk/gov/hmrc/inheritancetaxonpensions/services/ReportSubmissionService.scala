@@ -49,7 +49,7 @@ class ReportSubmissionService @Inject() (
         case Some(userAnswers) =>
           val submissionPayLoad = buildSubmissionPayload(userAnswers, pstr, ihtpAuthContext)
           val payloadAsJson = Json.toJson(submissionPayLoad)
-          val schema = SchemaPaths.EPID1767_v0_1_adjusted
+          val schema = SchemaPaths.EPID1767_v0_2
           val validationResult = jsonPayloadSchemaValidator.validatePayload(schema, payloadAsJson)
           if (validationResult.hasErrors) {
             throw SchemaValidationFailureException(
@@ -166,9 +166,7 @@ class ReportSubmissionService @Inject() (
             secondForename = organisationDetails.info.secondForename,
             surname = organisationDetails.info.surname
           ),
-          organisationDetails.address.copy(postcode =
-            UserAnswersHelper.getOptionalAs[String](userAnswers, "prDetails.organisation.ukPostcode")
-          )
+          organisationDetails.address
         )
 
       case "individual" =>
@@ -183,9 +181,7 @@ class ReportSubmissionService @Inject() (
             secondForename = individualDetails.name.secondForename,
             surname = individualDetails.name.surname
           ),
-          individualDetails.address.copy(postcode =
-            UserAnswersHelper.getOptionalAs[String](userAnswers, "prDetails.individual.ukPostcode")
-          )
+          individualDetails.address
         )
     }
 
@@ -288,9 +284,9 @@ class ReportSubmissionService @Inject() (
         beneficiaryPersonalDetails = personalDetails,
         beneficiaryAddress = AddressDetails(
           // TODO update once beneficiary address details are captured
-          addressline1 = "1 ABCDE Street",
-          addressline2 = "FGHIJ Town",
-          postcode = Some("ZZ99 1AA"),
+          addressLine1 = "1 ABCDE Street",
+          addressLine2 = Some("FGHIJ Town"),
+          postCode = Some("ZZ99 1AA"),
           country = "GB"
         )
       ),

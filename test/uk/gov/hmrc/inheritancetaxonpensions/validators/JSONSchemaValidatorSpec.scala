@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.inheritancetaxonpensions.validators
 
-import uk.gov.hmrc.inheritancetaxonpensions.validators.SchemaPaths.EPID1767_v0_1_adjusted
+import uk.gov.hmrc.inheritancetaxonpensions.validators.SchemaPaths.EPID1767_v0_2
 import play.api.inject.bind
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.inheritancetaxonpensions.models.ReportDetails
@@ -41,15 +41,15 @@ class JSONSchemaValidatorSpec extends BaseSpec {
   private lazy val jsonPayloadSchemaValidator: JSONSchemaValidator = app.injector.instanceOf[JSONSchemaValidator]
 
   "json schema validator" must {
-    "should successfully validate json payload against EPIC1767 version 0.1 - adjusted schema" in {
+    "should successfully validate json payload against EPID1767 working version 0.2 schema" in {
       val json: JsValue = Json.toJson(testReportSubmissionRequestBody)
-      val result = jsonPayloadSchemaValidator.validatePayload(EPID1767_v0_1_adjusted, json)
+      val result = jsonPayloadSchemaValidator.validatePayload(EPID1767_v0_2, json)
       result.hasErrors mustBe false
     }
 
-    "should successfully validate json payload with organisation against EPIC1767 version 0.1 - adjusted schema" in {
+    "should successfully validate json payload with organisation against EPID1767 working version 0.2 schema" in {
       val json: JsValue = Json.toJson(testReportSubmissionRequestBodyOrganisation)
-      val result = jsonPayloadSchemaValidator.validatePayload(EPID1767_v0_1_adjusted, json)
+      val result = jsonPayloadSchemaValidator.validatePayload(EPID1767_v0_2, json)
       result.hasErrors mustBe false
     }
 
@@ -61,7 +61,7 @@ class JSONSchemaValidatorSpec extends BaseSpec {
           )
         )
       )
-      val result = jsonPayloadSchemaValidator.validatePayload(EPID1767_v0_1_adjusted, json)
+      val result = jsonPayloadSchemaValidator.validatePayload(EPID1767_v0_2, json)
       result.hasErrors mustBe true
 
       val actualErrors = result.errors.map(_.toString)

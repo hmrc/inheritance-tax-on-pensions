@@ -57,9 +57,9 @@ class ReportSubmissionServiceSpec
     new ReportSubmissionService(mockUserAnswersRepository, mockJSONSchemaValidator, mockIhtpReportConnector)
 
   private val testAddress = Json.obj(
-    "addressline1" -> "1 ABCDE Street",
-    "addressline2" -> "FGHIJ Town",
-    "postcode" -> "ZZ99 1AA",
+    "addressLine1" -> "1 ABCDE Street",
+    "addressLine2" -> "FGHIJ Town",
+    "postCode" -> "ZZ99 1AA",
     "country" -> "GB"
   )
 
@@ -87,9 +87,9 @@ class ReportSubmissionServiceSpec
       "firstForename" -> "Firstname",
       "secondForename" -> "Middlenametwo",
       "surname" -> "Surname",
-      "addressline1" -> "1 ABCDE Street",
-      "addressline2" -> "FGHIJ Town",
-      "ukPostcode" -> "ZZ99 1AA",
+      "addressLine1" -> "1 ABCDE Street",
+      "addressLine2" -> "FGHIJ Town",
+      "postCode" -> "ZZ99 1AA",
       "country" -> "GB"
     )
   )
@@ -113,9 +113,9 @@ class ReportSubmissionServiceSpec
       "firstForename" -> "Firstnametwo",
       "secondForename" -> "Middlenametwo",
       "surname" -> "Surname",
-      "addressline1" -> "1 ABCDE Street",
-      "addressline2" -> "FGHIJ Town",
-      "ukPostcode" -> "ZZ99 1AA",
+      "addressLine1" -> "1 ABCDE Street",
+      "addressLine2" -> "FGHIJ Town",
+      "postCode" -> "ZZ99 1AA",
       "country" -> "GB"
     )
   )
@@ -278,9 +278,9 @@ class ReportSubmissionServiceSpec
               "firstForename" -> "Firstnametwo",
               "secondForename" -> "Middlenametwo",
               "surname" -> "Surname",
-              "addressline1" -> "1 ABCDE Street",
-              "addressline2" -> "FGHIJ Town",
-              "ukPostcode" -> "ZZ99 1AA",
+              "addressLine1" -> "1 ABCDE Street",
+              "addressLine2" -> "FGHIJ Town",
+              "postCode" -> "ZZ99 1AA",
               "country" -> "GB"
             )
           ),
@@ -363,9 +363,9 @@ class ReportSubmissionServiceSpec
               "title" -> "Ms",
               "secondForename" -> "Middlenametwo",
               "surname" -> "Surname",
-              "addressline1" -> "1 ABCDE Street",
-              "addressline2" -> "FGHIJ Town",
-              "postcode" -> "ZZ99 1AA",
+              "addressLine1" -> "1 ABCDE Street",
+              "addressLine2" -> "FGHIJ Town",
+              "postCode" -> "ZZ99 1AA",
               "country" -> "GB"
             )
           )
@@ -410,8 +410,8 @@ class ReportSubmissionServiceSpec
               "firstForename" -> "Firstname",
               "secondForename" -> "Middlenametwo",
               "surname" -> "Surname",
-              "addressline2" -> "FGHIJ Town",
-              "postcode" -> "ZZ99 1AA",
+              "addressLine2" -> "FGHIJ Town",
+              "postCode" -> "ZZ99 1AA",
               "country" -> "GB"
             )
           ),
