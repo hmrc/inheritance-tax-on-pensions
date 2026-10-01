@@ -49,7 +49,7 @@ class ReportSubmissionService @Inject() (
         case Some(userAnswers) =>
           val submissionPayLoad = buildSubmissionPayload(userAnswers, pstr, ihtpAuthContext)
           val payloadAsJson = Json.toJson(submissionPayLoad)
-          val schema = SchemaPaths.EPID1767_v0_2
+          val schema = SchemaPaths.EPID1767_v0_2_adjusted
           val validationResult = jsonPayloadSchemaValidator.validatePayload(schema, payloadAsJson)
           if (validationResult.hasErrors) {
             throw SchemaValidationFailureException(
@@ -91,11 +91,11 @@ class ReportSubmissionService @Inject() (
     )
 
     val hasNino = UserAnswersHelper.getMandatoryAs[Boolean](userAnswers, Constants.hasNinoPath)
-    val (nino, reasonForNoNino) =
+    val (nino, reasonNoNino) =
       if (hasNino) {
         (Some(UserAnswersHelper.getMandatory(userAnswers, Constants.ninoPath)), None)
       } else {
-        (None, Some(UserAnswersHelper.getMandatory(userAnswers, Constants.reasonForNoNinoPath)))
+        (None, Some(UserAnswersHelper.getMandatory(userAnswers, Constants.reasonNoNinoPath)))
       }
 
     val birthDeathDates = UserAnswersHelper.getMandatoryAs[BirthDeathDates](
@@ -127,7 +127,7 @@ class ReportSubmissionService @Inject() (
           case Some(ni) => Some(ni)
           case _ => None
         },
-        reasonNoNINO = reasonForNoNino match {
+        reasonNoNino = reasonNoNino match {
           case Some(reason) => Some(reason)
           case _ => None
         }
@@ -145,7 +145,7 @@ class ReportSubmissionService @Inject() (
         deceased,
         prDetails,
         buildIhTaxInformation(userAnswers),
-        beneficiaryList,
+        beneficiaryList.map(Beneficiaries(_)),
         declarations
       )
     )
@@ -154,19 +154,17 @@ class ReportSubmissionService @Inject() (
   private def buildPrDetails(userAnswers: UserAnswers): PrDetails =
     val prChangeFlag = UserAnswersHelper.getOptionalAs[YesNo](userAnswers, "prDetails.prChangeFlag")
     val prType = UserAnswersHelper.getMandatory(userAnswers, "prType")
-    val (prContactDetails, prAddress) = prType match {
+    val prContactDetails = prType match {
       case "organisation" =>
         val organisationDetails =
           UserAnswersHelper.getMandatoryAs[OrganisationDetails](userAnswers, "prDetails.organisation")
-        (
-          PrContactDetails(
-            orgName = Some(organisationDetails.info.organisationName),
-            title = organisationDetails.info.title,
-            firstForename = organisationDetails.info.firstForename,
-            secondForename = organisationDetails.info.secondForename,
-            surname = organisationDetails.info.surname
-          ),
-          organisationDetails.address
+        PrContactDetails(
+          orgName = Some(organisationDetails.info.organisationName),
+          title = organisationDetails.info.title,
+          firstForename = organisationDetails.info.firstForename,
+          secondForename = organisationDetails.info.secondForename,
+          surname = organisationDetails.info.surname,
+          prAddress = organisationDetails.address
         )
 
       case "individual" =>
@@ -174,18 +172,16 @@ class ReportSubmissionService @Inject() (
           userAnswers,
           "prDetails.individual"
         )
-        (
-          PrContactDetails(
-            title = individualDetails.name.title,
-            firstForename = individualDetails.name.firstForename,
-            secondForename = individualDetails.name.secondForename,
-            surname = individualDetails.name.surname
-          ),
-          individualDetails.address
+        PrContactDetails(
+          title = individualDetails.name.title,
+          firstForename = individualDetails.name.firstForename,
+          secondForename = individualDetails.name.secondForename,
+          surname = individualDetails.name.surname,
+          prAddress = individualDetails.address
         )
     }
 
-    PrDetails(prChangeFlag, IndividualOrOrg(prType), prContactDetails, prAddress)
+    PrDetails(prChangeFlag, IndividualOrOrg(prType), prContactDetails)
 
   private def buildIhTaxInformation(userAnswers: UserAnswers): IhTaxInformation =
     IhTaxInformation(
@@ -240,7 +236,7 @@ class ReportSubmissionService @Inject() (
                   ninoExist = YesNo.No,
                   // TODO update once beneficiary nino or reason for no nino are captured
                   nino = None,
-                  reasonNoNINO = Some("TODO")
+                  reasonNoNino = Some("TODO")
                 )
               )
             )
@@ -259,7 +255,7 @@ class ReportSubmissionService @Inject() (
                   surname = "TODO",
                   ninoExist = YesNo.No,
                   nino = None,
-                  reasonNoNINO = Some("TODO")
+                  reasonNoNino = Some("TODO")
                 )
               )
             )
@@ -277,18 +273,15 @@ class ReportSubmissionService @Inject() (
     personalDetails: BeneficiaryPersonalDetails
   ): BeneficiaryDetails =
     BeneficiaryDetails(
-      beneficiaryChangeFlag = None,
       beneficiaryType = IndividualOrTrust(beneficiaryType),
-      beneficiaryContactDetails = BeneficiaryContactDetails(
-        beneficiaryTrustName = beneficiaryTrustName,
-        beneficiaryPersonalDetails = personalDetails,
-        beneficiaryAddress = AddressDetails(
-          // TODO update once beneficiary address details are captured
-          addressLine1 = "1 ABCDE Street",
-          addressLine2 = Some("FGHIJ Town"),
-          postCode = Some("ZZ99 1AA"),
-          country = "GB"
-        )
+      beneficiaryTrustName = beneficiaryTrustName,
+      beneficiaryPersonalDetails = personalDetails,
+      beneficiaryAddress = AddressDetails(
+        // TODO update once beneficiary address details are captured
+        addressLine1 = "1 ABCDE Street",
+        addressLine2 = Some("FGHIJ Town"),
+        postCode = Some("ZZ99 1AA"),
+        country = "GB"
       ),
       beneficiaryPaymentDetails = BeneficiaryPaymentDetails(
         // TODO update once beneficiary payment details are captured
