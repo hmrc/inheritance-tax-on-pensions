@@ -21,12 +21,10 @@ import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import play.api.http.{ContentTypes, HeaderNames}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.inheritancetaxonpensions.auth.IhtpAuthWithSessionCache
-import play.api.libs.json.Json
+import uk.gov.hmrc.http.{BadRequestException, HttpResponse}
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
 import uk.gov.hmrc.inheritancetaxonpensions.services.{ReportRetrievalService, SessionService}
 import uk.gov.hmrc.auth.core.AuthConnector
-import play.api.http.Status._
-import uk.gov.hmrc.http.{BadRequestException, HttpResponse}
 
 import scala.concurrent.ExecutionContext
 
@@ -62,8 +60,9 @@ class GetReportController @Inject() (
           request.getQueryString("versionNumber")
         )
         .map {
-          case Right(uuid: String) => Status(200).withHeaders("uuid" -> uuid)
-          case Left(error) => Status(error.statusCode)(Json.obj("message" -> error.message))
+          case Right(uuid, correlationId, userAnswers) =>
+            Ok(userAnswers).withHeaders("uuid" -> uuid, "correlationid" -> correlationId)
+          case Left(response) => toResult(response)
         }
     }
   }

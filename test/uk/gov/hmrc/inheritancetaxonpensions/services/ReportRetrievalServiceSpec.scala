@@ -35,7 +35,8 @@ import uk.gov.hmrc.http.HeaderCarrier
 import scala.language.postfixOps
 import scala.concurrent.Future
 
-import java.time.Instant
+import java.time.{Clock, Instant, ZoneId}
+import java.time.temporal.ChronoUnit
 
 class ReportRetrievalServiceSpec
     extends AnyFreeSpec
@@ -51,7 +52,9 @@ class ReportRetrievalServiceSpec
 
   private val mockUserAnswersRepository: UserAnswersRepository = mock[UserAnswersRepository]
   private val mockIhtpReportConnector: IhtpReportConnector = mock[IhtpReportConnector]
-  private val service = new ReportRetrievalService(mockUserAnswersRepository, mockIhtpReportConnector)
+  private val instant = Instant.now.truncatedTo(ChronoUnit.MILLIS)
+  private val stubClock: Clock = Clock.fixed(instant, ZoneId.systemDefault)
+  private val service = new ReportRetrievalService(mockUserAnswersRepository, mockIhtpReportConnector, stubClock)
 
   "getOverview" - {
     "returns only the latest version of each report coming from the connector" in {

@@ -128,7 +128,6 @@ class IhtpReportConnector @Inject() (
           case response if Constants.TransientErrorStatusCodes.contains(response.status) =>
             throw RetryableReportResponse(response)
           case response =>
-            logger.info("[IhtpReportConnector][getReport] IHTP Report retrieved successfully")
             normaliseReportResponse(response, correlationId)
         }
         .recoverWith { case errorResponse @ RetryableReportResponse(response) =>

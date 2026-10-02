@@ -68,19 +68,78 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
     )
   )
 
+  val ihtNoticeResponse = Json.obj(
+    "ihtNoticeResponse" -> Json.obj(
+      "schemeDetails" -> Json.obj(
+        "pstr" -> "24000001IN",
+        "schemeName" -> "Test Scheme",
+        "schemeStartDate" -> "1980-01-01",
+        "schemeEndDate" -> "2030-01-01"
+      ),
+      "reportDetails" -> Json.obj(
+        "submissionDate" -> "2026-07-14T16:42:20Z",
+        "ihtPaymentReference" -> "A123456/25A629671",
+        "ihtVersion" -> "001",
+        "ihtPaid" -> false
+      ),
+      "deceased" -> Json.obj(
+        "deceasedPersonalDetails" -> Json.obj(
+          "title" -> "Mr",
+          "firstForename" -> "Firstname",
+          "secondForename" -> "Middlename",
+          "surname" -> "Surname",
+          "ninoExist" -> "No",
+          "reasonNoNino" -> "Reason for no NINO"
+        ),
+        "deceasedDetails" -> Json.obj(
+          "deceasedsDob" -> "1950-01-01",
+          "deceasedsDod" -> "2026-01-01",
+          "ihtRefNumber" -> "A123456/25A"
+        )
+      ),
+      "personalRep" -> Json.obj(
+        "typeOfPr" -> "01",
+        "prContactDetails" -> Json.obj(
+          "title" -> "Mrs",
+          "firstForename" -> "FirstnameA",
+          "secondForename" -> "MiddlenameA",
+          "surname" -> "Surname",
+          "prAddress" -> Json.obj(
+            "addressLine1" -> "1 ABCDE Street",
+            "addressLine2" -> "FGHIJ Town",
+            "postCode" -> "ZZ99 1AA",
+            "country" -> "GB"
+          )
+        )
+      ),
+      "ihTaxInformation" -> Json.obj(
+        "dateNoticeReceived" -> "2026-02-02",
+        "noticeSubmittedByPr" -> "Yes",
+        "knownBeneficiaries" -> "Yes",
+        "totalIhtPayable" -> 100,
+        "totalInterestPayable" -> 10,
+        "total" -> 110
+      ),
+      "declarations" -> Json.obj(
+        "submittedBy" -> "PSA",
+        "submitterId" -> "A2100005",
+        "submitterName" -> "PSA Name",
+        "psaDeclaration" -> Json.obj(
+          "psaDeclaration1" -> true,
+          "psaDeclaration2" -> true
+        )
+      )
+    )
+  )
+
   "getReport" should {
 
     "return a report retrieved by form bundle number with the required HIP headers" in {
-      val response = Json.obj(
-        "ihtNoticeResponse" -> Json.obj(
-          "foo" -> "bar"
-        )
-      )
       val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
 
       wireMockServer.stubFor(
         get(urlEqualTo(url)).willReturn(
-          ok(response.toString)
+          ok(ihtNoticeResponse.toString)
             .withHeader("Content-Type", "application/json")
             .withHeader("correlationid", correlationId)
         )
@@ -96,16 +155,15 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
         )
 
         result.status mustBe OK
-        result.json mustBe response
+        result.json mustBe ihtNoticeResponse
         result.header("correlationid") mustBe Some(correlationId)
       }
     }
 
     "return a report retrieved by an encoded payment reference number and version number" in {
-      val response = Json.obj("ihtNoticeResponse" -> Json.obj("foo" -> "bar"))
       val url = s"$reportUrl?pstr=24000001IN&ihtPaymentReference=PR+000/001&versionNumber=001"
 
-      wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(ok(response.toString)))
+      wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(ok(ihtNoticeResponse.toString)))
 
       whenReady(connector.getReport("24000001IN", None, Some("PR 000/001"), Some("001"))) { result =>
         val generatedCorrelationId = result
@@ -116,7 +174,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
           getRequestedFor(urlEqualTo(url)).withHeader("correlationid", equalTo(generatedCorrelationId))
         )
         result.status mustBe OK
-        result.json mustBe response
+        result.json mustBe ihtNoticeResponse
       }
     }
 

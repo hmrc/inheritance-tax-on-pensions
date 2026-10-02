@@ -60,6 +60,11 @@ class UserAnswersRepository @Inject() (
           Indexes.ascending("uuid"),
           IndexOptions()
             .name("uuidIdx")
+        ),
+        IndexModel(
+          Indexes.ascending("data.ihtPaymentReference"),
+          IndexOptions()
+            .name("ihtPaymentReferenceIdx")
         )
       )
     ) {
@@ -67,6 +72,9 @@ class UserAnswersRepository @Inject() (
   implicit val instantFormat: Format[Instant] = MongoJavatimeFormats.instantFormat
 
   private def byId(id: String): Bson = Filters.equal("_id", id)
+
+  private def byPaymentReference(paymentReference: String): Bson =
+    Filters.equal("data.ihtPaymentReference", paymentReference)
 
   def keepAlive(id: String): Future[Boolean] =
     collection
@@ -84,6 +92,13 @@ class UserAnswersRepository @Inject() (
           .find(byId(id))
           .headOption()
       }
+    }
+
+  def getByPaymentReference(paymentReference: String): Future[Option[UserAnswers]] =
+    Mdc.preservingMdc {
+      collection
+        .find(byPaymentReference(paymentReference))
+        .headOption()
     }
 
   def set(answers: UserAnswers): Future[Boolean] = {
