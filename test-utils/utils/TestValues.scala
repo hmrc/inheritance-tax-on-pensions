@@ -68,6 +68,7 @@ trait TestValues extends Generators {
   val testDateFrom = "2025-01-01"
   val testDateTo = "2026-01-01"
   val testPaymentNoticeDate = "2026-03-27"
+  val testProcessingDate: Instant = Instant.parse("2026-08-31T09:26:17Z")
   val testAddressLine1 = "1 ABCDE Street"
   val testAddressLine2 = "FGHIJ Town"
   val testUkPostcode = "ZZ99 1AA"
@@ -82,7 +83,8 @@ trait TestValues extends Generators {
     SuccessResponse(
       IhtResponse(
         formBundleNo = "910000000000",
-        ihtPaymentReference = testIhtPaymentReference
+        ihtPaymentReference = testIhtPaymentReference,
+        processingDate = testProcessingDate
       )
     )
   )
@@ -94,7 +96,7 @@ trait TestValues extends Generators {
     surname = "Surname",
     ninoExist = Yes,
     nino = Some(testNino),
-    reasonNoNINO = None
+    reasonNoNino = None
   )
 
   private val deceasedDetailsPayloadSection = DeceasedDetails(
@@ -112,7 +114,13 @@ trait TestValues extends Generators {
     title = Some("Mr"),
     firstForename = "Firstname",
     secondForename = Some("Middlenametwo"),
-    surname = "Surname"
+    surname = "Surname",
+    prAddress = AddressDetails(
+      addressLine1 = testAddressLine1,
+      addressLine2 = Some(testAddressLine2),
+      postCode = Some(testUkPostcode),
+      country = testCountry
+    )
   )
 
   private val prContactDetailsOrganisationPayloadSection = PrContactDetails(
@@ -120,13 +128,7 @@ trait TestValues extends Generators {
     title = Some("Ms"),
     firstForename = "Firstnametwo",
     secondForename = Some("Middlenametwo"),
-    surname = "Surname"
-  )
-
-  val prDetailsIndividualPayloadSection: PrDetails = PrDetails(
-    prChangeFlag = None,
-    typeOfPr = IorOIndividual,
-    prContactDetails = prContactDetailsIndividualPayloadSection,
+    surname = "Surname",
     prAddress = AddressDetails(
       addressLine1 = testAddressLine1,
       addressLine2 = Some(testAddressLine2),
@@ -135,36 +137,33 @@ trait TestValues extends Generators {
     )
   )
 
+  val prDetailsIndividualPayloadSection: PrDetails = PrDetails(
+    prChangeFlag = None,
+    typeOfPr = IorOIndividual,
+    prContactDetails = prContactDetailsIndividualPayloadSection
+  )
+
   val prDetailsOrganisationPayloadSection: PrDetails = PrDetails(
     prChangeFlag = None,
     typeOfPr = Organisation,
-    prContactDetails = prContactDetailsOrganisationPayloadSection,
-    prAddress = AddressDetails(
-      addressLine1 = "1 ABCDE Street",
-      addressLine2 = Some("FGHIJ Town"),
-      postCode = Some("ZZ99 1AA"),
-      country = "GB"
-    )
+    prContactDetails = prContactDetailsOrganisationPayloadSection
   )
 
-  private val beneficiaryPersonalDetails = BeneficiaryPersonalDetails(
+  val beneficiaryPersonalDetailsPayloadSection: BeneficiaryPersonalDetails = BeneficiaryPersonalDetails(
     title = Some("Mr"),
     firstForename = "Firstnamethree",
     secondForename = Some("Middlenametwo"),
     surname = "Surname",
     ninoExist = No,
     nino = None,
-    reasonNoNINO = Some("TODO")
+    reasonNoNino = Some("TODO")
   )
 
-  val beneficiaryContactDetailsPayloadSection: BeneficiaryContactDetails = BeneficiaryContactDetails(
-    beneficiaryPersonalDetails = beneficiaryPersonalDetails,
-    beneficiaryAddress = AddressDetails(
-      addressLine1 = testAddressLine1,
-      addressLine2 = Some(testAddressLine2),
-      postCode = Some(testUkPostcode),
-      country = testCountry
-    )
+  val beneficiaryAddressPayloadSection: AddressDetails = AddressDetails(
+    addressLine1 = testAddressLine1,
+    addressLine2 = Some(testAddressLine2),
+    postCode = Some(testUkPostcode),
+    country = testCountry
   )
 
   val beneficiaryPaymentDetailsPayloadSection: BeneficiaryPaymentDetails = BeneficiaryPaymentDetails(
@@ -227,11 +226,14 @@ trait TestValues extends Generators {
         total = Some(1050.00)
       ),
       Some(
-        Seq(
-          BeneficiaryDetails(
-            beneficiaryType = IorTIndividual,
-            beneficiaryContactDetails = beneficiaryContactDetailsPayloadSection,
-            beneficiaryPaymentDetails = beneficiaryPaymentDetailsPayloadSection
+        Beneficiaries(
+          Seq(
+            BeneficiaryDetails(
+              beneficiaryType = IorTIndividual,
+              beneficiaryPersonalDetails = beneficiaryPersonalDetailsPayloadSection,
+              beneficiaryAddress = beneficiaryAddressPayloadSection,
+              beneficiaryPaymentDetails = beneficiaryPaymentDetailsPayloadSection
+            )
           )
         )
       ),
@@ -240,7 +242,7 @@ trait TestValues extends Generators {
   )
 
   val testReportSubmissionResponse: IhtpPaymentNoticeResponse = IhtpPaymentNoticeResponse(
-    SuccessResponse(IhtResponse("910000000000", "123456789"))
+    SuccessResponse(IhtResponse("910000000000", "123456789", testProcessingDate))
   )
 
   val testSchemaValidationError: schema.Error = schema.Error
