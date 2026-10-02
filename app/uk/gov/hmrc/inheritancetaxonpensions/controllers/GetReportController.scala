@@ -62,7 +62,7 @@ class GetReportController @Inject() (
           request.getQueryString("versionNumber")
         )
         .map {
-          case Right(uuid: String) => Status(200).withHeaders("uuid" -> uuid)
+          case Right(uuid, userAnswers) => Ok(userAnswers).withHeaders("uuid" -> uuid)
           case Left(error) => Status(error.statusCode)(Json.obj("message" -> error.message))
         }
     }

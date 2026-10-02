@@ -18,19 +18,20 @@ package uk.gov.hmrc.inheritancetaxonpensions.models
 
 import play.api.libs.json._
 
-
 case class UserAnswersModel(
-    inheritanceTaxReference: Option[String],
-    nameOfDeceased: Option[NameOfDeceased],
-    hasNino: Option[Boolean],
-    nino: Option[String],
-    reasonForNoNino: Option[String],
-    birthDeathDates: Option[BirthDeathDatesAnswers],
-    didPrSubmit: Option[Boolean],
-    ihtTaxInformation: Option[IhTaxInformationAnswers],
-    areBeneficiariesKnown: Option[Boolean],
-    prType: Option[String],
-    prDetails: Option[PrDetailsAnswers]
+  inheritanceTaxReference: Option[String],
+  nameOfDeceased: Option[NameOfDeceased],
+  hasNino: Option[Boolean],
+  nino: Option[String],
+  reasonNoNino: Option[String],
+  birthDeathDates: Option[BirthDeathDatesAnswers],
+  didPrSubmit: Option[Boolean],
+  ihtTaxInformation: Option[IhTaxInformationAnswers],
+  areBeneficiariesKnown: Option[Boolean],
+  prType: Option[String],
+  prDetails: Option[PrDetailsAnswers],
+  ihtPaymentReference: Option[String],
+  ihtVersion: Option[String]
 )
 
 object UserAnswersModel {
@@ -38,8 +39,8 @@ object UserAnswersModel {
 }
 
 case class NameOfDeceased(
-    firstForename: String,
-    surname: String
+  firstForename: String,
+  surname: String
 )
 
 object NameOfDeceased {
@@ -47,8 +48,8 @@ object NameOfDeceased {
 }
 
 case class BirthDeathDatesAnswers(
-    dateOfBirth: String,
-    dateOfDeath: String
+  dateOfBirth: String,
+  dateOfDeath: String
 )
 
 object BirthDeathDatesAnswers {
@@ -56,7 +57,7 @@ object BirthDeathDatesAnswers {
 }
 
 case class IhTaxInformationAnswers(
-    dateThePensionSchemeReceivedNoticeToPay: String
+  dateThePensionSchemeReceivedNoticeToPay: String
 )
 
 object IhTaxInformationAnswers {
@@ -64,8 +65,8 @@ object IhTaxInformationAnswers {
 }
 
 case class PrDetailsAnswers(
-    individual: Option[IndividualDetailsAnswers],
-    organisation: Option[OrganisationDetailsAnswers]
+  individual: Option[IndividualDetailsAnswers],
+  organisation: Option[OrganisationDetailsAnswers]
 )
 
 object PrDetailsAnswers {
@@ -73,16 +74,16 @@ object PrDetailsAnswers {
 }
 
 case class IndividualDetailsAnswers(
-    title: Option[String],
-    firstForename: String,
-    secondForename: Option[String],
-    surname: String,
-    addressLine1: Option[String],
-    addressLine2: Option[String],
-    addressLine3: Option[String],
-    addressLine4: Option[String],
-    postCode: Option[String],
-    country: Option[String]
+  title: Option[String],
+  firstForename: String,
+  secondForename: Option[String],
+  surname: String,
+  addressLine1: Option[String],
+  addressLine2: Option[String],
+  addressLine3: Option[String],
+  addressLine4: Option[String],
+  postCode: Option[String],
+  country: Option[String]
 )
 
 object IndividualDetailsAnswers {
@@ -90,17 +91,17 @@ object IndividualDetailsAnswers {
 }
 
 case class OrganisationDetailsAnswers(
-    organisationName: String,
-    title: Option[String],
-    firstForename: String,
-    secondForename: Option[String],
-    surname: String,
-    addressLine1: Option[String],
-    addressLine2: Option[String],
-    addressLine3: Option[String],
-    addressLine4: Option[String],
-    postCode: Option[String],
-    country: Option[String]
+  organisationName: String,
+  title: Option[String],
+  firstForename: String,
+  secondForename: Option[String],
+  surname: String,
+  addressLine1: Option[String],
+  addressLine2: Option[String],
+  addressLine3: Option[String],
+  addressLine4: Option[String],
+  postCode: Option[String],
+  country: Option[String]
 )
 
 object OrganisationDetailsAnswers {

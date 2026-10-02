@@ -31,7 +31,7 @@ case class IhtNoticeResponse(
   deceased: Deceased,
   personalRep: PrDetails,
   ihTaxInformation: IhTaxInformation,
-  beneficiary: Option[Seq[BeneficiaryDetails]],
+  beneficiary: Option[Beneficiaries],
   declarations: Declarations
 )
 

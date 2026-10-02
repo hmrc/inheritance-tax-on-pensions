@@ -32,7 +32,6 @@ import uk.gov.hmrc.inheritancetaxonpensions.utils.UserAnswersHelper
 import scala.language.postfixOps
 import scala.concurrent.{ExecutionContext, Future}
 
-import java.time.Instant
 import javax.inject.{Inject, Singleton}
 
 @Singleton
@@ -64,7 +63,8 @@ class ReportSubmissionController @Inject() (
             case Some(ua0) =>
               for {
                 ua1 <- Future.fromTry(
-                  UserAnswersHelper.set(ua0, JsPath \ "processingDateTime", Instant.now())
+                  UserAnswersHelper
+                    .set(ua0, JsPath \ "processingDateTime", submissionResponse.success.ihtResponse.processingDate)
                 )
                 ua2 <- Future.fromTry(
                   UserAnswersHelper.set(

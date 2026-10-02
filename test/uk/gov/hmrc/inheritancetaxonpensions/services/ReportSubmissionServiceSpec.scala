@@ -76,9 +76,9 @@ class ReportSubmissionServiceSpec
       "title" -> "Mr",
       "firstForename" -> "Firstname",
       "secondForename" -> "Middlenametwo",
-      "surname" -> "Surname"
-    ),
-    "prAddress" -> testAddress
+      "surname" -> "Surname",
+      "prAddress" -> testAddress
+    )
   )
 
   private val individualPrDetailsUaJson = Json.obj(
@@ -101,9 +101,9 @@ class ReportSubmissionServiceSpec
       "title" -> "Ms",
       "firstForename" -> "Firstnametwo",
       "secondForename" -> "Middlenametwo",
-      "surname" -> "Surname"
-    ),
-    "prAddress" -> testAddress
+      "surname" -> "Surname",
+      "prAddress" -> testAddress
+    )
   )
 
   private val organisationPrDetailsUaJson = Json.obj(
@@ -337,7 +337,7 @@ class ReportSubmissionServiceSpec
       val result = service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).failed.futureValue
 
       result mustBe a[IllegalArgumentException]
-      result.getMessage must include("reasonForNoNino")
+      result.getMessage must include("reasonNoNino")
       verify(mockIhtpReportConnector, never).submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]())
     }
 
@@ -472,7 +472,7 @@ class ReportSubmissionServiceSpec
             "surname" -> "Surname"
           ),
           "hasNino" -> false,
-          "reasonForNoNino" -> "The deceased was not a UK citizen",
+          "reasonNoNino" -> "The deceased was not a UK citizen",
           "birthDeathDates" -> Json.obj(
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
@@ -499,7 +499,7 @@ class ReportSubmissionServiceSpec
           surname = "Surname",
           ninoExist = No,
           nino = None,
-          reasonNoNINO = Some("The deceased was not a UK citizen")
+          reasonNoNino = Some("The deceased was not a UK citizen")
         )
       )
       val payloadCaptor: ArgumentCaptor[IhtpPaymentNoticeSubmission] =
@@ -593,11 +593,14 @@ class ReportSubmissionServiceSpec
             total = None
           ),
           Some(
-            Seq(
-              BeneficiaryDetails(
-                beneficiaryType = IndividualOrTrust.Individual,
-                beneficiaryContactDetails = beneficiaryContactDetailsPayloadSection,
-                beneficiaryPaymentDetails = beneficiaryPaymentDetailsPayloadSection
+            Beneficiaries(
+              Seq(
+                BeneficiaryDetails(
+                  beneficiaryType = IndividualOrTrust.Individual,
+                  beneficiaryPersonalDetails = beneficiaryPersonalDetailsPayloadSection,
+                  beneficiaryAddress = beneficiaryAddressPayloadSection,
+                  beneficiaryPaymentDetails = beneficiaryPaymentDetailsPayloadSection
+                )
               )
             )
           ),
@@ -605,14 +608,14 @@ class ReportSubmissionServiceSpec
         )
       )
       Json.toJson(
-        payloadCaptor.getValue.ihtNoticeRequest.beneficiary.get.head.beneficiaryContactDetails.beneficiaryPersonalDetails
+        payloadCaptor.getValue.ihtNoticeRequest.beneficiary.get.beneficiaryDetails.head.beneficiaryPersonalDetails
       ) mustBe Json.obj(
         "title" -> "Mr",
         "firstForename" -> "Firstnamethree",
         "secondForename" -> "Middlenametwo",
         "surname" -> "Surname",
         "ninoExist" -> "No",
-        "reasonNoNINO" -> "TODO"
+        "reasonNoNino" -> "TODO"
       )
     }
 
@@ -643,9 +646,9 @@ class ReportSubmissionServiceSpec
         ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
       verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
 
-      val beneficiary = payloadCaptor.getValue.ihtNoticeRequest.beneficiary.get.head
+      val beneficiary = payloadCaptor.getValue.ihtNoticeRequest.beneficiary.get.beneficiaryDetails.head
       beneficiary.beneficiaryType mustBe IndividualOrTrust.Trust
-      beneficiary.beneficiaryContactDetails.beneficiaryTrustName mustBe Some(trustName)
+      beneficiary.beneficiaryTrustName mustBe Some(trustName)
       (Json.toJson(beneficiary).toString must not).include("hmrcReferenceNumber")
     }
 
