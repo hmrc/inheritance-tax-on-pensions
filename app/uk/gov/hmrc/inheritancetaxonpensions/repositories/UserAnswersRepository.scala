@@ -61,7 +61,8 @@ class UserAnswersRepository @Inject() (
           IndexOptions()
             .name("uuidIdx")
         )
-      )
+      ),
+      replaceIndexes = true
     ) {
 
   implicit val instantFormat: Format[Instant] = MongoJavatimeFormats.instantFormat
