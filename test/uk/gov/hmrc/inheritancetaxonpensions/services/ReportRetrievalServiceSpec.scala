@@ -28,9 +28,9 @@ import org.mockito.Mockito._
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.IhtpReportConnector
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.BeforeAndAfterEach
-import play.api.libs.json.Json
+import play.api.libs.json.{JsObject, Json}
 import play.api.http.Status.INTERNAL_SERVER_ERROR
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
 import scala.language.postfixOps
 import scala.concurrent.Future
@@ -55,6 +55,7 @@ class ReportRetrievalServiceSpec
   private val instant = Instant.now.truncatedTo(ChronoUnit.MILLIS)
   private val stubClock: Clock = Clock.fixed(instant, ZoneId.systemDefault)
   private val service = new ReportRetrievalService(mockUserAnswersRepository, mockIhtpReportConnector, stubClock)
+  private val testIhtVersion = "001"
 
   "getOverview" - {
     "returns only the latest version of each report coming from the connector" in {
@@ -192,6 +193,72 @@ class ReportRetrievalServiceSpec
           value.statusCode mustBe INTERNAL_SERVER_ERROR
         case Right(value) =>
           fail("unexpected")
+      }
+    }
+  }
+
+  "getReport" - {
+    "returns the uuid, correlationid and userAnswers coming from the connector when no user answers are found" in {
+
+      when(mockIhtpReportConnector.getReport(any(), any(), any(), any())(any()))
+        .thenReturn(
+          Future.successful(
+            HttpResponse(
+              status = 200,
+              body = testIhtNoticeResponse.toString,
+              headers = Map("correlationid" -> Seq("testCorrelationId"))
+            )
+          )
+        )
+
+      when(mockUserAnswersRepository.getByPaymentReference(any()))
+        .thenReturn(Future.successful(None))
+
+      val result = service.getReport(testPstr, srn, None, Some(testIhtPaymentReference), Some(testIhtVersion))
+
+      result.futureValue match {
+        case Left(value) => fail("unexpected")
+        case Right((uuid, correlationId, userAnswers)) =>
+          uuid must not be empty
+          correlationId mustBe "testCorrelationId"
+
+          val actualData = (userAnswers \ "data").as[JsObject]
+
+          actualData - "ihtVersion" mustEqual testUserAnswerJson
+          (actualData \ "ihtVersion").as[String] mustBe testIhtVersion
+      }
+    }
+
+    "returns the uuid, correlationid and userAnswers coming from the connector when user answers are found" in {
+
+      when(mockIhtpReportConnector.getReport(any(), any(), any(), any())(any()))
+        .thenReturn(
+          Future.successful(
+            HttpResponse(
+              status = 200,
+              body = testIhtNoticeResponse.toString,
+              headers = Map("correlationid" -> Seq("testCorrelationId"))
+            )
+          )
+        )
+
+      when(mockUserAnswersRepository.getByPaymentReference(any()))
+        .thenReturn(Future.successful(Some(emptyUserAnswers.copy(data = testUserAnswerJson))))
+
+      val result = service.getReport(testPstr, srn, None, Some(testIhtPaymentReference), Some(testIhtVersion))
+
+      result.futureValue match {
+        case Left(value) => fail("unexpected")
+        case Right((uuid, correlationId, userAnswers)) =>
+          uuid mustBe emptyUserAnswers.uuid
+          correlationId mustBe "testCorrelationId"
+          (userAnswers \ "srn").as[String] mustBe srn
+          (userAnswers \ "uuid").as[String] mustBe uuid
+
+          val actualData = (userAnswers \ "data").as[JsObject]
+
+          actualData - "ihtVersion" mustEqual testUserAnswerJson
+          (actualData \ "ihtVersion").as[String] mustBe testIhtVersion
       }
     }
   }

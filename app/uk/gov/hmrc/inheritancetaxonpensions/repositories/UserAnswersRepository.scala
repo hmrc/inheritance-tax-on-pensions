@@ -66,7 +66,8 @@ class UserAnswersRepository @Inject() (
           IndexOptions()
             .name("ihtPaymentReferenceIdx")
         )
-      )
+      ),
+      replaceIndexes = true
     ) {
 
   implicit val instantFormat: Format[Instant] = MongoJavatimeFormats.instantFormat

@@ -25,11 +25,11 @@ case class UserAnswersModel(
   nino: Option[String],
   reasonNoNino: Option[String],
   birthDeathDates: Option[BirthDeathDatesAnswers],
+  prType: Option[String],
+  prDetails: Option[PrDetailsAnswers],
   didPrSubmit: Option[Boolean],
   ihtTaxInformation: Option[IhTaxInformationAnswers],
   areBeneficiariesKnown: Option[Boolean],
-  prType: Option[String],
-  prDetails: Option[PrDetailsAnswers],
   ihtPaymentReference: Option[String],
   ihtVersion: Option[String]
 )
@@ -39,7 +39,9 @@ object UserAnswersModel {
 }
 
 case class NameOfDeceased(
+  title: Option[String],
   firstForename: String,
+  secondForename: Option[String],
   surname: String
 )
 

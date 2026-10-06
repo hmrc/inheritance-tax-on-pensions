@@ -177,10 +177,12 @@ class ReportRetrievalService @Inject() (
     Json
       .toJson(
         UserAnswersModel(
-          inheritanceTaxReference = Some(response.reportDetails.ihtPaymentReference),
+          inheritanceTaxReference = Some(response.deceased.deceasedDetails.ihtRefNumber),
           nameOfDeceased = Some(
             NameOfDeceased(
+              title = response.deceased.deceasedPersonalDetails.title,
               firstForename = response.deceased.deceasedPersonalDetails.firstForename,
+              secondForename = response.deceased.deceasedPersonalDetails.secondForename,
               surname = response.deceased.deceasedPersonalDetails.surname
             )
           ),
