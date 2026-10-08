@@ -17,13 +17,18 @@
 package uk.gov.hmrc.inheritancetaxonpensions.services
 
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.IhtpReportConnector
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.IndividualOrOrg.{Individual, Organisation}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import models.{IhtpOverviewReport, IhtpOverviewResponse, IhtpOverviewSuccess}
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 import uk.gov.hmrc.inheritancetaxonpensions.repositories.UserAnswersRepository
-import uk.gov.hmrc.inheritancetaxonpensions.models.UserAnswers
+import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.YesNo.Yes
+import uk.gov.hmrc.inheritancetaxonpensions.models._
+import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.{IndividualOrOrg, YesNo}
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants
 import com.google.inject.{Inject, Singleton}
+import play.api.Logging
+import play.api.libs.json._
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
 import uk.gov.hmrc.inheritancetaxonpensions.utils.UserAnswersHelper
 
@@ -35,8 +40,9 @@ import java.time._
 @Singleton
 class ReportRetrievalService @Inject() (
   userAnswersRepository: UserAnswersRepository,
-  ihtpReportConnector: IhtpReportConnector
-) {
+  ihtpReportConnector: IhtpReportConnector,
+  clock: Clock
+) extends Logging {
 
   def getOverview(pstr: String, srn: String, dateFrom: String, dateTo: String, status: Option[String])(implicit
     hc: HeaderCarrier,
@@ -98,5 +104,150 @@ class ReportRetrievalService @Inject() (
         Right(IhtpOverviewResponse(IhtpOverviewSuccess(mappedInProgress ++ latestSubmittedReports)))
       case Left(e) =>
         Left(e)
+    }
+
+  def getReport(
+    pstr: String,
+    srn: String,
+    fbNumber: Option[String],
+    ihtPaymentReference: Option[String],
+    versionNumber: Option[String]
+  )(implicit
+    hc: HeaderCarrier,
+    ec: ExecutionContext
+  ): Future[Either[HttpResponse, (String, String, JsValue)]] =
+    ihtpReportConnector
+      .getReport(pstr, fbNumber, ihtPaymentReference, versionNumber)
+      .flatMap { response =>
+        if (response.status >= 400) {
+          Future.successful(Left(response))
+        } else {
+          val ihtNoticeResponse =
+            response.json.as[IhtpPaymentNoticeRetrievalResponse]
+
+          setUserAnswers(ihtNoticeResponse.ihtNoticeResponse, srn).map { case (uuid, userAnswersJson) =>
+            Right(
+              uuid,
+              response.header("correlationid").getOrElse(""),
+              userAnswersJson
+            )
+          }
+        }
+      }
+
+  private def setUserAnswers(response: IhtNoticeResponse, srn: String)(implicit
+    ec: ExecutionContext
+  ): Future[(String, JsValue)] =
+    val paymentReference = response.reportDetails.ihtPaymentReference
+
+    val data = buildData(response)
+
+    userAnswersRepository
+      .getByPaymentReference(paymentReference)
+      .map {
+        case Some(existingUserAnswers) =>
+          logger.info(s"UserAnswers already exist for payment reference: $paymentReference, srn: $srn")
+          UserAnswersHelper.set(
+            existingUserAnswers,
+            JsPath \ "ihtVersion",
+            Some(response.reportDetails.ihtVersion)
+          )
+
+          val userAnswers = existingUserAnswers.copy(
+            data = data
+          )
+
+          (userAnswers.uuid, Json.toJson(userAnswers))
+        case None =>
+          val uuid = java.util.UUID.randomUUID().toString
+          logger.info(s"Creating new UserAnswers for payment reference: $paymentReference, srn: $srn, uuid: $uuid")
+          val userAnswers =
+            UserAnswers(
+              id = s"$srn-$uuid",
+              uuid = uuid,
+              srn = srn,
+              lastUpdated = Instant.now(clock),
+              data = data
+            )
+          userAnswersRepository.set(userAnswers)
+          (uuid, Json.toJson(userAnswers))
+      }
+
+  private def buildData(response: IhtNoticeResponse): JsObject =
+    Json
+      .toJson(
+        UserAnswersModel(
+          inheritanceTaxReference = Some(response.deceased.deceasedDetails.ihtRefNumber),
+          nameOfDeceased = Some(
+            NameOfDeceased(
+              title = response.deceased.deceasedPersonalDetails.title,
+              firstForename = response.deceased.deceasedPersonalDetails.firstForename,
+              secondForename = response.deceased.deceasedPersonalDetails.secondForename,
+              surname = response.deceased.deceasedPersonalDetails.surname
+            )
+          ),
+          hasNino = Some(response.deceased.deceasedPersonalDetails.ninoExist == YesNo.Yes),
+          nino = response.deceased.deceasedPersonalDetails.nino,
+          reasonNoNino = response.deceased.deceasedPersonalDetails.reasonNoNino,
+          birthDeathDates = Some(
+            BirthDeathDatesAnswers(
+              dateOfBirth = response.deceased.deceasedDetails.deceasedsDob,
+              dateOfDeath = response.deceased.deceasedDetails.deceasedsDod
+            )
+          ),
+          didPrSubmit = Some(response.ihTaxInformation.noticeSubmittedByPr == Yes),
+          ihtTaxInformation = Some(
+            IhTaxInformationAnswers(
+              dateThePensionSchemeReceivedNoticeToPay = response.ihTaxInformation.dateNoticeReceived
+            )
+          ),
+          areBeneficiariesKnown = Some(response.ihTaxInformation.knownBeneficiaries == Yes),
+          prType = Some(response.personalRep.typeOfPr.name),
+          prDetails = Some(buildPrDetails(response)),
+          ihtPaymentReference = Some(response.reportDetails.ihtPaymentReference),
+          ihtVersion = Some(response.reportDetails.ihtVersion)
+        )
+      )
+      .as[JsObject] // TODO update beneficiary once pages are complete
+
+  private def buildPrDetails(response: IhtNoticeResponse): PrDetailsAnswers =
+    response.personalRep.typeOfPr match {
+      case Individual =>
+        PrDetailsAnswers(
+          individual = Some(
+            IndividualDetailsAnswers(
+              title = response.personalRep.prContactDetails.title,
+              firstForename = response.personalRep.prContactDetails.firstForename,
+              secondForename = response.personalRep.prContactDetails.secondForename,
+              surname = response.personalRep.prContactDetails.surname,
+              addressLine1 = Some(response.personalRep.prContactDetails.prAddress.addressLine1),
+              addressLine2 = response.personalRep.prContactDetails.prAddress.addressLine2,
+              addressLine3 = response.personalRep.prContactDetails.prAddress.addressLine3,
+              addressLine4 = response.personalRep.prContactDetails.prAddress.addressLine4,
+              postCode = response.personalRep.prContactDetails.prAddress.postCode,
+              country = Some(response.personalRep.prContactDetails.prAddress.country)
+            )
+          ),
+          organisation = None
+        )
+      case Organisation =>
+        PrDetailsAnswers(
+          individual = None,
+          organisation = Some(
+            OrganisationDetailsAnswers(
+              organisationName = response.personalRep.prContactDetails.orgName.get,
+              title = response.personalRep.prContactDetails.title,
+              firstForename = response.personalRep.prContactDetails.firstForename,
+              secondForename = response.personalRep.prContactDetails.secondForename,
+              surname = response.personalRep.prContactDetails.surname,
+              addressLine1 = Some(response.personalRep.prContactDetails.prAddress.addressLine1),
+              addressLine2 = response.personalRep.prContactDetails.prAddress.addressLine2,
+              addressLine3 = response.personalRep.prContactDetails.prAddress.addressLine3,
+              addressLine4 = response.personalRep.prContactDetails.prAddress.addressLine4,
+              postCode = response.personalRep.prContactDetails.prAddress.postCode,
+              country = Some(response.personalRep.prContactDetails.prAddress.country)
+            )
+          )
+        )
     }
 }

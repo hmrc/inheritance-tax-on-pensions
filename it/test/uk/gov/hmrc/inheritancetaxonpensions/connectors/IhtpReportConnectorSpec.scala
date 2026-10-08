@@ -71,16 +71,11 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
   "getReport" should {
 
     "return a report retrieved by form bundle number with the required HIP headers" in {
-      val response = Json.obj(
-        "ihtNoticeResponse" -> Json.obj(
-          "foo" -> "bar"
-        )
-      )
       val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
 
       wireMockServer.stubFor(
         get(urlEqualTo(url)).willReturn(
-          ok(response.toString)
+          ok(testIhtNoticeResponse.toString)
             .withHeader("Content-Type", "application/json")
             .withHeader("correlationid", correlationId)
         )
@@ -96,16 +91,15 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
         )
 
         result.status mustBe OK
-        result.json mustBe response
+        result.json mustBe testIhtNoticeResponse
         result.header("correlationid") mustBe Some(correlationId)
       }
     }
 
     "return a report retrieved by an encoded payment reference number and version number" in {
-      val response = Json.obj("ihtNoticeResponse" -> Json.obj("foo" -> "bar"))
       val url = s"$reportUrl?pstr=24000001IN&ihtPaymentReference=PR+000/001&versionNumber=001"
 
-      wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(ok(response.toString)))
+      wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(ok(testIhtNoticeResponse.toString)))
 
       whenReady(connector.getReport("24000001IN", None, Some("PR 000/001"), Some("001"))) { result =>
         val generatedCorrelationId = result
@@ -116,7 +110,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
           getRequestedFor(urlEqualTo(url)).withHeader("correlationid", equalTo(generatedCorrelationId))
         )
         result.status mustBe OK
-        result.json mustBe response
+        result.json mustBe testIhtNoticeResponse
       }
     }
 

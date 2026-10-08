@@ -273,6 +273,8 @@ trait TestValues extends Generators {
       "secondForename" -> "Middlenametwo",
       "surname" -> "Surname"
     ),
+    "hasNino" -> true,
+    "nino" -> testNino,
     "birthDeathDates" -> Json.obj(
       "dateOfBirth" -> "1950-01-01",
       "dateOfDeath" -> "2026-01-01"
@@ -290,15 +292,12 @@ trait TestValues extends Generators {
         "country" -> "GB"
       )
     ),
-    "hasNino" -> true,
-    "nino" -> testNino,
+    "didPrSubmit" -> true,
     "ihtTaxInformation" -> Json.obj(
       "dateThePensionSchemeReceivedNoticeToPay" -> "2026-03-27"
     ),
-    "didPrSubmit" -> true,
-    "ihtPaymentReference" -> testIhtPaymentReference,
-    "formBundleNo" -> "000012345678",
-    "processingDateTime" -> "2026-08-12T16:26:37"
+    "areBeneficiariesKnown" -> false,
+    "ihtPaymentReference" -> testIhtPaymentReference
   )
 
   val testOverviewResponse: JsArray = Json.arr(
@@ -340,6 +339,70 @@ trait TestValues extends Generators {
       "secondForename" -> "E",
       "surname" -> "Surname",
       "ihtpStatus" -> "Not reconciled"
+    )
+  )
+
+  val testIhtNoticeResponse = Json.obj(
+    "ihtNoticeResponse" -> Json.obj(
+      "schemeDetails" -> Json.obj(
+        "pstr" -> "24000001IN",
+        "schemeName" -> "Test Scheme",
+        "schemeStartDate" -> "1980-01-01",
+        "schemeEndDate" -> "2030-01-01"
+      ),
+      "reportDetails" -> Json.obj(
+        "submissionDate" -> "2026-07-14T16:42:20Z",
+        "ihtPaymentReference" -> "A123456/25A629671",
+        "ihtVersion" -> "001",
+        "ihtPaid" -> false
+      ),
+      "deceased" -> Json.obj(
+        "deceasedPersonalDetails" -> Json.obj(
+          "title" -> "Mr",
+          "firstForename" -> "Firstname",
+          "secondForename" -> "Middlenametwo",
+          "surname" -> "Surname",
+          "ninoExist" -> "Yes",
+          "nino" -> testNino
+        ),
+        "deceasedDetails" -> Json.obj(
+          "deceasedsDob" -> "1950-01-01",
+          "deceasedsDod" -> "2026-01-01",
+          "ihtRefNumber" -> "A123459/25A"
+        )
+      ),
+      "personalRep" -> Json.obj(
+        "typeOfPr" -> "01",
+        "prContactDetails" -> Json.obj(
+          "title" -> "Mr",
+          "firstForename" -> "Firstname",
+          "secondForename" -> "Middlenametwo",
+          "surname" -> "Surname",
+          "prAddress" -> Json.obj(
+            "addressLine1" -> "1 ABCDE Street",
+            "addressLine2" -> "FGHIJ Town",
+            "postCode" -> "ZZ99 1AA",
+            "country" -> "GB"
+          )
+        )
+      ),
+      "ihTaxInformation" -> Json.obj(
+        "dateNoticeReceived" -> "2026-03-27",
+        "noticeSubmittedByPr" -> "Yes",
+        "knownBeneficiaries" -> "Yes",
+        "totalIhtPayable" -> 100,
+        "totalInterestPayable" -> 10,
+        "total" -> 110
+      ),
+      "declarations" -> Json.obj(
+        "submittedBy" -> "PSA",
+        "submitterId" -> "A2100005",
+        "submitterName" -> "PSA Name",
+        "psaDeclaration" -> Json.obj(
+          "psaDeclaration1" -> true,
+          "psaDeclaration2" -> true
+        )
+      )
     )
   )
 }

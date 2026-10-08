@@ -212,7 +212,7 @@ class IhtpReportConnector @Inject() (
   private def normaliseReportResponse(response: HttpResponse, correlationId: String): HttpResponse =
     response.status match {
       case OK =>
-        Try(response.json) match {
+        Try(response.json.as[IhtpPaymentNoticeRetrievalResponse]) match {
           case Success(_) =>
             logger.info("[IhtpReportConnector][getReport] IHTP Report retrieved successfully")
             withCorrelationId(response, correlationId)

@@ -16,16 +16,15 @@
 
 package uk.gov.hmrc.inheritancetaxonpensions.controllers
 
-import uk.gov.hmrc.inheritancetaxonpensions.connectors.{IhtpReportConnector, SchemeDetailsConnector}
+import uk.gov.hmrc.inheritancetaxonpensions.connectors.SchemeDetailsConnector
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import play.api.http.{ContentTypes, HeaderNames}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.inheritancetaxonpensions.auth.IhtpAuthWithSessionCache
-import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
-import uk.gov.hmrc.inheritancetaxonpensions.services.SessionService
-import uk.gov.hmrc.auth.core.AuthConnector
-import play.api.http.Status._
 import uk.gov.hmrc.http.{BadRequestException, HttpResponse}
+import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
+import uk.gov.hmrc.inheritancetaxonpensions.services.{ReportRetrievalService, SessionService}
+import uk.gov.hmrc.auth.core.AuthConnector
 
 import scala.concurrent.ExecutionContext
 
@@ -37,7 +36,7 @@ class GetReportController @Inject() (
   override val authConnector: AuthConnector,
   override protected val schemeDetailsConnector: SchemeDetailsConnector,
   override protected val sessionService: SessionService,
-  ihtpReportConnector: IhtpReportConnector
+  reportRetrievalService: ReportRetrievalService
 )(implicit ec: ExecutionContext)
     extends BackendController(cc)
     with BaseController
@@ -52,14 +51,19 @@ class GetReportController @Inject() (
         throw new BadRequestException("Bad Request with missing query parameter: pstr")
       }
 
-      ihtpReportConnector
+      reportRetrievalService
         .getReport(
           pstr,
+          srnS,
           request.getQueryString("fbNumber"),
           request.getQueryString("ihtPaymentReference"),
           request.getQueryString("versionNumber")
         )
-        .map(toResult)
+        .map {
+          case Right(uuid, correlationId, userAnswers) =>
+            Ok(userAnswers).withHeaders("uuid" -> uuid, "correlationid" -> correlationId)
+          case Left(response) => toResult(response)
+        }
     }
   }
 
