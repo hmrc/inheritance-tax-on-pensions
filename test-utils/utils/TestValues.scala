@@ -50,7 +50,7 @@ trait TestValues extends Generators {
       )
     )
   )
-  val pstr = "testPstr"
+  val pstr = "24000001IN"
   val srn = "S2400000001"
   val uuid = "ed350bdc-4010-406c-9ca0-8faaf5f93cbc"
   val psrVersion = "001"
@@ -183,14 +183,14 @@ trait TestValues extends Generators {
     submittedBy = "PSP",
     submitterId = pspId,
     psaDeclaration = None,
-    pspDeclaration = Some(PspDeclaration(true, true, "TODO"))
+    pspDeclaration = Some(PspDeclaration(true, true, psaId))
   )
 
   val testReportSubmissionRequestBody: IhtpPaymentNoticeSubmission = IhtpPaymentNoticeSubmission(
     IhtNoticeRequest(
       ReportDetails(
         pstr = "24000001IN",
-        ihtPaymentReference = None
+        ihtPaymentReference = Some("A123456/25A123456")
       ),
       deceasedPayloadSection,
       prDetailsIndividualPayloadSection,

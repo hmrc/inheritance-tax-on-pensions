@@ -49,7 +49,7 @@ class ReportSubmissionService @Inject() (
         case Some(userAnswers) =>
           val submissionPayLoad = buildSubmissionPayload(userAnswers, pstr, ihtpAuthContext)
           val payloadAsJson = Json.toJson(submissionPayLoad)
-          val schema = SchemaPaths.EPID1767_v0_2_adjusted
+          val schema = SchemaPaths.EPID1767_v1_0_0
           val validationResult = jsonPayloadSchemaValidator.validatePayload(schema, payloadAsJson)
           if (validationResult.hasErrors) {
             throw SchemaValidationFailureException(
@@ -302,7 +302,7 @@ class ReportSubmissionService @Inject() (
             PspDeclaration(
               pspDeclaration1 = true,
               pspDeclaration2 = true,
-              psaid = "TODO"
+              psaid = "A0000000" // TODO
             )
           )
         )

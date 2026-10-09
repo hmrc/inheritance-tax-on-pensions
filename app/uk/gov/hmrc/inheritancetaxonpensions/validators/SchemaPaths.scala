@@ -20,4 +20,5 @@ object SchemaPaths {
   val INTERNAL_v0_16 = "/resources/schemas/internalApiSchema_v0.16.json"
   val EPID1767_v0_1_adjusted = "/resources/schemas/epid1767_Schema_v0.1_adjusted.json"
   val EPID1767_v0_2_adjusted = "/resources/schemas/epid1767_Schema_v0.2_adjusted.json"
+  val EPID1767_v1_0_0 = "/resources/schemas/epid1767_Schema_v1.0.0.json"
 }

@@ -17,7 +17,7 @@
 package uk.gov.hmrc.inheritancetaxonpensions.validators
 
 import com.networknt.schema.{SchemaRegistry, SpecificationVersion}
-import uk.gov.hmrc.inheritancetaxonpensions.validators.SchemaPaths.EPID1767_v0_2_adjusted
+import uk.gov.hmrc.inheritancetaxonpensions.validators.SchemaPaths.EPID1767_v1_0_0
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.inheritancetaxonpensions.models.ReportDetails
 import utils.BaseSpec
@@ -46,7 +46,7 @@ class JSONSchemaValidatorSpec extends BaseSpec {
   private lazy val jsonPayloadSchemaValidator: JSONSchemaValidator = app.injector.instanceOf[JSONSchemaValidator]
 
   private lazy val adjustedSchema: JsValue =
-    Using.resource(getClass.getResourceAsStream(EPID1767_v0_2_adjusted))(stream => Json.parse(stream))
+    Using.resource(getClass.getResourceAsStream(EPID1767_v1_0_0))(stream => Json.parse(stream))
 
   private def validatesDefinition(definition: String, data: JsValue): Boolean = {
     val objectMapper = new ObjectMapper()
@@ -79,14 +79,14 @@ class JSONSchemaValidatorSpec extends BaseSpec {
             )
           )
         )
-        val result = jsonPayloadSchemaValidator.validatePayload(EPID1767_v0_2_adjusted, json)
+        val result = jsonPayloadSchemaValidator.validatePayload(EPID1767_v1_0_0, json)
         result.hasErrors mustBe false
       }
     }
 
     "should successfully validate json payload with organisation against EPID1767 working version 0.2 schema" in {
       val json: JsValue = Json.toJson(testReportSubmissionRequestBodyOrganisation)
-      val result = jsonPayloadSchemaValidator.validatePayload(EPID1767_v0_2_adjusted, json)
+      val result = jsonPayloadSchemaValidator.validatePayload(EPID1767_v1_0_0, json)
       result.hasErrors mustBe false
     }
 
@@ -105,7 +105,7 @@ class JSONSchemaValidatorSpec extends BaseSpec {
         "2026-07-14T16:42:20Z" -> true,
         "2026-07-14" -> false,
         "2026-07-14T99:42:20Z" -> false,
-        "2026-07-14T16:42:20.123Z" -> false
+        "2026-07-14T16:42:20.123Z" -> true
       ).foreach { case (date, valid) =>
         withClue(s"submissionDate=$date: ") {
           validatesDefinition(
@@ -120,11 +120,11 @@ class JSONSchemaValidatorSpec extends BaseSpec {
       val json: JsValue = Json.toJson(
         testReportSubmissionRequestBody.copy(
           ihtNoticeRequest = testReportSubmissionRequestBody.ihtNoticeRequest.copy(
-            reportDetails = ReportDetails(pstr = "Invalid", ihtPaymentReference = Some("a".repeat(18)))
+            reportDetails = ReportDetails(pstr = "AB000001IN", ihtPaymentReference = Some("a".repeat(18)))
           )
         )
       )
-      val result = jsonPayloadSchemaValidator.validatePayload(EPID1767_v0_2_adjusted, json)
+      val result = jsonPayloadSchemaValidator.validatePayload(EPID1767_v1_0_0, json)
       result.hasErrors mustBe true
 
       val actualErrors = result.errors.map(_.toString)
