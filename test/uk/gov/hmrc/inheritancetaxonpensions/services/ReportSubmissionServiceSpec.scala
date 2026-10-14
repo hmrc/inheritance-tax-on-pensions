@@ -559,11 +559,11 @@ class ReportSubmissionServiceSpec
                   "secondForename" -> "Middlenametwo",
                   "surname" -> "Surname"
                 )
-              )
+              ),
+              "hasNino" -> false,
+              "reasonNoNino" -> "Beneficiary does not have a NINO"
             )
-          ),
-          "hasNino" -> true,
-          "nino" -> testNino
+          )
         )
       )
       when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
@@ -615,7 +615,7 @@ class ReportSubmissionServiceSpec
         "secondForename" -> "Middlenametwo",
         "surname" -> "Surname",
         "ninoExist" -> "No",
-        "reasonNoNino" -> "TODO"
+        "reasonNoNino" -> "Beneficiary does not have a NINO"
       )
     }
 

@@ -224,6 +224,13 @@ class ReportSubmissionService @Inject() (
         beneficiaryType match {
           case "individual" =>
             val individualName = (beneficiary \ "beneficiaryDetails" \ "individual").as[IndividualName]
+            val hasNino = (beneficiary \ "hasNino").as[Boolean]
+            val (nino, reasonNoNino) =
+              if (hasNino) {
+                (Some((beneficiary \ "nino").as[String]), None)
+              } else {
+                (None, Some((beneficiary \ "reasonNoNino").as[String]))
+              }
             Some(
               buildBeneficiaryDetails(
                 beneficiaryType = beneficiaryType,
@@ -233,10 +240,15 @@ class ReportSubmissionService @Inject() (
                   firstForename = individualName.firstForename,
                   secondForename = individualName.secondForename,
                   surname = individualName.surname,
-                  ninoExist = YesNo.No,
-                  // TODO update once beneficiary nino or reason for no nino are captured
-                  nino = None,
-                  reasonNoNino = Some("TODO")
+                  ninoExist = YesNo(hasNino),
+                  nino = nino match {
+                    case Some(ni) => Some(ni)
+                    case _ => None
+                  },
+                  reasonNoNino = reasonNoNino match {
+                    case Some(reason) => Some(reason)
+                    case _ => None
+                  }
                 )
               )
             )

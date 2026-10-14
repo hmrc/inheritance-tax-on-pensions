@@ -156,7 +156,7 @@ trait TestValues extends Generators {
     surname = "Surname",
     ninoExist = No,
     nino = None,
-    reasonNoNino = Some("TODO")
+    reasonNoNino = Some("Beneficiary does not have a NINO")
   )
 
   val beneficiaryAddressPayloadSection: AddressDetails = AddressDetails(
