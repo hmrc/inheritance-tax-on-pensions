@@ -676,7 +676,11 @@ class ReportSubmissionServiceSpec
               "beneficiaryType" -> "trust",
               "beneficiaryDetails" -> Json.obj(
                 "trust" -> Json.obj(
-                  "beneficiaryTrustName" -> trustName
+                  "beneficiaryTrustName" -> trustName,
+                  "title" -> "Mr",
+                  "firstForename" -> "Firstnamethree",
+                  "secondForename" -> "Middlenametwo",
+                  "surname" -> "Surname"
                 )
               )
             )
