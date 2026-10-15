@@ -240,7 +240,7 @@ class ReportSubmissionService @Inject() (
                   firstForename = individualName.firstForename,
                   secondForename = individualName.secondForename,
                   surname = individualName.surname,
-                  ninoExist = YesNo(hasNino),
+                  ninoExist = Some(YesNo(hasNino)),
                   nino = nino match {
                     case Some(ni) => Some(ni)
                     case _ => None
@@ -253,21 +253,26 @@ class ReportSubmissionService @Inject() (
               )
             )
           case "trust" =>
+            val trust = beneficiary \ "beneficiaryDetails" \ "trust"
+
             val beneficiaryTrustName =
-              (beneficiary \ "beneficiaryDetails" \ "trust" \ "beneficiaryTrustName").as[String]
+              (trust \ "beneficiaryTrustName").as[String]
+
+            val beneficiaryTrustContactName =
+              (trust.as[JsObject] - "beneficiaryTrustName").as[IndividualName]
+
             Some(
               buildBeneficiaryDetails(
                 beneficiaryType = beneficiaryType,
                 beneficiaryTrustName = Some(beneficiaryTrustName),
-                // TODO update once the trust beneficiary contact details are captured
                 personalDetails = BeneficiaryPersonalDetails(
-                  title = None,
-                  firstForename = "TODO",
-                  secondForename = None,
-                  surname = "TODO",
-                  ninoExist = YesNo.No,
+                  title = beneficiaryTrustContactName.title,
+                  firstForename = beneficiaryTrustContactName.firstForename,
+                  secondForename = beneficiaryTrustContactName.secondForename,
+                  surname = beneficiaryTrustContactName.surname,
+                  ninoExist = None,
                   nino = None,
-                  reasonNoNino = Some("TODO")
+                  reasonNoNino = None
                 )
               )
             )
