@@ -28,7 +28,7 @@ import org.mockito.Mockito._
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.IhtpReportConnector
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.BeforeAndAfterEach
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.http.Status.INTERNAL_SERVER_ERROR
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
@@ -213,6 +213,8 @@ class ReportRetrievalServiceSpec
 
       when(mockUserAnswersRepository.getByPaymentReference(any()))
         .thenReturn(Future.successful(None))
+      when(mockUserAnswersRepository.set(any()))
+        .thenReturn(Future.successful(true))
 
       val result = service.getReport(testPstr, srn, None, Some(testIhtPaymentReference), Some(testIhtVersion))
 
@@ -244,6 +246,8 @@ class ReportRetrievalServiceSpec
 
       when(mockUserAnswersRepository.getByPaymentReference(any()))
         .thenReturn(Future.successful(Some(emptyUserAnswers.copy(data = testUserAnswerJson))))
+      when(mockUserAnswersRepository.set(any()))
+        .thenReturn(Future.successful(true))
 
       val result = service.getReport(testPstr, srn, None, Some(testIhtPaymentReference), Some(testIhtVersion))
 
@@ -259,6 +263,73 @@ class ReportRetrievalServiceSpec
 
           actualData - "ihtVersion" mustEqual testUserAnswerJson
           (actualData \ "ihtVersion").as[String] mustBe testIhtVersion
+      }
+    }
+
+    "maps beneficiary details from the response into user answers" in {
+
+      val beneficiaryBlock = Json.obj(
+        "ihtNoticeResponse" -> Json.obj(
+          "beneficiary" -> Json.obj(
+            "beneficiaryDetails" -> Json.arr(
+              Json.obj(
+                "beneficiaryType" -> "01",
+                "beneficiaryPersonalDetails" -> Json.obj(
+                  "title" -> "Mr",
+                  "firstForename" -> "First",
+                  "secondForename" -> "Middle",
+                  "surname" -> "Surname",
+                  "ninoExist" -> "Yes",
+                  "nino" -> testNino
+                ),
+                "beneficiaryAddress" -> Json.obj(
+                  "addressLine1" -> "21 RB Road",
+                  "addressLine2" -> "RBtown",
+                  "postCode" -> "LL1 4LL",
+                  "country" -> "GB"
+                ),
+                "beneficiaryPaymentDetails" -> Json.obj(
+                  "beneficiaryIhtPayable" -> 60.0,
+                  "beneficiaryInterestPayable" -> 6.0,
+                  "beneficiaryTotal" -> 66.0
+                )
+              )
+            )
+          )
+        )
+      )
+
+      when(mockIhtpReportConnector.getReport(any(), any(), any(), any())(any()))
+        .thenReturn(
+          Future.successful(
+            HttpResponse(
+              status = 200,
+              body = testIhtNoticeResponse.deepMerge(beneficiaryBlock).toString,
+              headers = Map("correlationid" -> Seq("testCorrelationId"))
+            )
+          )
+        )
+
+      when(mockUserAnswersRepository.getByPaymentReference(any()))
+        .thenReturn(Future.successful(None))
+      when(mockUserAnswersRepository.set(any()))
+        .thenReturn(Future.successful(true))
+
+      val result = service.getReport(testPstr, srn, None, Some(testIhtPaymentReference), Some(testIhtVersion))
+
+      result.futureValue match {
+        case Left(_) => fail("unexpected")
+        case Right((_, _, userAnswers)) =>
+          val beneficiaries = (userAnswers \ "data" \ "beneficiaries").as[JsArray].value
+          beneficiaries.size mustBe 1
+
+          val beneficiary = beneficiaries.head
+          (beneficiary \ "beneficiaryType").as[String] mustBe "individual"
+          (beneficiary \ "beneficiaryDetails" \ "individual" \ "firstForename").as[String] mustBe "First"
+          (beneficiary \ "beneficiaryDetails" \ "individual" \ "surname").as[String] mustBe "Surname"
+          (beneficiary \ "hasNino").as[Boolean] mustBe true
+          (beneficiary \ "nino").as[String] mustBe testNino
+          (beneficiary \ "beneficiaryIhtPayable").as[Double] mustBe 60.0
       }
     }
   }
