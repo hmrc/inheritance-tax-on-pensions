@@ -154,7 +154,7 @@ trait TestValues extends Generators {
     firstForename = "Firstnamethree",
     secondForename = Some("Middlenametwo"),
     surname = "Surname",
-    ninoExist = No,
+    ninoExist = Some(No),
     nino = None,
     reasonNoNino = Some("Beneficiary does not have a NINO")
   )
