@@ -235,6 +235,7 @@ class ReportSubmissionService @Inject() (
               buildBeneficiaryDetails(
                 beneficiaryType = beneficiaryType,
                 beneficiaryTrustName = None,
+                beneficiaryIhtPayable = (beneficiary \ "beneficiaryIhtPayable").as[Double],
                 personalDetails = BeneficiaryPersonalDetails(
                   title = individualName.title,
                   firstForename = individualName.firstForename,
@@ -259,6 +260,8 @@ class ReportSubmissionService @Inject() (
               buildBeneficiaryDetails(
                 beneficiaryType = beneficiaryType,
                 beneficiaryTrustName = Some(beneficiaryTrustName),
+                // TODO update once trust beneficiary payment details are captured
+                beneficiaryIhtPayable = 99.99,
                 // TODO update once the trust beneficiary contact details are captured
                 personalDetails = BeneficiaryPersonalDetails(
                   title = None,
@@ -282,6 +285,7 @@ class ReportSubmissionService @Inject() (
   private def buildBeneficiaryDetails(
     beneficiaryType: String,
     beneficiaryTrustName: Option[String],
+    beneficiaryIhtPayable: Double,
     personalDetails: BeneficiaryPersonalDetails
   ): BeneficiaryDetails =
     BeneficiaryDetails(
@@ -296,8 +300,8 @@ class ReportSubmissionService @Inject() (
         country = "GB"
       ),
       beneficiaryPaymentDetails = BeneficiaryPaymentDetails(
-        // TODO update once beneficiary payment details are captured
-        beneficiaryIhtPayable = 99.99,
+        beneficiaryIhtPayable = beneficiaryIhtPayable,
+        // TODO update once beneficiary interest and total amounts are captured
         beneficiaryInterestPayable = 99.99,
         beneficiaryTotal = 99.99
       )
