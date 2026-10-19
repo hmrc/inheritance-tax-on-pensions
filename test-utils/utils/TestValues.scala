@@ -296,7 +296,7 @@ trait TestValues extends Generators {
     "ihtTaxInformation" -> Json.obj(
       "dateThePensionSchemeReceivedNoticeToPay" -> "2026-03-27"
     ),
-    "areBeneficiariesKnown" -> true,
+    "areBeneficiariesKnown" -> false,
     "ihtPaymentReference" -> testIhtPaymentReference
   )
 
@@ -389,7 +389,7 @@ trait TestValues extends Generators {
       "ihTaxInformation" -> Json.obj(
         "dateNoticeReceived" -> "2026-03-27",
         "noticeSubmittedByPr" -> "Yes",
-        "knownBeneficiaries" -> "Yes",
+        "knownBeneficiaries" -> "No",
         "totalIhtPayable" -> 100,
         "totalInterestPayable" -> 10,
         "total" -> 110
