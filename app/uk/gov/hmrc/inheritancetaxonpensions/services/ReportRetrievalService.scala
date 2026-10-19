@@ -125,7 +125,7 @@ class ReportRetrievalService @Inject() (
           val ihtNoticeResponse =
             response.json.as[IhtpPaymentNoticeRetrievalResponse]
 
-          setUserAnswers(ihtNoticeResponse.ihtNoticeResponse, srn).map { case (uuid, userAnswersJson) =>
+          setUserAnswers(ihtNoticeResponse.ihtNoticeResponse, srn, fbNumber).map { case (uuid, userAnswersJson) =>
             Right(
               uuid,
               response.header("correlationid").getOrElse(""),
@@ -135,7 +135,7 @@ class ReportRetrievalService @Inject() (
         }
       }
 
-  private def setUserAnswers(response: IhtNoticeResponse, srn: String)(implicit
+  private def setUserAnswers(response: IhtNoticeResponse, srn: String, fbNumber: Option[String])(implicit
     ec: ExecutionContext
   ): Future[(String, JsValue)] =
     val paymentReference = response.reportDetails.ihtPaymentReference
@@ -151,7 +151,11 @@ class ReportRetrievalService @Inject() (
             data = data,
             lastUpdated = Instant.now(clock)
           )
-          userAnswersRepository.set(userAnswers).map(_ => (userAnswers.uuid, Json.toJson(userAnswers)))
+          if (fbNumber.isDefined) {
+            userAnswersRepository.set(userAnswers).map(_ => (userAnswers.uuid, Json.toJson(userAnswers)))
+          } else {
+            Future.successful((userAnswers.uuid, Json.toJson(userAnswers)))
+          }
         case None =>
           val uuid = java.util.UUID.randomUUID().toString
           logger.info(s"Creating new UserAnswers for payment reference: $paymentReference, srn: $srn, uuid: $uuid")

@@ -246,8 +246,6 @@ class ReportRetrievalServiceSpec
 
       when(mockUserAnswersRepository.getByPaymentReference(any()))
         .thenReturn(Future.successful(Some(emptyUserAnswers.copy(data = testUserAnswerJson))))
-      when(mockUserAnswersRepository.set(any()))
-        .thenReturn(Future.successful(true))
 
       val result = service.getReport(testPstr, srn, None, Some(testIhtPaymentReference), Some(testIhtVersion))
 
@@ -264,6 +262,43 @@ class ReportRetrievalServiceSpec
           actualData - "ihtVersion" mustEqual testUserAnswerJson
           (actualData \ "ihtVersion").as[String] mustBe testIhtVersion
       }
+
+      verify(mockUserAnswersRepository, never()).set(any())
+    }
+
+    "persists refreshed data when user answers are found and lookup is by fbNumber" in {
+
+      when(mockIhtpReportConnector.getReport(any(), any(), any(), any())(any()))
+        .thenReturn(
+          Future.successful(
+            HttpResponse(
+              status = 200,
+              body = testIhtNoticeResponse.toString,
+              headers = Map("correlationid" -> Seq("testCorrelationId"))
+            )
+          )
+        )
+
+      when(mockUserAnswersRepository.getByPaymentReference(any()))
+        .thenReturn(Future.successful(Some(emptyUserAnswers.copy(data = testUserAnswerJson))))
+      when(mockUserAnswersRepository.set(any()))
+        .thenReturn(Future.successful(true))
+
+      val result = service.getReport(testPstr, srn, Some("testFbNumber"), None, None)
+
+      result.futureValue match {
+        case Left(value) => fail("unexpected")
+        case Right((uuid, correlationId, userAnswers)) =>
+          uuid mustBe emptyUserAnswers.uuid
+          correlationId mustBe "testCorrelationId"
+
+          val actualData = (userAnswers \ "data").as[JsObject]
+
+          actualData - "ihtVersion" mustEqual testUserAnswerJson
+          (actualData \ "ihtVersion").as[String] mustBe testIhtVersion
+      }
+
+      verify(mockUserAnswersRepository, times(1)).set(any())
     }
 
     "maps beneficiary details from the response into user answers" in {
