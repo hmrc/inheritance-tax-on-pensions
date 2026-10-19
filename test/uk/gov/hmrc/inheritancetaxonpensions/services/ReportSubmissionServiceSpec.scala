@@ -626,7 +626,9 @@ class ReportSubmissionServiceSpec
         Json.obj(
           "beneficiaryType" -> "individual",
           "beneficiaryIhtPayable" -> amount,
-          "beneficiaryDetails" -> Json.obj("individual" -> deceasedPersonalDetailsUaJson)
+          "beneficiaryDetails" -> Json.obj("individual" -> deceasedPersonalDetailsUaJson),
+          "hasNino" -> true,
+          "nino" -> testNino
         )
       }
       val answers = validUserAnswers.copy(data =
