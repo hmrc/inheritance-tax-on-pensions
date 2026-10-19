@@ -270,6 +270,11 @@ class ReportRetrievalServiceSpec
 
       val beneficiaryBlock = Json.obj(
         "ihtNoticeResponse" -> Json.obj(
+          "deceased" -> Json.obj(
+            "deceasedPersonalDetails" -> Json.obj(
+              "reasonNoNino" -> "should be suppressed"
+            )
+          ),
           "beneficiary" -> Json.obj(
             "beneficiaryDetails" -> Json.arr(
               Json.obj(
@@ -280,7 +285,8 @@ class ReportRetrievalServiceSpec
                   "secondForename" -> "Middle",
                   "surname" -> "Surname",
                   "ninoExist" -> "Yes",
-                  "nino" -> testNino
+                  "nino" -> testNino,
+                  "reasonNoNino" -> "should be suppressed"
                 ),
                 "beneficiaryAddress" -> Json.obj(
                   "addressLine1" -> "21 RB Road",
@@ -292,6 +298,27 @@ class ReportRetrievalServiceSpec
                   "beneficiaryIhtPayable" -> 60.0,
                   "beneficiaryInterestPayable" -> 6.0,
                   "beneficiaryTotal" -> 66.0
+                )
+              ),
+              Json.obj(
+                "beneficiaryType" -> "01",
+                "beneficiaryPersonalDetails" -> Json.obj(
+                  "title" -> "Ms",
+                  "firstForename" -> "Second",
+                  "surname" -> "Surname",
+                  "ninoExist" -> "No",
+                  "nino" -> "AB111111C",
+                  "reasonNoNino" -> "no nino reason"
+                ),
+                "beneficiaryAddress" -> Json.obj(
+                  "addressLine1" -> "21 RB Road",
+                  "postCode" -> "LL1 4LL",
+                  "country" -> "GB"
+                ),
+                "beneficiaryPaymentDetails" -> Json.obj(
+                  "beneficiaryIhtPayable" -> 40.0,
+                  "beneficiaryInterestPayable" -> 4.0,
+                  "beneficiaryTotal" -> 44.0
                 )
               )
             )
@@ -320,8 +347,13 @@ class ReportRetrievalServiceSpec
       result.futureValue match {
         case Left(_) => fail("unexpected")
         case Right((_, _, userAnswers)) =>
-          val beneficiaries = (userAnswers \ "data" \ "beneficiaries").as[JsArray].value
-          beneficiaries.size mustBe 1
+          val data = (userAnswers \ "data").as[JsObject]
+          (data \ "hasNino").as[Boolean] mustBe true
+          (data \ "nino").as[String] mustBe testNino
+          (data \ "reasonNoNino").asOpt[String] mustBe empty
+
+          val beneficiaries = (data \ "beneficiaries").as[JsArray].value
+          beneficiaries.size mustBe 2
 
           val beneficiary = beneficiaries.head
           (beneficiary \ "beneficiaryType").as[String] mustBe "individual"
@@ -329,7 +361,21 @@ class ReportRetrievalServiceSpec
           (beneficiary \ "beneficiaryDetails" \ "individual" \ "surname").as[String] mustBe "Surname"
           (beneficiary \ "hasNino").as[Boolean] mustBe true
           (beneficiary \ "nino").as[String] mustBe testNino
+          (beneficiary \ "reasonNoNino").asOpt[String] mustBe empty
+          (beneficiary \ "beneficiaryAddress" \ "addressLine1").as[String] mustBe "21 RB Road"
+          (beneficiary \ "beneficiaryAddress" \ "addressLine2").as[String] mustBe "RBtown"
+          (beneficiary \ "beneficiaryAddress" \ "postCode").as[String] mustBe "LL1 4LL"
+          (beneficiary \ "beneficiaryAddress" \ "country").as[String] mustBe "GB"
           (beneficiary \ "beneficiaryIhtPayable").as[Double] mustBe 60.0
+          (beneficiary \ "beneficiaryInterestPayable").as[Double] mustBe 6.0
+
+          val secondBeneficiary = beneficiaries(1)
+          (secondBeneficiary \ "hasNino").as[Boolean] mustBe false
+          (secondBeneficiary \ "nino").asOpt[String] mustBe empty
+          (secondBeneficiary \ "reasonNoNino").as[String] mustBe "no nino reason"
+          (secondBeneficiary \ "beneficiaryAddress" \ "addressLine1").as[String] mustBe "21 RB Road"
+          (secondBeneficiary \ "beneficiaryIhtPayable").as[Double] mustBe 40.0
+          (secondBeneficiary \ "beneficiaryInterestPayable").as[Double] mustBe 4.0
       }
     }
   }

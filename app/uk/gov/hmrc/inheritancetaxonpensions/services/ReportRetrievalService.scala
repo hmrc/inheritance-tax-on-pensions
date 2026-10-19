@@ -180,8 +180,10 @@ class ReportRetrievalService @Inject() (
             )
           ),
           hasNino = Some(response.deceased.deceasedPersonalDetails.ninoExist == YesNo.Yes),
-          nino = response.deceased.deceasedPersonalDetails.nino,
-          reasonNoNino = response.deceased.deceasedPersonalDetails.reasonNoNino,
+          nino = response.deceased.deceasedPersonalDetails.nino
+            .filter(_ => response.deceased.deceasedPersonalDetails.ninoExist == YesNo.Yes),
+          reasonNoNino = response.deceased.deceasedPersonalDetails.reasonNoNino
+            .filter(_ => response.deceased.deceasedPersonalDetails.ninoExist != YesNo.Yes),
           birthDeathDates = Some(
             BirthDeathDatesAnswers(
               dateOfBirth = response.deceased.deceasedDetails.deceasedsDob,
@@ -227,9 +229,11 @@ class ReportRetrievalService @Inject() (
             )
           ),
           "hasNino" -> (personalDetails.ninoExist == Yes),
-          "nino" -> personalDetails.nino,
-          "reasonNoNino" -> personalDetails.reasonNoNino,
-          "beneficiaryIhtPayable" -> details.beneficiaryPaymentDetails.beneficiaryIhtPayable
+          "nino" -> personalDetails.nino.filter(_ => personalDetails.ninoExist == Yes),
+          "reasonNoNino" -> personalDetails.reasonNoNino.filter(_ => personalDetails.ninoExist != Yes),
+          "beneficiaryAddress" -> details.beneficiaryAddress,
+          "beneficiaryIhtPayable" -> details.beneficiaryPaymentDetails.beneficiaryIhtPayable,
+          "beneficiaryInterestPayable" -> details.beneficiaryPaymentDetails.beneficiaryInterestPayable
         )
       case IndividualOrTrust.Trust =>
         Json.obj(
@@ -237,7 +241,9 @@ class ReportRetrievalService @Inject() (
           "beneficiaryDetails" -> Json.obj(
             "trust" -> Json.obj("beneficiaryTrustName" -> details.beneficiaryTrustName)
           ),
-          "beneficiaryIhtPayable" -> details.beneficiaryPaymentDetails.beneficiaryIhtPayable
+          "beneficiaryAddress" -> details.beneficiaryAddress,
+          "beneficiaryIhtPayable" -> details.beneficiaryPaymentDetails.beneficiaryIhtPayable,
+          "beneficiaryInterestPayable" -> details.beneficiaryPaymentDetails.beneficiaryInterestPayable
         )
     }
   }
