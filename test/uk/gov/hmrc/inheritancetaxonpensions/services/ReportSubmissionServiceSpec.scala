@@ -552,6 +552,7 @@ class ReportSubmissionServiceSpec
           "beneficiaries" -> Json.arr(
             Json.obj(
               "beneficiaryType" -> "individual",
+              "beneficiaryIhtPayable" -> BigDecimal("1234.56"),
               "beneficiaryDetails" -> Json.obj(
                 "individual" -> Json.obj(
                   "title" -> "Mr",
@@ -599,7 +600,8 @@ class ReportSubmissionServiceSpec
                   beneficiaryType = IndividualOrTrust.Individual,
                   beneficiaryPersonalDetails = beneficiaryPersonalDetailsPayloadSection,
                   beneficiaryAddress = beneficiaryAddressPayloadSection,
-                  beneficiaryPaymentDetails = beneficiaryPaymentDetailsPayloadSection
+                  beneficiaryPaymentDetails =
+                    beneficiaryPaymentDetailsPayloadSection.copy(beneficiaryIhtPayable = 1234.56)
                 )
               )
             )
@@ -617,6 +619,50 @@ class ReportSubmissionServiceSpec
         "ninoExist" -> "No",
         "reasonNoNino" -> "Beneficiary does not have a NINO"
       )
+    }
+
+    "map each individual beneficiary's saved amount, including zero and the maximum" in {
+      val beneficiaries = Seq(BigDecimal("0"), BigDecimal("999999999.99")).map { amount =>
+        Json.obj(
+          "beneficiaryType" -> "individual",
+          "beneficiaryIhtPayable" -> amount,
+          "beneficiaryDetails" -> Json.obj("individual" -> deceasedPersonalDetailsUaJson)
+        )
+      }
+      val answers = validUserAnswers.copy(data =
+        validUserAnswers.data ++ Json.obj(
+          "areBeneficiariesKnown" -> true,
+          "beneficiaries" -> beneficiaries
+        )
+      )
+      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(answers)))
+      when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Right(testSubmissionResponse)))
+
+      service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).futureValue.isRight mustBe true
+      val captured = ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
+      verify(mockIhtpReportConnector).submitReport(captured.capture())(any[HeaderCarrier]())
+      captured.getValue.ihtNoticeRequest.beneficiary.get.beneficiaryDetails
+        .map(_.beneficiaryPaymentDetails.beneficiaryIhtPayable) mustBe Seq(0.0, 999999999.99)
+    }
+
+    "reject an individual beneficiary without a saved amount rather than submitting a placeholder" in {
+      val answers = validUserAnswers.copy(data =
+        validUserAnswers.data ++ Json.obj(
+          "areBeneficiariesKnown" -> true,
+          "beneficiaries" -> Json.arr(
+            Json.obj(
+              "beneficiaryType" -> "individual",
+              "beneficiaryDetails" -> Json.obj("individual" -> deceasedPersonalDetailsUaJson)
+            )
+          )
+        )
+      )
+      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(answers)))
+
+      service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).failed.futureValue mustBe
+        a[play.api.libs.json.JsResultException]
+      verifyNoInteractions(mockIhtpReportConnector)
     }
 
     "include a trust beneficiary name in the payload" in {
