@@ -28,7 +28,7 @@ import org.mockito.Mockito._
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.IhtpReportConnector
 import org.scalatest.matchers.must.Matchers
 import org.scalatest.BeforeAndAfterEach
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.http.Status.INTERNAL_SERVER_ERROR
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 
@@ -213,6 +213,8 @@ class ReportRetrievalServiceSpec
 
       when(mockUserAnswersRepository.getByPaymentReference(any()))
         .thenReturn(Future.successful(None))
+      when(mockUserAnswersRepository.set(any()))
+        .thenReturn(Future.successful(true))
 
       val result = service.getReport(testPstr, srn, None, Some(testIhtPaymentReference), Some(testIhtVersion))
 
@@ -259,6 +261,156 @@ class ReportRetrievalServiceSpec
 
           actualData - "ihtVersion" mustEqual testUserAnswerJson
           (actualData \ "ihtVersion").as[String] mustBe testIhtVersion
+      }
+
+      verify(mockUserAnswersRepository, never()).set(any())
+    }
+
+    "persists refreshed data when user answers are found and lookup is by fbNumber" in {
+
+      when(mockIhtpReportConnector.getReport(any(), any(), any(), any())(any()))
+        .thenReturn(
+          Future.successful(
+            HttpResponse(
+              status = 200,
+              body = testIhtNoticeResponse.toString,
+              headers = Map("correlationid" -> Seq("testCorrelationId"))
+            )
+          )
+        )
+
+      when(mockUserAnswersRepository.getByPaymentReference(any()))
+        .thenReturn(Future.successful(Some(emptyUserAnswers.copy(data = testUserAnswerJson))))
+      when(mockUserAnswersRepository.set(any()))
+        .thenReturn(Future.successful(true))
+
+      val result = service.getReport(testPstr, srn, Some("testFbNumber"), None, None)
+
+      result.futureValue match {
+        case Left(value) => fail("unexpected")
+        case Right((uuid, correlationId, userAnswers)) =>
+          uuid mustBe emptyUserAnswers.uuid
+          correlationId mustBe "testCorrelationId"
+
+          val actualData = (userAnswers \ "data").as[JsObject]
+
+          actualData - "ihtVersion" mustEqual testUserAnswerJson
+          (actualData \ "ihtVersion").as[String] mustBe testIhtVersion
+      }
+
+      verify(mockUserAnswersRepository, times(1)).set(any())
+    }
+
+    "maps beneficiary details from the response into user answers" in {
+
+      val beneficiaryBlock = Json.obj(
+        "ihtNoticeResponse" -> Json.obj(
+          "deceased" -> Json.obj(
+            "deceasedPersonalDetails" -> Json.obj(
+              "reasonNoNino" -> "should be suppressed"
+            )
+          ),
+          "beneficiary" -> Json.obj(
+            "beneficiaryDetails" -> Json.arr(
+              Json.obj(
+                "beneficiaryType" -> "01",
+                "beneficiaryPersonalDetails" -> Json.obj(
+                  "title" -> "Mr",
+                  "firstForename" -> "First",
+                  "secondForename" -> "Middle",
+                  "surname" -> "Surname",
+                  "ninoExist" -> "Yes",
+                  "nino" -> testNino,
+                  "reasonNoNino" -> "should be suppressed"
+                ),
+                "beneficiaryAddress" -> Json.obj(
+                  "addressLine1" -> "21 RB Road",
+                  "addressLine2" -> "RBtown",
+                  "postCode" -> "LL1 4LL",
+                  "country" -> "GB"
+                ),
+                "beneficiaryPaymentDetails" -> Json.obj(
+                  "beneficiaryIhtPayable" -> 60.0,
+                  "beneficiaryInterestPayable" -> 6.0,
+                  "beneficiaryTotal" -> 66.0
+                )
+              ),
+              Json.obj(
+                "beneficiaryType" -> "01",
+                "beneficiaryPersonalDetails" -> Json.obj(
+                  "title" -> "Ms",
+                  "firstForename" -> "Second",
+                  "surname" -> "Surname",
+                  "ninoExist" -> "No",
+                  "nino" -> "AB111111C",
+                  "reasonNoNino" -> "no nino reason"
+                ),
+                "beneficiaryAddress" -> Json.obj(
+                  "addressLine1" -> "21 RB Road",
+                  "postCode" -> "LL1 4LL",
+                  "country" -> "GB"
+                ),
+                "beneficiaryPaymentDetails" -> Json.obj(
+                  "beneficiaryIhtPayable" -> 40.0,
+                  "beneficiaryInterestPayable" -> 4.0,
+                  "beneficiaryTotal" -> 44.0
+                )
+              )
+            )
+          )
+        )
+      )
+
+      when(mockIhtpReportConnector.getReport(any(), any(), any(), any())(any()))
+        .thenReturn(
+          Future.successful(
+            HttpResponse(
+              status = 200,
+              body = testIhtNoticeResponse.deepMerge(beneficiaryBlock).toString,
+              headers = Map("correlationid" -> Seq("testCorrelationId"))
+            )
+          )
+        )
+
+      when(mockUserAnswersRepository.getByPaymentReference(any()))
+        .thenReturn(Future.successful(None))
+      when(mockUserAnswersRepository.set(any()))
+        .thenReturn(Future.successful(true))
+
+      val result = service.getReport(testPstr, srn, None, Some(testIhtPaymentReference), Some(testIhtVersion))
+
+      result.futureValue match {
+        case Left(_) => fail("unexpected")
+        case Right((_, _, userAnswers)) =>
+          val data = (userAnswers \ "data").as[JsObject]
+          (data \ "hasNino").as[Boolean] mustBe true
+          (data \ "nino").as[String] mustBe testNino
+          (data \ "reasonNoNino").asOpt[String] mustBe empty
+
+          val beneficiaries = (data \ "beneficiaries").as[JsArray].value
+          beneficiaries.size mustBe 2
+
+          val beneficiary = beneficiaries.head
+          (beneficiary \ "beneficiaryType").as[String] mustBe "individual"
+          (beneficiary \ "beneficiaryDetails" \ "individual" \ "firstForename").as[String] mustBe "First"
+          (beneficiary \ "beneficiaryDetails" \ "individual" \ "surname").as[String] mustBe "Surname"
+          (beneficiary \ "hasNino").as[Boolean] mustBe true
+          (beneficiary \ "nino").as[String] mustBe testNino
+          (beneficiary \ "reasonNoNino").asOpt[String] mustBe empty
+          (beneficiary \ "beneficiaryAddress" \ "addressLine1").as[String] mustBe "21 RB Road"
+          (beneficiary \ "beneficiaryAddress" \ "addressLine2").as[String] mustBe "RBtown"
+          (beneficiary \ "beneficiaryAddress" \ "postCode").as[String] mustBe "LL1 4LL"
+          (beneficiary \ "beneficiaryAddress" \ "country").as[String] mustBe "GB"
+          (beneficiary \ "beneficiaryIhtPayable").as[Double] mustBe 60.0
+          (beneficiary \ "beneficiaryInterestPayable").as[Double] mustBe 6.0
+
+          val secondBeneficiary = beneficiaries(1)
+          (secondBeneficiary \ "hasNino").as[Boolean] mustBe false
+          (secondBeneficiary \ "nino").asOpt[String] mustBe empty
+          (secondBeneficiary \ "reasonNoNino").as[String] mustBe "no nino reason"
+          (secondBeneficiary \ "beneficiaryAddress" \ "addressLine1").as[String] mustBe "21 RB Road"
+          (secondBeneficiary \ "beneficiaryIhtPayable").as[Double] mustBe 40.0
+          (secondBeneficiary \ "beneficiaryInterestPayable").as[Double] mustBe 4.0
       }
     }
   }

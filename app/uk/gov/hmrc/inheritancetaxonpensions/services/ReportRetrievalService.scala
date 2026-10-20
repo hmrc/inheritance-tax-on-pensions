@@ -24,7 +24,7 @@ import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 import uk.gov.hmrc.inheritancetaxonpensions.repositories.UserAnswersRepository
 import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.YesNo.Yes
 import uk.gov.hmrc.inheritancetaxonpensions.models._
-import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.{IndividualOrOrg, YesNo}
+import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.{IndividualOrOrg, IndividualOrTrust, YesNo}
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants
 import com.google.inject.{Inject, Singleton}
 import play.api.Logging
@@ -125,7 +125,7 @@ class ReportRetrievalService @Inject() (
           val ihtNoticeResponse =
             response.json.as[IhtpPaymentNoticeRetrievalResponse]
 
-          setUserAnswers(ihtNoticeResponse.ihtNoticeResponse, srn).map { case (uuid, userAnswersJson) =>
+          setUserAnswers(ihtNoticeResponse.ihtNoticeResponse, srn, fbNumber).map { case (uuid, userAnswersJson) =>
             Right(
               uuid,
               response.header("correlationid").getOrElse(""),
@@ -135,7 +135,7 @@ class ReportRetrievalService @Inject() (
         }
       }
 
-  private def setUserAnswers(response: IhtNoticeResponse, srn: String)(implicit
+  private def setUserAnswers(response: IhtNoticeResponse, srn: String, fbNumber: Option[String])(implicit
     ec: ExecutionContext
   ): Future[(String, JsValue)] =
     val paymentReference = response.reportDetails.ihtPaymentReference
@@ -144,20 +144,18 @@ class ReportRetrievalService @Inject() (
 
     userAnswersRepository
       .getByPaymentReference(paymentReference)
-      .map {
+      .flatMap {
         case Some(existingUserAnswers) =>
           logger.info(s"UserAnswers already exist for payment reference: $paymentReference, srn: $srn")
-          UserAnswersHelper.set(
-            existingUserAnswers,
-            JsPath \ "ihtVersion",
-            Some(response.reportDetails.ihtVersion)
-          )
-
           val userAnswers = existingUserAnswers.copy(
-            data = data
+            data = data,
+            lastUpdated = Instant.now(clock)
           )
-
-          (userAnswers.uuid, Json.toJson(userAnswers))
+          if (fbNumber.isDefined) {
+            userAnswersRepository.set(userAnswers).map(_ => (userAnswers.uuid, Json.toJson(userAnswers)))
+          } else {
+            Future.successful((userAnswers.uuid, Json.toJson(userAnswers)))
+          }
         case None =>
           val uuid = java.util.UUID.randomUUID().toString
           logger.info(s"Creating new UserAnswers for payment reference: $paymentReference, srn: $srn, uuid: $uuid")
@@ -169,8 +167,7 @@ class ReportRetrievalService @Inject() (
               lastUpdated = Instant.now(clock),
               data = data
             )
-          userAnswersRepository.set(userAnswers)
-          (uuid, Json.toJson(userAnswers))
+          userAnswersRepository.set(userAnswers).map(_ => (uuid, Json.toJson(userAnswers)))
       }
 
   private def buildData(response: IhtNoticeResponse): JsObject =
@@ -187,8 +184,10 @@ class ReportRetrievalService @Inject() (
             )
           ),
           hasNino = Some(response.deceased.deceasedPersonalDetails.ninoExist == YesNo.Yes),
-          nino = response.deceased.deceasedPersonalDetails.nino,
-          reasonNoNino = response.deceased.deceasedPersonalDetails.reasonNoNino,
+          nino = response.deceased.deceasedPersonalDetails.nino
+            .filter(_ => response.deceased.deceasedPersonalDetails.ninoExist == YesNo.Yes),
+          reasonNoNino = response.deceased.deceasedPersonalDetails.reasonNoNino
+            .filter(_ => response.deceased.deceasedPersonalDetails.ninoExist != YesNo.Yes),
           birthDeathDates = Some(
             BirthDeathDatesAnswers(
               dateOfBirth = response.deceased.deceasedDetails.deceasedsDob,
@@ -201,14 +200,57 @@ class ReportRetrievalService @Inject() (
               dateThePensionSchemeReceivedNoticeToPay = response.ihTaxInformation.dateNoticeReceived
             )
           ),
-          areBeneficiariesKnown = Some(response.ihTaxInformation.knownBeneficiaries == Yes),
+          areBeneficiariesKnown = response.ihTaxInformation.knownBeneficiaries.map(_ == Yes),
           prType = Some(response.personalRep.typeOfPr.name),
           prDetails = Some(buildPrDetails(response)),
           ihtPaymentReference = Some(response.reportDetails.ihtPaymentReference),
           ihtVersion = Some(response.reportDetails.ihtVersion)
         )
       )
-      .as[JsObject] // TODO update beneficiary once pages are complete
+      .as[JsObject] ++ buildBeneficiaries(response)
+
+  private def buildBeneficiaries(response: IhtNoticeResponse): JsObject =
+    response.beneficiary match {
+      case Some(beneficiaries) =>
+        Json.obj(
+          "beneficiaries" -> beneficiaries.beneficiaryDetails.map(buildBeneficiaryElement)
+        )
+      case None => Json.obj()
+    }
+
+  private def buildBeneficiaryElement(details: BeneficiaryDetails): JsObject = {
+    val personalDetails = details.beneficiaryPersonalDetails
+    details.beneficiaryType match {
+      case IndividualOrTrust.Individual =>
+        Json.obj(
+          "beneficiaryType" -> "individual",
+          "beneficiaryDetails" -> Json.obj(
+            "individual" -> Json.obj(
+              "title" -> personalDetails.title,
+              "firstForename" -> personalDetails.firstForename,
+              "secondForename" -> personalDetails.secondForename,
+              "surname" -> personalDetails.surname
+            )
+          ),
+          "hasNino" -> (personalDetails.ninoExist == Yes),
+          "nino" -> personalDetails.nino.filter(_ => personalDetails.ninoExist == Yes),
+          "reasonNoNino" -> personalDetails.reasonNoNino.filter(_ => personalDetails.ninoExist != Yes),
+          "beneficiaryAddress" -> details.beneficiaryAddress,
+          "beneficiaryIhtPayable" -> details.beneficiaryPaymentDetails.beneficiaryIhtPayable,
+          "beneficiaryInterestPayable" -> details.beneficiaryPaymentDetails.beneficiaryInterestPayable
+        )
+      case IndividualOrTrust.Trust =>
+        Json.obj(
+          "beneficiaryType" -> "trust",
+          "beneficiaryDetails" -> Json.obj(
+            "trust" -> Json.obj("beneficiaryTrustName" -> details.beneficiaryTrustName)
+          ),
+          "beneficiaryAddress" -> details.beneficiaryAddress,
+          "beneficiaryIhtPayable" -> details.beneficiaryPaymentDetails.beneficiaryIhtPayable,
+          "beneficiaryInterestPayable" -> details.beneficiaryPaymentDetails.beneficiaryInterestPayable
+        )
+    }
+  }
 
   private def buildPrDetails(response: IhtNoticeResponse): PrDetailsAnswers =
     response.personalRep.typeOfPr match {
