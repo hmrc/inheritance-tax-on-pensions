@@ -27,7 +27,7 @@ body:json {
     "srn": "{{srn}}",
     "uuid": "{{user_answers_uuid}}",
     "data": {
-      "inheritanceTaxReference": "A123459/25A",
+      "inheritanceTaxReference": "{{test_iht_reference}}",
       "nameOfDeceased": {
         "title": "Mr",
         "firstForename": "Firstname",
@@ -51,8 +51,8 @@ body:json {
           "country": "GB"
         }
       },
-      "hasNino": true,
-      "nino": "AB123456C",
+      "hasNino": false,
+      "reasonNoNino": "Test reason for no NINO",
       "ihtTaxInformation": {
         "dateThePensionSchemeReceivedNoticeToPay": "2026-03-27"
       },

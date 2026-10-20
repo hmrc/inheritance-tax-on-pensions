@@ -82,7 +82,7 @@ class GetReportControllerSpec extends BaseSpec with TestValues:
     "inheritanceTaxReference" -> "inheritanceTaxReference",
     "nameOfDeceased" -> "John Doe",
     "hasNino" -> true,
-    "nino" -> "AB123456C",
+    "nino" -> testNino,
     "ihtPaymentReference" -> "ihtPaymentReference",
     "ihtVersion" -> "ihtVersion"
   )
@@ -108,7 +108,7 @@ class GetReportControllerSpec extends BaseSpec with TestValues:
       ).thenReturn(Future.successful(Right(("uuid", correlationId, userAnswers))))
 
       val result = controller.getReport()(
-        requestWithRequiredHeaders("/ihtp?pstr=24000001IN&fbNumber=119000004320")
+        requestWithRequiredHeaders(s"/ihtp?pstr=24000001IN&fbNumber=$testFormBundleNumber")
       )
 
       status(result) mustEqual Status.OK
@@ -117,7 +117,7 @@ class GetReportControllerSpec extends BaseSpec with TestValues:
       verify(mockReportRetrievalService).getReport(
         eqTo("24000001IN"),
         eqTo("S2400000001"),
-        eqTo(Some("119000004320")),
+        eqTo(Some(testFormBundleNumber)),
         eqTo(None),
         eqTo(None)
       )(any[HeaderCarrier](), any[ExecutionContext]())
@@ -285,7 +285,7 @@ class GetReportControllerSpec extends BaseSpec with TestValues:
       authoriseUser()
 
       intercept[BadRequestException] {
-        await(controller.getReport()(requestWithRequiredHeaders("/ihtp?fbNumber=119000004320")))
+        await(controller.getReport()(requestWithRequiredHeaders(s"/ihtp?fbNumber=$testFormBundleNumber")))
       }
 
       verify(mockIhtpReportConnector, never).getReport(any(), any(), any(), any())(any())
@@ -298,7 +298,7 @@ class GetReportControllerSpec extends BaseSpec with TestValues:
       intercept[InsufficientEnrolments] {
         await(
           controller.getReport()(
-            requestWithRequiredHeaders("/ihtp?pstr=24000001IN&fbNumber=119000004320")
+            requestWithRequiredHeaders(s"/ihtp?pstr=24000001IN&fbNumber=$testFormBundleNumber")
           )
         )
       }
@@ -309,7 +309,7 @@ class GetReportControllerSpec extends BaseSpec with TestValues:
 
     "return BAD_REQUEST when required headers are missing" in {
       intercept[BadRequestException] {
-        await(controller.getReport()(FakeRequest("GET", "/ihtp?pstr=24000001IN&fbNumber=119000004320")))
+        await(controller.getReport()(FakeRequest("GET", s"/ihtp?pstr=24000001IN&fbNumber=$testFormBundleNumber")))
       }
 
       verify(mockAuthConnector, never).authorise(any(), any())(any(), any())

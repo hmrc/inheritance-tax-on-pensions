@@ -29,6 +29,6 @@ tests {
   test("Response contains the requested user answers", function () {
       expect(res.body._id).to.equal(bru.getEnvVar("user_answers_id"));
       expect(res.body.srn).to.equal(bru.getEnvVar("srn"));
-      expect(res.body.data.inheritanceTaxReference).to.equal("A123459/25A");
+      expect(res.body.data.inheritanceTaxReference).to.equal(bru.getVar("test_iht_reference"));
   });
 }

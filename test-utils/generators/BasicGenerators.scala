@@ -17,6 +17,7 @@
 package generators
 
 import org.scalacheck.Gen._
+import uk.gov.hmrc.domain.NinoGenerator
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 
@@ -82,22 +83,19 @@ trait BasicGenerators {
       s <- alphaNumStr
     } yield s"$c$s"
 
-  val ninoGen: Gen[String] = {
-    val firstLetters = "ABCEGHJKLMNOPRSTWXYZ"
-    val secondLetters = "ABCEGHJKLMNPRSTWXYZ"
-    val suffixGen = Gen.oneOf("ABCD".toSeq)
-    val forbiddenPrefixes = Set("BG", "GB", "KN", "NK", "NT", "TN", "ZZ")
-    val validPrefixes =
-      firstLetters.toSeq
-        .flatMap(first => secondLetters.toSeq.map(second => s"$first$second"))
-        .filterNot(forbiddenPrefixes.contains)
+  val ninoGen: Gen[String] = Gen.delay(Gen.const(NinoGenerator().nextNino.nino))
 
-    for {
-      prefix <- Gen.oneOf(validPrefixes)
-      digits <- Gen.listOfN(6, numChar).map(_.mkString)
-      suffix <- suffixGen
-    } yield s"$prefix$digits$suffix"
-  }
+  def numericStringLength(length: Int): Gen[String] = Gen.listOfN(length, numChar).map(_.mkString)
+
+  val psaIdGen: Gen[String] = numericStringLength(7).map("A" + _)
+  val pspIdGen: Gen[String] = numericStringLength(8)
+  val formBundleNumberGen: Gen[String] = numericStringLength(12)
+  val ihtReferenceGen: Gen[String] = for {
+    prefix <- Gen.oneOf("A", "F")
+    number <- numericStringLength(6)
+    year <- numericStringLength(2)
+    suffix <- Gen.alphaUpperChar
+  } yield s"$prefix$number/$year$suffix"
 
   def stringsWithMaxLength(maxLength: Int): Gen[String] =
     for {

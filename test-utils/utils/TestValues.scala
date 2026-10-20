@@ -38,12 +38,18 @@ trait TestValues extends Generators {
   val clock: Clock = Clock.fixed(Instant.ofEpochMilli(clockMillis), ZoneId.of("UTC"))
 
   val externalId: String = "externalId"
+  val psaId: String = psaIdGen.sample.get
+  val pspId: String = pspIdGen.sample.get
+  val testIhtReference: String = ihtReferenceGen.sample.get
+  val secondIhtReference: String = ihtReferenceGen.suchThat(_ != testIhtReference).sample.get
+  val testFormBundleNumber: String = formBundleNumberGen.sample.get
+  val secondFormBundleNumber: String = formBundleNumberGen.suchThat(_ != testFormBundleNumber).sample.get
   val enrolments: Enrolments = Enrolments(
     Set(
       Enrolment(
         psaEnrolmentKey,
         Seq(
-          EnrolmentIdentifier("PSAID", "A0000000")
+          EnrolmentIdentifier("PSAID", psaId)
         ),
         "Activated",
         None
@@ -60,8 +66,6 @@ trait TestValues extends Generators {
   val psaPspId = "psaPspId"
   val credentialRole = "credentialRole"
   val sampleToday: LocalDate = LocalDate.of(2023, 10, 19)
-  val psaId = "A0000000"
-  val pspId = "21000005"
   val testNino: String = ninoGen.sample.get
   val testDateOfBirth = "1950-01-01"
   val testDateOfDeath = "2026-01-01"
@@ -76,13 +80,14 @@ trait TestValues extends Generators {
   val testUserAnswersId = "testUserAnswersId"
   val testPstr = "12345678"
   val emptyUserAnswers: UserAnswers = UserAnswers(s"$srn-$uuid", srn, uuid)
-  val testIhtPaymentReference: String = "A123456/25A629671"
+  val testIhtPaymentReference: String = testIhtReference + numericStringLength(6).sample.get
+  val secondIhtPaymentReference: String = secondIhtReference + numericStringLength(6).sample.get
   val trustName: String = "Testdata Trust"
 
   val testSubmissionResponse: IhtpPaymentNoticeResponse = IhtpPaymentNoticeResponse(
     SuccessResponse(
       IhtResponse(
-        formBundleNo = "910000000000",
+        formBundleNo = testFormBundleNumber,
         ihtPaymentReference = testIhtPaymentReference,
         processingDate = testProcessingDate
       )
@@ -102,7 +107,7 @@ trait TestValues extends Generators {
   private val deceasedDetailsPayloadSection = DeceasedDetails(
     deceasedsDob = testDateOfBirth,
     deceasedsDod = testDateOfDeath,
-    ihtRefNumber = "A123459/25A"
+    ihtRefNumber = testIhtReference
   )
 
   val deceasedPayloadSection: Deceased = Deceased(
@@ -183,14 +188,15 @@ trait TestValues extends Generators {
     submittedBy = "PSP",
     submitterId = pspId,
     psaDeclaration = None,
-    pspDeclaration = Some(PspDeclaration(true, true, psaId))
+    // The service still uses this placeholder until the authorising PSA is supplied by the frontend.
+    pspDeclaration = Some(PspDeclaration(true, true, "A0000000"))
   )
 
   val testReportSubmissionRequestBody: IhtpPaymentNoticeSubmission = IhtpPaymentNoticeSubmission(
     IhtNoticeRequest(
       ReportDetails(
         pstr = "24000001IN",
-        ihtPaymentReference = Some("A123456/25A123456")
+        ihtPaymentReference = Some(testIhtPaymentReference)
       ),
       deceasedPayloadSection,
       prDetailsIndividualPayloadSection,
@@ -242,7 +248,7 @@ trait TestValues extends Generators {
   )
 
   val testReportSubmissionResponse: IhtpPaymentNoticeResponse = IhtpPaymentNoticeResponse(
-    SuccessResponse(IhtResponse("910000000000", "123456789", testProcessingDate))
+    SuccessResponse(IhtResponse(testFormBundleNumber, "123456789", testProcessingDate))
   )
 
   val testSchemaValidationError: schema.Error = schema.Error
@@ -266,7 +272,7 @@ trait TestValues extends Generators {
   )
 
   val testUserAnswerJson: JsObject = Json.obj(
-    "inheritanceTaxReference" -> "A123459/25A",
+    "inheritanceTaxReference" -> testIhtReference,
     "nameOfDeceased" -> Json.obj(
       "title" -> "Mr",
       "firstForename" -> "Firstname",
@@ -302,11 +308,11 @@ trait TestValues extends Generators {
 
   val testOverviewResponse: JsArray = Json.arr(
     Json.obj(
-      "fbNumber" -> "100000000000",
+      "fbNumber" -> testFormBundleNumber,
       "submissionDate" -> "2026-04-10T16:12:49Z",
       "paymentDueDate" -> "2026-10-10",
       "ihtVersion" -> "001",
-      "inheritanceTaxReference" -> "A123456/25A",
+      "inheritanceTaxReference" -> testIhtReference,
       "paymentReference" -> testIhtPaymentReference,
       "title" -> "Dr",
       "firstForename" -> "Firstname",
@@ -315,11 +321,11 @@ trait TestValues extends Generators {
       "ihtpStatus" -> "Paid"
     ),
     Json.obj(
-      "fbNumber" -> "100000000000",
+      "fbNumber" -> testFormBundleNumber,
       "submissionDate" -> "2026-04-10T16:12:49Z",
       "paymentDueDate" -> "2026-10-10",
       "ihtVersion" -> "002",
-      "inheritanceTaxReference" -> "A123456/25A",
+      "inheritanceTaxReference" -> testIhtReference,
       "paymentReference" -> testIhtPaymentReference,
       "title" -> "Dr",
       "firstForename" -> "Firstname",
@@ -328,12 +334,12 @@ trait TestValues extends Generators {
       "ihtpStatus" -> "Not reconciled"
     ),
     Json.obj(
-      "fbNumber" -> "200000000000",
+      "fbNumber" -> secondFormBundleNumber,
       "submissionDate" -> "2026-04-10T16:12:49Z",
       "paymentDueDate" -> "2026-10-10",
       "ihtVersion" -> "001",
-      "inheritanceTaxReference" -> "A223456/25A",
-      "paymentReference" -> "A223456/25A629671",
+      "inheritanceTaxReference" -> secondIhtReference,
+      "paymentReference" -> secondIhtPaymentReference,
       "title" -> "Ms",
       "firstForename" -> "Firstnametwo",
       "secondForename" -> "E",
@@ -352,7 +358,7 @@ trait TestValues extends Generators {
       ),
       "reportDetails" -> Json.obj(
         "submissionDate" -> "2026-07-14T16:42:20Z",
-        "ihtPaymentReference" -> "A123456/25A629671",
+        "ihtPaymentReference" -> testIhtPaymentReference,
         "ihtVersion" -> "001",
         "ihtPaid" -> false
       ),
@@ -368,7 +374,7 @@ trait TestValues extends Generators {
         "deceasedDetails" -> Json.obj(
           "deceasedsDob" -> "1950-01-01",
           "deceasedsDod" -> "2026-01-01",
-          "ihtRefNumber" -> "A123459/25A"
+          "ihtRefNumber" -> testIhtReference
         )
       ),
       "personalRep" -> Json.obj(
@@ -396,7 +402,7 @@ trait TestValues extends Generators {
       ),
       "declarations" -> Json.obj(
         "submittedBy" -> "PSA",
-        "submitterId" -> "A2100005",
+        "submitterId" -> psaId,
         "submitterName" -> "PSA Name",
         "psaDeclaration" -> Json.obj(
           "psaDeclaration1" -> true,

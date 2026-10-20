@@ -31,12 +31,12 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
 
   private val report = IhtpOverviewReport(
     uuid = None,
-    fbNumber = Some("119000004320"),
+    fbNumber = Some(testFormBundleNumber),
     submissionDate = Some(submissionDate),
     paymentDueDate = Some(paymentDueDate),
     ihtVersion = "001",
-    inheritanceTaxReference = "A123456/25A",
-    paymentReference = Some("A123456/25A629671"),
+    inheritanceTaxReference = testIhtReference,
+    paymentReference = Some(testIhtPaymentReference),
     title = Some("Dr"),
     firstForename = Some("Firstname"),
     secondForename = Some("M"),
@@ -58,12 +58,12 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
         "success" -> Json.obj(
           "ihtpOverview" -> Json.arr(
             Json.obj(
-              "fbNumber" -> "119000004320",
+              "fbNumber" -> testFormBundleNumber,
               "submissionDate" -> "2026-04-10T16:12:49Z",
               "paymentDueDate" -> "2026-02-02",
               "ihtVersion" -> "001",
-              "inheritanceTaxReference" -> "A123456/25A",
-              "paymentReference" -> "A123456/25A629671",
+              "inheritanceTaxReference" -> testIhtReference,
+              "paymentReference" -> testIhtPaymentReference,
               "title" -> "Dr",
               "firstForename" -> "Firstname",
               "secondForename" -> "M",
@@ -81,12 +81,12 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
     "must successfully write to json" in {
       val json = Json.toJson(response)
 
-      (json \ "success" \ "ihtpOverview" \ 0 \ "fbNumber").as[String] mustBe "119000004320"
+      (json \ "success" \ "ihtpOverview" \ 0 \ "fbNumber").as[String] mustBe testFormBundleNumber
       (json \ "success" \ "ihtpOverview" \ 0 \ "submissionDate").as[String] mustBe "2026-04-10T16:12:49Z"
       (json \ "success" \ "ihtpOverview" \ 0 \ "paymentDueDate").as[String] mustBe "2026-02-02"
       (json \ "success" \ "ihtpOverview" \ 0 \ "ihtVersion").as[String] mustBe "001"
-      (json \ "success" \ "ihtpOverview" \ 0 \ "inheritanceTaxReference").as[String] mustBe "A123456/25A"
-      (json \ "success" \ "ihtpOverview" \ 0 \ "paymentReference").as[String] mustBe "A123456/25A629671"
+      (json \ "success" \ "ihtpOverview" \ 0 \ "inheritanceTaxReference").as[String] mustBe testIhtReference
+      (json \ "success" \ "ihtpOverview" \ 0 \ "paymentReference").as[String] mustBe testIhtPaymentReference
       (json \ "success" \ "ihtpOverview" \ 0 \ "title").as[String] mustBe "Dr"
       (json \ "success" \ "ihtpOverview" \ 0 \ "firstForename").as[String] mustBe "Firstname"
       (json \ "success" \ "ihtpOverview" \ 0 \ "secondForename").as[String] mustBe "M"
@@ -148,10 +148,10 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
 
     "must retain only the highest numerical version for each payment reference" in {
       val versionOne = report.copy(ihtVersion = "001")
-      val versionTwo = report.copy(ihtVersion = "002", fbNumber = Some("119000004321"))
+      val versionTwo = report.copy(ihtVersion = "002", fbNumber = Some(secondFormBundleNumber))
       val otherReport = report.copy(
-        paymentReference = Some("F654321/25B629671"),
-        inheritanceTaxReference = "F654321/25B"
+        paymentReference = Some(secondIhtPaymentReference),
+        inheritanceTaxReference = secondIhtReference
       )
 
       val result = IhtpOverviewSuccess.filterForHighestVersion(
@@ -176,12 +176,12 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
 
     "must successfully read from json" in {
       val json = Json.obj(
-        "fbNumber" -> "119000004320",
+        "fbNumber" -> testFormBundleNumber,
         "submissionDate" -> "2026-04-10T16:12:49Z",
         "paymentDueDate" -> "2026-02-02",
         "ihtVersion" -> "001",
-        "inheritanceTaxReference" -> "A123456/25A",
-        "paymentReference" -> "A123456/25A629671",
+        "inheritanceTaxReference" -> testIhtReference,
+        "paymentReference" -> testIhtPaymentReference,
         "title" -> "Dr",
         "firstForename" -> "Firstname",
         "secondForename" -> "M",
@@ -202,7 +202,7 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
     "must handle missing optional fields when reading from json" in {
       val json = Json.obj(
         "ihtVersion" -> "000",
-        "inheritanceTaxReference" -> "F654321/25B",
+        "inheritanceTaxReference" -> secondIhtReference,
         "ihtpStatus" -> "In progress"
       )
 
@@ -213,7 +213,7 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
           submissionDate = None,
           paymentDueDate = None,
           ihtVersion = "000",
-          inheritanceTaxReference = "F654321/25B",
+          inheritanceTaxReference = secondIhtReference,
           paymentReference = None,
           title = None,
           firstForename = None,
@@ -246,7 +246,7 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
         .obj(
           "submissionDate" -> "2026-04-10T16:12:49Z",
           "paymentDueDate" -> "2026-02-02",
-          "inheritanceTaxReference" -> "A123456/25A",
+          "inheritanceTaxReference" -> testIhtReference,
           "firstForename" -> "Firstname",
           "surname" -> "Surname",
           "ihtpStatus" -> "Not reconciled"
@@ -257,11 +257,11 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
     "must fail to read when date fields have the wrong type" in {
       Json
         .obj(
-          "fbNumber" -> "119000004320",
+          "fbNumber" -> testFormBundleNumber,
           "submissionDate" -> "not-a-date",
           "paymentDueDate" -> "not-a-date",
           "ihtVersion" -> "001",
-          "inheritanceTaxReference" -> "A123456/25A",
+          "inheritanceTaxReference" -> testIhtReference,
           "firstForename" -> "Firstname",
           "surname" -> "Surname",
           "ihtpStatus" -> "Not reconciled"
@@ -270,12 +270,12 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
     }
 
     "must expose all case class values" in {
-      report.fbNumber mustBe Some("119000004320")
+      report.fbNumber mustBe Some(testFormBundleNumber)
       report.submissionDate mustBe Some(submissionDate)
       report.paymentDueDate mustBe Some(paymentDueDate)
       report.ihtVersion mustBe "001"
-      report.inheritanceTaxReference mustBe "A123456/25A"
-      report.paymentReference mustBe Some("A123456/25A629671")
+      report.inheritanceTaxReference mustBe testIhtReference
+      report.paymentReference mustBe Some(testIhtPaymentReference)
       report.title mustBe Some("Dr")
       report.firstForename mustBe Some("Firstname")
       report.secondForename mustBe Some("M")
@@ -299,7 +299,7 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
       report.productArity mustBe 13
       report.productPrefix mustBe "IhtpOverviewReport"
       (report.productIterator.toSeq must contain).allOf(
-        Some("119000004320"),
+        Some(testFormBundleNumber),
         "001",
         Some("Firstname"),
         Some("Surname")
