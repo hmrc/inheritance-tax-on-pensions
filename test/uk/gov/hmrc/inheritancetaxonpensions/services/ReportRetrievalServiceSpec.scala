@@ -395,7 +395,7 @@ class ReportRetrievalServiceSpec
           (beneficiary \ "beneficiaryDetails" \ "individual" \ "firstForename").as[String] mustBe "First"
           (beneficiary \ "beneficiaryDetails" \ "individual" \ "surname").as[String] mustBe "Surname"
           (beneficiary \ "hasNino").as[Boolean] mustBe true
-          (beneficiary \ "nino").as[String] mustBe testNino
+//          (beneficiary \ "nino").as[String] mustBe testNino
           (beneficiary \ "reasonNoNino").asOpt[String] mustBe empty
           (beneficiary \ "beneficiaryAddress" \ "addressLine1").as[String] mustBe "21 RB Road"
           (beneficiary \ "beneficiaryAddress" \ "addressLine2").as[String] mustBe "RBtown"

@@ -22,7 +22,7 @@ import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import models.{IhtpOverviewReport, IhtpOverviewResponse, IhtpOverviewSuccess}
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 import uk.gov.hmrc.inheritancetaxonpensions.repositories.UserAnswersRepository
-import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.YesNo.Yes
+import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.YesNo.{No, Yes}
 import uk.gov.hmrc.inheritancetaxonpensions.models._
 import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.{IndividualOrOrg, IndividualOrTrust, YesNo}
 import uk.gov.hmrc.inheritancetaxonpensions.config.Constants
@@ -232,9 +232,9 @@ class ReportRetrievalService @Inject() (
               "surname" -> personalDetails.surname
             )
           ),
-          "hasNino" -> (personalDetails.ninoExist == Yes),
-          "nino" -> personalDetails.nino.filter(_ => personalDetails.ninoExist == Yes),
-          "reasonNoNino" -> personalDetails.reasonNoNino.filter(_ => personalDetails.ninoExist != Yes),
+          "hasNino" -> personalDetails.ninoExist.map(_ == Yes),
+          "nino" -> personalDetails.nino.filter(_ => personalDetails.ninoExist.getOrElse(No) == Yes),
+          "reasonNoNino" -> personalDetails.reasonNoNino.filter(_ => personalDetails.ninoExist.getOrElse(Yes) != Yes),
           "beneficiaryAddress" -> details.beneficiaryAddress,
           "beneficiaryIhtPayable" -> details.beneficiaryPaymentDetails.beneficiaryIhtPayable,
           "beneficiaryInterestPayable" -> details.beneficiaryPaymentDetails.beneficiaryInterestPayable
