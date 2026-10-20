@@ -71,7 +71,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
   "getReport" should {
 
     "return a report retrieved by form bundle number with the required HIP headers" in {
-      val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
+      val url = s"$reportUrl?pstr=24000001IN&fbNumber=$testFormBundleNumber"
 
       wireMockServer.stubFor(
         get(urlEqualTo(url)).willReturn(
@@ -81,7 +81,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
         )
       )
 
-      whenReady(connector.getReport("24000001IN", Some("119000004320"), None, None)) { result =>
+      whenReady(connector.getReport("24000001IN", Some(testFormBundleNumber), None, None)) { result =>
         WireMock.verify(
           getRequestedFor(urlEqualTo(url))
             .withHeader("X-Message-Type", equalTo("SubmitIHTPNotice"))
@@ -116,10 +116,10 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
 
     Seq("" -> "an empty", "not-json" -> "a malformed").foreach { case (body, description) =>
       s"return a standardised server error for $description successful response" in {
-        val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
+        val url = s"$reportUrl?pstr=24000001IN&fbNumber=$testFormBundleNumber"
         wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(ok(body)))
 
-        whenReady(connector.getReport("24000001IN", Some("119000004320"), None, None)) { result =>
+        whenReady(connector.getReport("24000001IN", Some(testFormBundleNumber), None, None)) { result =>
           result.status mustBe INTERNAL_SERVER_ERROR
           result.json mustBe unexpectedResponse
           result.header("correlationid") must not be empty
@@ -138,24 +138,24 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
           )
         )
       )
-      val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
+      val url = s"$reportUrl?pstr=24000001IN&fbNumber=$testFormBundleNumber"
       wireMockServer.stubFor(
         get(urlEqualTo(url)).willReturn(
           badRequest().withHeader("Content-Type", "application/json").withBody(response.toString)
         )
       )
 
-      whenReady(connector.getReport("24000001IN", Some("119000004320"), None, None)) { result =>
+      whenReady(connector.getReport("24000001IN", Some(testFormBundleNumber), None, None)) { result =>
         result.status mustBe BAD_REQUEST
         result.json mustBe response
       }
     }
 
     "return not found without manufacturing a response body" in {
-      val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
+      val url = s"$reportUrl?pstr=24000001IN&fbNumber=$testFormBundleNumber"
       wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(notFound()))
 
-      whenReady(connector.getReport("24000001IN", Some("119000004320"), None, None)) { result =>
+      whenReady(connector.getReport("24000001IN", Some(testFormBundleNumber), None, None)) { result =>
         result.status mustBe NOT_FOUND
         result.body mustBe empty
         result.header("correlationid") must not be empty
@@ -187,10 +187,10 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
     }
 
     "normalise an error status not listed in the draft API specification" in {
-      val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
+      val url = s"$reportUrl?pstr=24000001IN&fbNumber=$testFormBundleNumber"
       wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(aResponse().withStatus(418)))
 
-      whenReady(connector.getReport("24000001IN", Some("119000004320"), None, None)) { result =>
+      whenReady(connector.getReport("24000001IN", Some(testFormBundleNumber), None, None)) { result =>
         result.status mustBe INTERNAL_SERVER_ERROR
         result.json mustBe unexpectedResponse
         result.header("correlationid") must not be empty
@@ -207,7 +207,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
             )
           )
         )
-        val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
+        val url = s"$reportUrl?pstr=24000001IN&fbNumber=$testFormBundleNumber"
         wireMockServer.stubFor(
           get(urlEqualTo(url)).willReturn(
             aResponse()
@@ -217,7 +217,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
           )
         )
 
-        whenReady(connector.getReport("24000001IN", Some("119000004320"), None, None)) { result =>
+        whenReady(connector.getReport("24000001IN", Some(testFormBundleNumber), None, None)) { result =>
           WireMock.verify(6, getRequestedFor(urlEqualTo(url)))
           result.status mustBe statusCode
           result.json mustBe response
@@ -227,10 +227,10 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
 
     Seq(BAD_GATEWAY, GATEWAY_TIMEOUT).foreach { statusCode =>
       s"retry 5 times and then normalise a $statusCode response" in {
-        val url = s"$reportUrl?pstr=24000001IN&fbNumber=119000004320"
+        val url = s"$reportUrl?pstr=24000001IN&fbNumber=$testFormBundleNumber"
         wireMockServer.stubFor(get(urlEqualTo(url)).willReturn(aResponse().withStatus(statusCode)))
 
-        whenReady(connector.getReport("24000001IN", Some("119000004320"), None, None)) { result =>
+        whenReady(connector.getReport("24000001IN", Some(testFormBundleNumber), None, None)) { result =>
           WireMock.verify(6, getRequestedFor(urlEqualTo(url)))
           result.status mustBe INTERNAL_SERVER_ERROR
           result.json mustBe unexpectedResponse

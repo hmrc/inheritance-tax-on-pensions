@@ -147,7 +147,7 @@ class ReportSubmissionServiceSpec
       srn,
       uuid,
       Json.obj(
-        "inheritanceTaxReference" -> "A123459/25A",
+        "inheritanceTaxReference" -> testIhtReference,
         "nameOfDeceased" -> Json.obj(
           "firstForename" -> "Firstname",
           "surname" -> "Surname"
@@ -160,7 +160,7 @@ class ReportSubmissionServiceSpec
     srn,
     uuid,
     Json.obj(
-      "inheritanceTaxReference" -> "A123459/25A",
+      "inheritanceTaxReference" -> testIhtReference,
       "nameOfDeceased" -> deceasedPersonalDetailsUaJson,
       "hasNino" -> true,
       "nino" -> testNino,
@@ -262,7 +262,7 @@ class ReportSubmissionServiceSpec
         srn,
         uuid,
         Json.obj(
-          "inheritanceTaxReference" -> "A123459/25A",
+          "inheritanceTaxReference" -> testIhtReference,
           "nameOfDeceased" -> deceasedPersonalDetailsUaJson,
           "hasNino" -> true,
           "nino" -> testNino,
@@ -347,7 +347,7 @@ class ReportSubmissionServiceSpec
         srn,
         uuid,
         Json.obj(
-          "inheritanceTaxReference" -> "A123459/25A",
+          "inheritanceTaxReference" -> testIhtReference,
           "nameOfDeceased" -> deceasedPersonalDetailsUaJson,
           "hasNino" -> true,
           "nino" -> testNino,
@@ -395,7 +395,7 @@ class ReportSubmissionServiceSpec
         uuid,
         Json.obj(
           "nameOfDeceased" -> deceasedPersonalDetailsUaJson,
-          "inheritanceTaxReference" -> "A123459/25A",
+          "inheritanceTaxReference" -> testIhtReference,
           "hasNino" -> true,
           "nino" -> testNino,
           "birthDeathDates" -> Json.obj(
@@ -433,7 +433,7 @@ class ReportSubmissionServiceSpec
         srn,
         uuid,
         Json.obj(
-          "inheritanceTaxReference" -> "A123459/25A",
+          "inheritanceTaxReference" -> testIhtReference,
           "nameOfDeceased" -> deceasedPersonalDetailsUaJson,
           "hasNino" -> true,
           "nino" -> testNino,
@@ -465,7 +465,7 @@ class ReportSubmissionServiceSpec
         srn,
         uuid,
         Json.obj(
-          "inheritanceTaxReference" -> "A123459/25A",
+          "inheritanceTaxReference" -> testIhtReference,
           "nameOfDeceased" -> Json.obj(
             "title" -> "Mrs",
             "firstForename" -> "Firstnametwo",
@@ -535,7 +535,7 @@ class ReportSubmissionServiceSpec
         uuid,
         Json.obj(
           "nameOfDeceased" -> deceasedPersonalDetailsUaJson,
-          "inheritanceTaxReference" -> "A123459/25A",
+          "inheritanceTaxReference" -> testIhtReference,
           "hasNino" -> true,
           "nino" -> testNino,
           "birthDeathDates" -> Json.obj(

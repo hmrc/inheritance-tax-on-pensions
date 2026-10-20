@@ -5,14 +5,14 @@ meta {
 }
 
 get {
-  url: {{ihtp_url}}/ihtp?pstr=24000001IN&ihtPaymentReference=A123456/25A629671&versionNumber=001
+  url: {{ihtp_url}}/ihtp?pstr=24000001IN&ihtPaymentReference={{report_payment_reference}}&versionNumber=001
   body: none
   auth: bearer
 }
 
 params:query {
   pstr: 24000001IN
-  ihtPaymentReference: A123456/25A629671
+  ihtPaymentReference: {{report_payment_reference}}
   versionNumber: 001
 }
 
@@ -27,13 +27,19 @@ auth:bearer {
   token: {{bearer_token}}
 }
 
+script:pre-request {
+  if (!bru.getVar("report_payment_reference")) {
+    throw new Error("Run Retrieve Report - Success (fbNumber) first to capture its generated payment reference.");
+  }
+}
+
 tests {
   test("Status code is 200", function () {
       expect(res.getStatus()).to.equal(200);
   });
   
   test("Response contains the requested payment reference and version", function () {
-      expect(res.body.data.ihtPaymentReference).to.equal("A123456/25A629671");
+      expect(res.body.data.ihtPaymentReference).to.equal(bru.getVar("report_payment_reference"));
       expect(res.body.data.ihtVersion).to.equal("001");
   });
 }

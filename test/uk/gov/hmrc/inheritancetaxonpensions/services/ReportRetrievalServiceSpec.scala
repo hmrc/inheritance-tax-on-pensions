@@ -101,7 +101,7 @@ class ReportRetrievalServiceSpec
             Seq(
               emptyUserAnswers.copy(data =
                 Json.obj(
-                  "inheritanceTaxReference" -> "A000001/01A"
+                  "inheritanceTaxReference" -> testIhtReference
                 )
               )
             )

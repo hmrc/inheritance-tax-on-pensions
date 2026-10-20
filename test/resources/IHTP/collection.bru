@@ -1,0 +1,6 @@
+script:pre-request {
+  if (!bru.getVar("test_iht_reference")) {
+    const digits = length => Array.from({ length }, () => Math.floor(Math.random() * 10)).join("");
+    bru.setVar("test_iht_reference", `A${digits(6)}/${digits(2)}A`);
+  }
+}
