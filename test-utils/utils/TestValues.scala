@@ -83,6 +83,7 @@ trait TestValues extends Generators {
   val testIhtPaymentReference: String = testIhtReference + numericStringLength(6).sample.get
   val secondIhtPaymentReference: String = secondIhtReference + numericStringLength(6).sample.get
   val trustName: String = "Testdata Trust"
+  val testMonetaryValue: BigDecimal = BigDecimal("1234.56")
 
   val testSubmissionResponse: IhtpPaymentNoticeResponse = IhtpPaymentNoticeResponse(
     SuccessResponse(
