@@ -69,9 +69,9 @@ class ReportRetrievalService @Inject() (
             val draftLastUpdated = ua.lastUpdated
             !latestSubmittedReports.exists(item =>
               (item.paymentReference.getOrElse("test") == draftPaymentReference) &&
-                item.submissionDate
+                (item.submissionDate
                   .getOrElse(Instant.EPOCH)
-                  .isAfter(draftLastUpdated.atZone(ZoneId.of("Europe/Paris")).toInstant)
+                  .isAfter(draftLastUpdated.atZone(ZoneId.of("Europe/Paris")).toInstant) || item.ihtpStatus == "Paid")
             )
           )
         val mappedInProgress = filtered
