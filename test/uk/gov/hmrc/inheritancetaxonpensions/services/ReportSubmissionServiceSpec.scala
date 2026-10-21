@@ -552,7 +552,7 @@ class ReportSubmissionServiceSpec
           "beneficiaries" -> Json.arr(
             Json.obj(
               "beneficiaryType" -> "individual",
-              "beneficiaryIhtPayable" -> BigDecimal("1234.56"),
+              "beneficiaryIhtPayable" -> testMonetaryValue,
               "beneficiaryDetails" -> Json.obj(
                 "individual" -> Json.obj(
                   "title" -> "Mr",
@@ -667,7 +667,7 @@ class ReportSubmissionServiceSpec
       verifyNoInteractions(mockIhtpReportConnector)
     }
 
-    "include a trust beneficiary name in the payload" in {
+    "include a trust beneficiary details in the payload" in {
       val testUserAnswers = validUserAnswers.copy(
         data = validUserAnswers.data ++ Json.obj(
           "areBeneficiariesKnown" -> true,
@@ -682,7 +682,8 @@ class ReportSubmissionServiceSpec
                   "secondForename" -> "Middlenametwo",
                   "surname" -> "Surname"
                 )
-              )
+              ),
+              "beneficiaryIhtPayable" -> testMonetaryValue
             )
           )
         )
@@ -701,6 +702,7 @@ class ReportSubmissionServiceSpec
       val beneficiary = payloadCaptor.getValue.ihtNoticeRequest.beneficiary.get.beneficiaryDetails.head
       beneficiary.beneficiaryType mustBe IndividualOrTrust.Trust
       beneficiary.beneficiaryTrustName mustBe Some(trustName)
+      beneficiary.beneficiaryPaymentDetails.beneficiaryIhtPayable mustBe testMonetaryValue.doubleValue
       (Json.toJson(beneficiary).toString must not).include("hmrcReferenceNumber")
     }
 

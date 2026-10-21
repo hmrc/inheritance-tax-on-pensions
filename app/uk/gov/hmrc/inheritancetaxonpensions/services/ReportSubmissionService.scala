@@ -266,8 +266,7 @@ class ReportSubmissionService @Inject() (
               buildBeneficiaryDetails(
                 beneficiaryType = beneficiaryType,
                 beneficiaryTrustName = Some(beneficiaryTrustName),
-                // TODO update once trust beneficiary payment details are captured
-                beneficiaryIhtPayable = 99.99,
+                beneficiaryIhtPayable = (beneficiary \ "beneficiaryIhtPayable").as[Double],
                 personalDetails = BeneficiaryPersonalDetails(
                   title = beneficiaryTrustContactName.title,
                   firstForename = beneficiaryTrustContactName.firstForename,
