@@ -172,6 +172,39 @@ class ReportRetrievalServiceSpec
           value.success.ihtpOverview must have size 2
       }
     }
+    "filters out drafts that match a paid report even when updated after the submission" in {
+
+      when(mockIhtpReportConnector.getOverview(any(), any(), any(), any())(any()))
+        .thenReturn(
+          Future.successful(
+            Right(
+              IhtpOverviewResponse(
+                IhtpOverviewSuccess(
+                  testOverviewResponse.as[Seq[IhtpOverviewReport]].filter(_.ihtpStatus == "Paid")
+                )
+              )
+            )
+          )
+        )
+
+      when(mockUserAnswersRepository.findBySrn(any()))
+        .thenReturn(
+          Future.successful(
+            Seq(
+              emptyUserAnswers.copy(data = testUserAnswerJson)
+            )
+          )
+        )
+
+      val result = service.getOverview(testPstr, srn, testDateFrom, testDateTo, None).futureValue
+
+      result match {
+        case Left(value) => fail("unexpected")
+        case Right(value) =>
+          value.success.ihtpOverview must have size 1
+          value.success.ihtpOverview.map(_.ihtpStatus) mustBe Seq("Paid")
+      }
+    }
     "errors out when connector errors out" in {
 
       when(mockIhtpReportConnector.getOverview(any(), any(), any(), any())(any()))
