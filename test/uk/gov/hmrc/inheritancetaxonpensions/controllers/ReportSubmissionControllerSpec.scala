@@ -32,9 +32,7 @@ import org.mockito.Mockito._
 import uk.gov.hmrc.inheritancetaxonpensions.services.{ReportSubmissionService, SessionService}
 import uk.gov.hmrc.auth.core.{AuthConnector, Enrolments, InsufficientEnrolments}
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
-
-import java.time.Instant
+import scala.concurrent.{ExecutionContext, Future}
 
 class ReportSubmissionControllerSpec extends BaseSpec with TestValues:
 
@@ -89,8 +87,8 @@ class ReportSubmissionControllerSpec extends BaseSpec with TestValues:
       authoriseUser()
       when(mockReportSubmissionService.submitReport(any(), any(), any())(any()))
         .thenReturn(Future.successful(Right(testSubmissionResponse)))
-      when(mockUserAnswersRepository.get(any()))
-        .thenReturn(Future.successful(None))
+      when(mockUserAnswersRepository.clear(any()))
+        .thenReturn(Future.successful(true))
 
       val result = controller.submitReport(testPstr, testUserAnswersId)(
         requestWithRequiredHeaders
@@ -101,26 +99,7 @@ class ReportSubmissionControllerSpec extends BaseSpec with TestValues:
       verify(mockAuthConnector, times(1)).authorise(any(), any())(any(), any())
       verify(mockSchemeDetailsConnector, times(1)).checkAssociation(any(), any(), any())(any(), any())
       verify(mockReportSubmissionService, times(1)).submitReport(any(), any(), any())(any())
-    }
-
-    "save the processing date returned by ETMP after successful submission" in {
-      authoriseUser()
-      val savedAnswers = Promise[UserAnswers]()
-      when(mockReportSubmissionService.submitReport(any(), any(), any())(any()))
-        .thenReturn(Future.successful(Right(testSubmissionResponse)))
-      when(mockUserAnswersRepository.get(any()))
-        .thenReturn(Future.successful(Some(emptyUserAnswers)))
-      when(mockUserAnswersRepository.set(any())).thenAnswer { invocation =>
-        savedAnswers.success(invocation.getArgument[UserAnswers](0))
-        Future.successful(true)
-      }
-
-      val result = controller.submitReport(testPstr, testUserAnswersId)(requestWithRequiredHeaders)
-
-      status(result) mustEqual Status.OK
-      whenReady(savedAnswers.future) { answers =>
-        (answers.data \ "processingDateTime").as[Instant] mustBe testProcessingDate
-      }
+      verify(mockUserAnswersRepository, times(1)).clear(any())
     }
 
     "return error response when service returns Left" in {
