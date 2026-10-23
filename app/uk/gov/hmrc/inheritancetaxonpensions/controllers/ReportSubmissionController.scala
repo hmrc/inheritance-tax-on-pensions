@@ -21,16 +21,14 @@ import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import uk.gov.hmrc.inheritancetaxonpensions.auth.IhtpAuthWithSessionCache
 import uk.gov.hmrc.inheritancetaxonpensions.repositories.UserAnswersRepository
-import uk.gov.hmrc.inheritancetaxonpensions.models.UserAnswers
+import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
 import uk.gov.hmrc.inheritancetaxonpensions.services.{ReportSubmissionService, SessionService}
 import uk.gov.hmrc.auth.core.AuthConnector
 import play.api.Logging
-import play.api.libs.json.{JsPath, Json}
-import uk.gov.hmrc.inheritancetaxonpensions.config.Constants._
-import uk.gov.hmrc.inheritancetaxonpensions.utils.UserAnswersHelper
+import play.api.libs.json.Json
 
 import scala.language.postfixOps
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 import javax.inject.{Inject, Singleton}
 
@@ -55,33 +53,13 @@ class ReportSubmissionController @Inject() (
     authorisedAsIhtpUser(srnS) { ihtpAuthContext =>
       reportSubmissionService.submitReport(userAnswersId, pstr, ihtpAuthContext).map {
         case Right(submissionResponse) =>
-          val uaOptionF = userAnswersRepository.get(userAnswersId)
-          uaOptionF.map {
-            // this might be replaced eventually with the removal of the user answer after submission
-            // added for now to try out logic of displaying drafts on submission list only
-            // if the draft is "newer" than the submission
-            case Some(ua0) =>
-              for {
-                ua1 <- Future.fromTry(
-                  UserAnswersHelper
-                    .set(ua0, JsPath \ "processingDateTime", submissionResponse.success.ihtResponse.processingDate)
-                )
-                ua2 <- Future.fromTry(
-                  UserAnswersHelper.set(
-                    ua1,
-                    JsPath \ "ihtPaymentReference",
-                    submissionResponse.success.ihtResponse.ihtPaymentReference
-                  )
-                )
-                ua3 <- Future.fromTry(
-                  UserAnswersHelper
-                    .set(ua2, JsPath \ "formBundleNo", submissionResponse.success.ihtResponse.formBundleNo)
-                )
-                _ <- userAnswersRepository.set(ua3)
-              } yield ()
-            case None =>
+          val deletedOptionF = userAnswersRepository.clear(userAnswersId)
+          deletedOptionF.map {
+            case true =>
+              logger.info(s"[ReportSubmissionController][submitReport] User answer $userAnswersId removed")
+            case _ =>
               logger.warn(
-                s"[ReportSubmissionController][submitReport] Unable to save submit response"
+                s"[ReportSubmissionController][submitReport] Unable to remove user answer after successful submission"
               )
           }
           Ok(Json.toJson(submissionResponse))

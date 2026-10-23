@@ -243,7 +243,13 @@ class ReportRetrievalService @Inject() (
         Json.obj(
           "beneficiaryType" -> "trust",
           "beneficiaryDetails" -> Json.obj(
-            "trust" -> Json.obj("beneficiaryTrustName" -> details.beneficiaryTrustName)
+            "trust" -> Json.obj(
+              "beneficiaryTrustName" -> details.beneficiaryTrustName,
+              "title" -> personalDetails.title,
+              "firstForename" -> personalDetails.firstForename,
+              "secondForename" -> personalDetails.secondForename,
+              "surname" -> personalDetails.surname
+            )
           ),
           "beneficiaryAddress" -> details.beneficiaryAddress,
           "beneficiaryIhtPayable" -> details.beneficiaryPaymentDetails.beneficiaryIhtPayable,

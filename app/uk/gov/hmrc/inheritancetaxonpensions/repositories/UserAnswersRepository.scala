@@ -125,5 +125,8 @@ class UserAnswersRepository @Inject() (
     collection
       .deleteOne(byId(id))
       .toFuture()
-      .map(_ => true)
+      .map {
+        case deleteResult if deleteResult.wasAcknowledged() => true
+        case _ => false
+      }
 }
