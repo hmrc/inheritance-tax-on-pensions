@@ -369,14 +369,12 @@ class ReportRetrievalServiceSpec
                 )
               ),
               Json.obj(
-                "beneficiaryType" -> "01",
+                "beneficiaryType" -> "02",
+                "beneficiaryTrustName" -> "Trustname",
                 "beneficiaryPersonalDetails" -> Json.obj(
                   "title" -> "Ms",
                   "firstForename" -> "Second",
-                  "surname" -> "Surname",
-                  "ninoExist" -> "No",
-                  "nino" -> "AB111111C",
-                  "reasonNoNino" -> "no nino reason"
+                  "surname" -> "Surname"
                 ),
                 "beneficiaryAddress" -> Json.obj(
                   "addressLine1" -> "21 RB Road",
@@ -438,9 +436,6 @@ class ReportRetrievalServiceSpec
           (beneficiary \ "beneficiaryInterestPayable").as[Double] mustBe 6.0
 
           val secondBeneficiary = beneficiaries(1)
-          (secondBeneficiary \ "hasNino").as[Boolean] mustBe false
-          (secondBeneficiary \ "nino").asOpt[String] mustBe empty
-          (secondBeneficiary \ "reasonNoNino").as[String] mustBe "no nino reason"
           (secondBeneficiary \ "beneficiaryAddress" \ "addressLine1").as[String] mustBe "21 RB Road"
           (secondBeneficiary \ "beneficiaryIhtPayable").as[Double] mustBe 40.0
           (secondBeneficiary \ "beneficiaryInterestPayable").as[Double] mustBe 4.0
