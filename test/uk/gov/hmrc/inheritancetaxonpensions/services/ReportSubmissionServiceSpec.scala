@@ -553,6 +553,7 @@ class ReportSubmissionServiceSpec
             Json.obj(
               "beneficiaryType" -> "individual",
               "beneficiaryIhtPayable" -> testMonetaryValue,
+              "beneficiaryInterestPayable" -> testMonetaryValue,
               "beneficiaryDetails" -> Json.obj(
                 "individual" -> Json.obj(
                   "title" -> "Mr",
@@ -600,8 +601,10 @@ class ReportSubmissionServiceSpec
                   beneficiaryType = IndividualOrTrust.Individual,
                   beneficiaryPersonalDetails = beneficiaryPersonalDetailsPayloadSection,
                   beneficiaryAddress = beneficiaryAddressPayloadSection,
-                  beneficiaryPaymentDetails =
-                    beneficiaryPaymentDetailsPayloadSection.copy(beneficiaryIhtPayable = 1234.56)
+                  beneficiaryPaymentDetails = beneficiaryPaymentDetailsPayloadSection.copy(
+                    beneficiaryIhtPayable = 1234.56,
+                    beneficiaryInterestPayable = 1234.56
+                  )
                 )
               )
             )
@@ -626,6 +629,7 @@ class ReportSubmissionServiceSpec
         Json.obj(
           "beneficiaryType" -> "individual",
           "beneficiaryIhtPayable" -> amount,
+          "beneficiaryInterestPayable" -> amount,
           "beneficiaryDetails" -> Json.obj("individual" -> deceasedPersonalDetailsUaJson),
           "hasNino" -> true,
           "nino" -> testNino
@@ -683,7 +687,8 @@ class ReportSubmissionServiceSpec
                   "surname" -> "Surname"
                 )
               ),
-              "beneficiaryIhtPayable" -> testMonetaryValue
+              "beneficiaryIhtPayable" -> testMonetaryValue,
+              "beneficiaryInterestPayable" -> testMonetaryValue
             )
           )
         )
@@ -703,6 +708,7 @@ class ReportSubmissionServiceSpec
       beneficiary.beneficiaryType mustBe IndividualOrTrust.Trust
       beneficiary.beneficiaryTrustName mustBe Some(trustName)
       beneficiary.beneficiaryPaymentDetails.beneficiaryIhtPayable mustBe testMonetaryValue.doubleValue
+      beneficiary.beneficiaryPaymentDetails.beneficiaryInterestPayable mustBe testMonetaryValue.doubleValue
       (Json.toJson(beneficiary).toString must not).include("hmrcReferenceNumber")
     }
 
