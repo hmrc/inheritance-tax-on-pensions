@@ -309,8 +309,7 @@ class ReportSubmissionService @Inject() (
       beneficiaryPaymentDetails = BeneficiaryPaymentDetails(
         beneficiaryIhtPayable = beneficiaryIhtPayable,
         beneficiaryInterestPayable = beneficiaryInterestPayable,
-        // TODO update once beneficiary total amount is captured
-        beneficiaryTotal = 99.99
+        beneficiaryTotal = beneficiaryIhtPayable + beneficiaryInterestPayable
       )
     )
 

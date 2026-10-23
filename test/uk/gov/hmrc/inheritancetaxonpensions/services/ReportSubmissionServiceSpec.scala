@@ -603,7 +603,8 @@ class ReportSubmissionServiceSpec
                   beneficiaryAddress = beneficiaryAddressPayloadSection,
                   beneficiaryPaymentDetails = beneficiaryPaymentDetailsPayloadSection.copy(
                     beneficiaryIhtPayable = 1234.56,
-                    beneficiaryInterestPayable = 1234.56
+                    beneficiaryInterestPayable = 1234.56,
+                    beneficiaryTotal = 2469.12
                   )
                 )
               )
