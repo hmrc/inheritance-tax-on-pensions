@@ -236,6 +236,7 @@ class ReportSubmissionService @Inject() (
                 beneficiaryType = beneficiaryType,
                 beneficiaryTrustName = None,
                 beneficiaryIhtPayable = (beneficiary \ "beneficiaryIhtPayable").as[Double],
+                beneficiaryInterestPayable = (beneficiary \ "beneficiaryInterestPayable").as[Double],
                 personalDetails = BeneficiaryPersonalDetails(
                   title = individualName.title,
                   firstForename = individualName.firstForename,
@@ -267,6 +268,7 @@ class ReportSubmissionService @Inject() (
                 beneficiaryType = beneficiaryType,
                 beneficiaryTrustName = Some(beneficiaryTrustName),
                 beneficiaryIhtPayable = (beneficiary \ "beneficiaryIhtPayable").as[Double],
+                beneficiaryInterestPayable = (beneficiary \ "beneficiaryInterestPayable").as[Double],
                 personalDetails = BeneficiaryPersonalDetails(
                   title = beneficiaryTrustContactName.title,
                   firstForename = beneficiaryTrustContactName.firstForename,
@@ -290,6 +292,7 @@ class ReportSubmissionService @Inject() (
     beneficiaryType: String,
     beneficiaryTrustName: Option[String],
     beneficiaryIhtPayable: Double,
+    beneficiaryInterestPayable: Double,
     personalDetails: BeneficiaryPersonalDetails
   ): BeneficiaryDetails =
     BeneficiaryDetails(
@@ -305,9 +308,8 @@ class ReportSubmissionService @Inject() (
       ),
       beneficiaryPaymentDetails = BeneficiaryPaymentDetails(
         beneficiaryIhtPayable = beneficiaryIhtPayable,
-        // TODO update once beneficiary interest and total amounts are captured
-        beneficiaryInterestPayable = 99.99,
-        beneficiaryTotal = 99.99
+        beneficiaryInterestPayable = beneficiaryInterestPayable,
+        beneficiaryTotal = beneficiaryIhtPayable + beneficiaryInterestPayable
       )
     )
 
