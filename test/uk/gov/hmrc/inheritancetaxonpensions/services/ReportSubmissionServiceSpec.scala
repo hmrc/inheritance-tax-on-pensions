@@ -63,6 +63,14 @@ class ReportSubmissionServiceSpec
     "country" -> "GB"
   )
 
+  private val internationalBeneficiaryAddress = beneficiaryAddressPayloadSection.copy(
+    addressLine1 = "2 ABCDE Street",
+    addressLine2 = None,
+    addressLine5 = Some("75001"),
+    postCode = None,
+    country = "FR"
+  )
+
   private val deceasedPersonalDetailsUaJson = Json.obj(
     "title" -> "Mr",
     "firstForename" -> "Firstname",
@@ -554,6 +562,7 @@ class ReportSubmissionServiceSpec
               "beneficiaryType" -> "individual",
               "beneficiaryIhtPayable" -> testMonetaryValue,
               "beneficiaryInterestPayable" -> testMonetaryValue,
+              "beneficiaryAddress" -> Json.toJson(beneficiaryAddressPayloadSection),
               "beneficiaryDetails" -> Json.obj(
                 "individual" -> Json.obj(
                   "title" -> "Mr",
@@ -625,12 +634,14 @@ class ReportSubmissionServiceSpec
       )
     }
 
-    "map each individual beneficiary's saved amount, including zero and the maximum" in {
-      val beneficiaries = Seq(BigDecimal("0"), BigDecimal("999999999.99")).map { amount =>
+    "map each individual beneficiary's saved amount and UK or international address" in {
+      val addresses = Seq(beneficiaryAddressPayloadSection, internationalBeneficiaryAddress)
+      val beneficiaries = Seq(BigDecimal("0"), BigDecimal("999999999.99")).zip(addresses).map { (amount, address) =>
         Json.obj(
           "beneficiaryType" -> "individual",
           "beneficiaryIhtPayable" -> amount,
           "beneficiaryInterestPayable" -> amount,
+          "beneficiaryAddress" -> Json.toJson(address),
           "beneficiaryDetails" -> Json.obj("individual" -> deceasedPersonalDetailsUaJson),
           "hasNino" -> true,
           "nino" -> testNino
@@ -651,6 +662,7 @@ class ReportSubmissionServiceSpec
       verify(mockIhtpReportConnector).submitReport(captured.capture())(any[HeaderCarrier]())
       captured.getValue.ihtNoticeRequest.beneficiary.get.beneficiaryDetails
         .map(_.beneficiaryPaymentDetails.beneficiaryIhtPayable) mustBe Seq(0.0, 999999999.99)
+      captured.getValue.ihtNoticeRequest.beneficiary.get.beneficiaryDetails.map(_.beneficiaryAddress) mustBe addresses
     }
 
     "reject an individual beneficiary without a saved amount rather than submitting a placeholder" in {
@@ -672,13 +684,38 @@ class ReportSubmissionServiceSpec
       verifyNoInteractions(mockIhtpReportConnector)
     }
 
-    "include a trust beneficiary details in the payload" in {
+    "reject beneficiaries without a saved address rather than submitting a placeholder" in {
+      Seq("individual", "trust").foreach { beneficiaryType =>
+        reset(mockUserAnswersRepository, mockIhtpReportConnector)
+        val details =
+          if (beneficiaryType == "trust") deceasedPersonalDetailsUaJson ++ Json.obj("beneficiaryTrustName" -> trustName)
+          else deceasedPersonalDetailsUaJson
+        val beneficiary = Json.obj(
+          "beneficiaryType" -> beneficiaryType,
+          "beneficiaryIhtPayable" -> BigDecimal("12.34"),
+          "beneficiaryInterestPayable" -> BigDecimal("0"),
+          "beneficiaryDetails" -> Json.obj(beneficiaryType -> details),
+          "hasNino" -> true,
+          "nino" -> testNino
+        )
+        val answers =
+          validUserAnswers.copy(data = validUserAnswers.data ++ Json.obj("beneficiaries" -> Json.arr(beneficiary)))
+        when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(answers)))
+
+        service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).failed.futureValue mustBe
+          a[play.api.libs.json.JsResultException]
+        verifyNoInteractions(mockIhtpReportConnector)
+      }
+    }
+
+    "include a trust beneficiary name and saved international address in the payload" in {
       val testUserAnswers = validUserAnswers.copy(
         data = validUserAnswers.data ++ Json.obj(
           "areBeneficiariesKnown" -> true,
           "beneficiaries" -> Json.arr(
             Json.obj(
               "beneficiaryType" -> "trust",
+              "beneficiaryAddress" -> Json.toJson(internationalBeneficiaryAddress),
               "beneficiaryDetails" -> Json.obj(
                 "trust" -> Json.obj(
                   "beneficiaryTrustName" -> trustName,
@@ -710,6 +747,7 @@ class ReportSubmissionServiceSpec
       beneficiary.beneficiaryTrustName mustBe Some(trustName)
       beneficiary.beneficiaryPaymentDetails.beneficiaryIhtPayable mustBe testMonetaryValue.doubleValue
       beneficiary.beneficiaryPaymentDetails.beneficiaryInterestPayable mustBe testMonetaryValue.doubleValue
+      beneficiary.beneficiaryAddress mustBe internationalBeneficiaryAddress
       (Json.toJson(beneficiary).toString must not).include("hmrcReferenceNumber")
     }
 
