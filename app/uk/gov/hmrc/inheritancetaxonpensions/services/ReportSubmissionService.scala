@@ -235,6 +235,7 @@ class ReportSubmissionService @Inject() (
               buildBeneficiaryDetails(
                 beneficiaryType = beneficiaryType,
                 beneficiaryTrustName = None,
+                address = (beneficiary \ "beneficiaryAddress").as[AddressDetails],
                 beneficiaryIhtPayable = (beneficiary \ "beneficiaryIhtPayable").as[Double],
                 beneficiaryInterestPayable = (beneficiary \ "beneficiaryInterestPayable").as[Double],
                 personalDetails = BeneficiaryPersonalDetails(
@@ -267,6 +268,7 @@ class ReportSubmissionService @Inject() (
               buildBeneficiaryDetails(
                 beneficiaryType = beneficiaryType,
                 beneficiaryTrustName = Some(beneficiaryTrustName),
+                address = (beneficiary \ "beneficiaryAddress").as[AddressDetails],
                 beneficiaryIhtPayable = (beneficiary \ "beneficiaryIhtPayable").as[Double],
                 beneficiaryInterestPayable = (beneficiary \ "beneficiaryInterestPayable").as[Double],
                 personalDetails = BeneficiaryPersonalDetails(
@@ -291,6 +293,7 @@ class ReportSubmissionService @Inject() (
   private def buildBeneficiaryDetails(
     beneficiaryType: String,
     beneficiaryTrustName: Option[String],
+    address: AddressDetails,
     beneficiaryIhtPayable: Double,
     beneficiaryInterestPayable: Double,
     personalDetails: BeneficiaryPersonalDetails
@@ -299,13 +302,7 @@ class ReportSubmissionService @Inject() (
       beneficiaryType = IndividualOrTrust(beneficiaryType),
       beneficiaryTrustName = beneficiaryTrustName,
       beneficiaryPersonalDetails = personalDetails,
-      beneficiaryAddress = AddressDetails(
-        // TODO update once beneficiary address details are captured
-        addressLine1 = "1 ABCDE Street",
-        addressLine2 = Some("FGHIJ Town"),
-        postCode = Some("ZZ99 1AA"),
-        country = "GB"
-      ),
+      beneficiaryAddress = address,
       beneficiaryPaymentDetails = BeneficiaryPaymentDetails(
         beneficiaryIhtPayable = beneficiaryIhtPayable,
         beneficiaryInterestPayable = beneficiaryInterestPayable,
