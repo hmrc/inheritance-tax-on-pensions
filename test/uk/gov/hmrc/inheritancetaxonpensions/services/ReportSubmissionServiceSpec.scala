@@ -599,9 +599,9 @@ class ReportSubmissionServiceSpec
             dateNoticeReceived = testPaymentNoticeDate,
             noticeSubmittedByPr = Yes,
             knownBeneficiaries = Some(Yes),
-            totalIhtPayable = None,
-            totalInterestPayable = None,
-            total = None
+            totalIhtPayable = Some(1234.56),
+            totalInterestPayable = Some(1234.56),
+            total = Some(2469.12)
           ),
           Some(
             Beneficiaries(
@@ -631,6 +631,53 @@ class ReportSubmissionServiceSpec
         "surname" -> "Surname",
         "ninoExist" -> "No",
         "reasonNoNino" -> "Beneficiary does not have a NINO"
+      )
+    }
+
+    "calculate ihTaxInformation totals as the sum of each beneficiary's payment amounts" in {
+      val beneficiary = (ihtPayable: BigDecimal, interestPayable: BigDecimal, firstForename: String) =>
+        Json.obj(
+          "beneficiaryType" -> "individual",
+          "beneficiaryIhtPayable" -> ihtPayable,
+          "beneficiaryInterestPayable" -> interestPayable,
+          "beneficiaryAddress" -> Json.toJson(beneficiaryAddressPayloadSection),
+          "beneficiaryDetails" -> Json.obj(
+            "individual" -> Json.obj(
+              "title" -> "Mr",
+              "firstForename" -> firstForename,
+              "surname" -> "Surname"
+            )
+          ),
+          "hasNino" -> true,
+          "nino" -> testNino
+        )
+
+      val testUserAnswers = validUserAnswers.copy(data =
+        validUserAnswers.data ++ Json.obj(
+          "areBeneficiariesKnown" -> true,
+          "beneficiaries" -> Json.arr(
+            beneficiary(BigDecimal("1000.00"), BigDecimal("50.00"), "Firstnamethree"),
+            beneficiary(BigDecimal("2000.50"), BigDecimal("25.25"), "Firstnamefour")
+          )
+        )
+      )
+      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
+      when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Right(testSubmissionResponse)))
+
+      val result = service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).futureValue
+      result.isRight mustBe true
+      val payloadCaptor: ArgumentCaptor[IhtpPaymentNoticeSubmission] =
+        ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
+      verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
+      payloadCaptor.getValue.ihtNoticeRequest.ihTaxInformation mustBe IhTaxInformation(
+        ihTaxChangeFlag = None,
+        dateNoticeReceived = testPaymentNoticeDate,
+        noticeSubmittedByPr = Yes,
+        knownBeneficiaries = Some(Yes),
+        totalIhtPayable = Some(3000.50),
+        totalInterestPayable = Some(75.25),
+        total = Some(3075.75)
       )
     }
 
