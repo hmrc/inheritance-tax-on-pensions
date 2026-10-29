@@ -144,7 +144,7 @@ class ReportSubmissionService @Inject() (
         reportDetails,
         deceased,
         prDetails,
-        buildIhTaxInformation(userAnswers),
+        buildIhTaxInformation(userAnswers, beneficiaryList),
         beneficiaryList.map(Beneficiaries(_)),
         declarations
       )
@@ -183,7 +183,10 @@ class ReportSubmissionService @Inject() (
 
     PrDetails(prChangeFlag, IndividualOrOrg(prType), prContactDetails)
 
-  private def buildIhTaxInformation(userAnswers: UserAnswers): IhTaxInformation =
+  private def buildIhTaxInformation(
+    userAnswers: UserAnswers,
+    beneficiaryList: Option[Seq[BeneficiaryDetails]]
+  ): IhTaxInformation =
     IhTaxInformation(
       ihTaxChangeFlag = UserAnswersHelper.getOptionalAs[YesNo](userAnswers, "ihtTaxInformation.ihTaxChangeFlag"),
       dateNoticeReceived = UserAnswersHelper.getMandatory(
@@ -202,19 +205,36 @@ class ReportSubmissionService @Inject() (
           "areBeneficiariesKnown"
         )
         .map(YesNo.apply),
-      totalIhtPayable = UserAnswersHelper.getOptionalAs[Double](
+      totalIhtPayable = totalOrBeneficiarySum(
         userAnswers,
-        "ihtTaxInformation.totalIhtPayable"
+        beneficiaryList,
+        "ihtTaxInformation.totalIhtPayable",
+        _.beneficiaryIhtPayable
       ),
-      totalInterestPayable = UserAnswersHelper.getOptionalAs[Double](
+      totalInterestPayable = totalOrBeneficiarySum(
         userAnswers,
-        "ihtTaxInformation.totalInterestPayable"
+        beneficiaryList,
+        "ihtTaxInformation.totalInterestPayable",
+        _.beneficiaryInterestPayable
       ),
-      total = UserAnswersHelper.getOptionalAs[Double](
+      total = totalOrBeneficiarySum(
         userAnswers,
-        "ihtTaxInformation.total"
+        beneficiaryList,
+        "ihtTaxInformation.total",
+        _.beneficiaryTotal
       )
     )
+
+  private def totalOrBeneficiarySum(
+    userAnswers: UserAnswers,
+    beneficiaryList: Option[Seq[BeneficiaryDetails]],
+    path: String,
+    amount: BeneficiaryPaymentDetails => Double
+  ): Option[Double] =
+    beneficiaryList match {
+      case Some(beneficiaries) => Some(beneficiaries.map(b => amount(b.beneficiaryPaymentDetails)).sum)
+      case None => UserAnswersHelper.getOptionalAs[Double](userAnswers, path)
+    }
 
   private def buildBeneficiaryList(userAnswers: UserAnswers): Option[Seq[BeneficiaryDetails]] = {
     val beneficiariesArray = userAnswers.data \ "beneficiaries"
