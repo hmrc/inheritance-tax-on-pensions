@@ -60,7 +60,7 @@ class ReportRetrievalServiceSpec
   "getOverview" - {
     "returns only the latest version of each report coming from the connector" in {
 
-      when(mockIhtpReportConnector.getOverview(any(), any(), any(), any())(any()))
+      when(mockIhtpReportConnector.getOverview(any(), any(), any(), any(), any(), any())(any()))
         .thenReturn(
           Future.successful(
             Right(
@@ -74,19 +74,19 @@ class ReportRetrievalServiceSpec
           Future.successful(Seq())
         )
 
-      val result = service.getOverview(testPstr, srn, testDateFrom, testDateTo, None).futureValue
+      val result = service.getOverview(testPstr, srn, testDateFrom, testDateTo, None, None, None).futureValue
 
       result match {
         case Left(value) => fail("unexpected")
         case Right(value) =>
           value.success.ihtpOverview must have size 2
           value.success.ihtpOverview
-            .filter(_.paymentReference.contains(testIhtPaymentReference))
+            .filter(_.ihtPaymentReference.contains(testIhtPaymentReference))
             .map(_.ihtVersion) mustBe Seq("002")
       }
     }
     "returns all coming from both the connector and from user answers" in {
-      when(mockIhtpReportConnector.getOverview(any(), any(), any(), any())(any()))
+      when(mockIhtpReportConnector.getOverview(any(), any(), any(), any(), any(), any())(any()))
         .thenReturn(
           Future.successful(
             Right(
@@ -108,7 +108,7 @@ class ReportRetrievalServiceSpec
           )
         )
 
-      val result = service.getOverview(testPstr, srn, testDateFrom, testDateTo, None).futureValue
+      val result = service.getOverview(testPstr, srn, testDateFrom, testDateTo, None, None, None).futureValue
 
       result match {
         case Left(value) => fail("unexpected")
@@ -118,7 +118,7 @@ class ReportRetrievalServiceSpec
     }
     "returns all coming from both the connector and complete ua" in {
 
-      when(mockIhtpReportConnector.getOverview(any(), any(), any(), any())(any()))
+      when(mockIhtpReportConnector.getOverview(any(), any(), any(), any(), any(), any())(any()))
         .thenReturn(
           Future.successful(
             Right(
@@ -136,7 +136,7 @@ class ReportRetrievalServiceSpec
           )
         )
 
-      val result = service.getOverview(testPstr, srn, testDateFrom, testDateTo, None).futureValue
+      val result = service.getOverview(testPstr, srn, testDateFrom, testDateTo, None, None, None).futureValue
 
       result match {
         case Left(value) => fail("unexpected")
@@ -146,7 +146,7 @@ class ReportRetrievalServiceSpec
     }
     "filters out reports that are not updated after the submission" in {
 
-      when(mockIhtpReportConnector.getOverview(any(), any(), any(), any())(any()))
+      when(mockIhtpReportConnector.getOverview(any(), any(), any(), any(), any(), any())(any()))
         .thenReturn(
           Future.successful(
             Right(
@@ -164,7 +164,7 @@ class ReportRetrievalServiceSpec
           )
         )
 
-      val result = service.getOverview(testPstr, srn, testDateFrom, testDateTo, None).futureValue
+      val result = service.getOverview(testPstr, srn, testDateFrom, testDateTo, None, None, None).futureValue
 
       result match {
         case Left(value) => fail("unexpected")
@@ -174,13 +174,13 @@ class ReportRetrievalServiceSpec
     }
     "filters out drafts that match a paid report even when updated after the submission" in {
 
-      when(mockIhtpReportConnector.getOverview(any(), any(), any(), any())(any()))
+      when(mockIhtpReportConnector.getOverview(any(), any(), any(), any(), any(), any())(any()))
         .thenReturn(
           Future.successful(
             Right(
               IhtpOverviewResponse(
                 IhtpOverviewSuccess(
-                  testOverviewResponse.as[Seq[IhtpOverviewReport]].filter(_.ihtpStatus == "Paid")
+                  testOverviewResponse.as[Seq[IhtpOverviewReport]].filter(_.ihtStatus == "Paid")
                 )
               )
             )
@@ -196,18 +196,18 @@ class ReportRetrievalServiceSpec
           )
         )
 
-      val result = service.getOverview(testPstr, srn, testDateFrom, testDateTo, None).futureValue
+      val result = service.getOverview(testPstr, srn, testDateFrom, testDateTo, None, None, None).futureValue
 
       result match {
         case Left(value) => fail("unexpected")
         case Right(value) =>
           value.success.ihtpOverview must have size 1
-          value.success.ihtpOverview.map(_.ihtpStatus) mustBe Seq("Paid")
+          value.success.ihtpOverview.map(_.ihtStatus) mustBe Seq("Paid")
       }
     }
     "errors out when connector errors out" in {
 
-      when(mockIhtpReportConnector.getOverview(any(), any(), any(), any())(any()))
+      when(mockIhtpReportConnector.getOverview(any(), any(), any(), any(), any(), any())(any()))
         .thenReturn(
           Future.successful(
             Left(ErrorCodes.unexpectedResponse)
@@ -219,7 +219,7 @@ class ReportRetrievalServiceSpec
           Future.successful(Seq())
         )
 
-      val result = service.getOverview(testPstr, srn, testDateFrom, testDateTo, None).futureValue
+      val result = service.getOverview(testPstr, srn, testDateFrom, testDateTo, None, None, None).futureValue
 
       result match {
         case Left(value) =>

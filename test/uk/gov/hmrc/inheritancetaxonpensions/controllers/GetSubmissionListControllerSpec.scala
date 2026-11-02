@@ -95,7 +95,7 @@ class GetSubmissionListControllerSpec extends BaseSpec:
         )
       when(mockSchemeDetailsConnector.checkAssociation(any(), any(), any())(any(), any()))
         .thenReturn(Future.successful(true))
-      when(mockReportRetrievalService.getOverview(any(), any(), any(), any(), any())(any(), any()))
+      when(mockReportRetrievalService.getOverview(any(), any(), any(), any(), any(), any(), any())(any(), any()))
         .thenReturn(
           Future.successful(
             Right(IhtpOverviewResponse(IhtpOverviewSuccess(Seq())))
@@ -119,6 +119,8 @@ class GetSubmissionListControllerSpec extends BaseSpec:
         eqTo(srn),
         eqTo("2026-01-01"),
         eqTo("2026-12-31"),
+        eqTo(None),
+        eqTo(None),
         eqTo(None)
       )(
         any[HeaderCarrier](),
@@ -142,7 +144,10 @@ class GetSubmissionListControllerSpec extends BaseSpec:
         )
       }
 
-      verify(mockReportRetrievalService, never).getOverview(any(), any(), any(), any(), any())(any(), any())
+      verify(mockReportRetrievalService, never).getOverview(any(), any(), any(), any(), any(), any(), any())(
+        any(),
+        any()
+      )
     }
 
     "should return 400 when dateTo is missing" in {
@@ -161,7 +166,10 @@ class GetSubmissionListControllerSpec extends BaseSpec:
         )
       }
 
-      verify(mockReportRetrievalService, never).getOverview(any(), any(), any(), any(), any())(any(), any())
+      verify(mockReportRetrievalService, never).getOverview(any(), any(), any(), any(), any(), any(), any())(
+        any(),
+        any()
+      )
     }
 
     "should return 400 when non of required headers exist" in {
@@ -190,7 +198,7 @@ class GetSubmissionListControllerSpec extends BaseSpec:
         )
       when(mockSchemeDetailsConnector.checkAssociation(any(), any(), any())(any(), any()))
         .thenReturn(Future.successful(true))
-      when(mockReportRetrievalService.getOverview(any(), any(), any(), any(), any())(any(), any()))
+      when(mockReportRetrievalService.getOverview(any(), any(), any(), any(), any(), any(), any())(any(), any()))
         .thenReturn(
           Future.successful(
             Left(ErrorCodes.unexpectedResponse)
@@ -212,6 +220,8 @@ class GetSubmissionListControllerSpec extends BaseSpec:
         eqTo(srn),
         eqTo("2026-01-01"),
         eqTo("2026-12-31"),
+        eqTo(None),
+        eqTo(None),
         eqTo(None)
       )(
         any[HeaderCarrier](),

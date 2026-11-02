@@ -44,12 +44,20 @@ class ReportRetrievalService @Inject() (
   clock: Clock
 ) extends Logging {
 
-  def getOverview(pstr: String, srn: String, dateFrom: String, dateTo: String, status: Option[String])(implicit
+  def getOverview(
+    pstr: String,
+    srn: String,
+    dateFrom: String,
+    dateTo: String,
+    ihtPaymentReference: Option[String],
+    ihtReference: Option[String],
+    nino: Option[String]
+  )(implicit
     hc: HeaderCarrier,
     ec: ExecutionContext
   ): Future[Either[ErrorResponse, IhtpOverviewResponse]] =
     val downstreamEitherF: Future[Either[ErrorResponse, IhtpOverviewResponse]] =
-      ihtpReportConnector.getOverview(pstr, dateFrom, dateTo, status)
+      ihtpReportConnector.getOverview(pstr, dateFrom, dateTo, ihtPaymentReference, ihtReference, nino)
 
     val inProgressF: Future[Seq[UserAnswers]] =
       userAnswersRepository.findBySrn(srn).recover { case e =>
@@ -68,10 +76,10 @@ class ReportRetrievalService @Inject() (
             val draftPaymentReference = UserAnswersHelper.getOptional(ua, "ihtPaymentReference").getOrElse("fail")
             val draftLastUpdated = ua.lastUpdated
             !latestSubmittedReports.exists(item =>
-              (item.paymentReference.getOrElse("test") == draftPaymentReference) &&
+              (item.ihtPaymentReference.getOrElse("test") == draftPaymentReference) &&
                 (item.submissionDate
                   .getOrElse(Instant.EPOCH)
-                  .isAfter(draftLastUpdated.atZone(ZoneId.of("Europe/Paris")).toInstant) || item.ihtpStatus == "Paid")
+                  .isAfter(draftLastUpdated.atZone(ZoneId.of("Europe/Paris")).toInstant) || item.ihtStatus == "Paid")
             )
           )
         val mappedInProgress = filtered
@@ -88,17 +96,16 @@ class ReportRetrievalService @Inject() (
               ),
               ihtVersion = "000", // fixed value
               inheritanceTaxReference = UserAnswersHelper.getMandatoryAs[String](ua, inheritanceTaxReferenceNumberPath),
-              paymentReference = None,
-              title = None, // likely not in final version of ETMP payload
+              ihtPaymentReference = None,
               firstForename = UserAnswersHelper.getOptional(ua, s"${nameOfDeceasedPath}.${deceasedFirstForename}"),
-              secondForename = None, // likely not in final version of ETMP payload
               surname = Some(
                 UserAnswersHelper
                   .getOptional(ua, s"${nameOfDeceasedPath}.${deceasedSurname}")
                   .getOrElse("Enter name") // fallback if only the first page of the journey was saved
               ),
               nino = None,
-              ihtpStatus = "In progress" // fixed value
+              ihtStatus = "In progress", // fixed value
+              allocatedDate = None
             )
           )
         Right(IhtpOverviewResponse(IhtpOverviewSuccess(mappedInProgress ++ latestSubmittedReports)))

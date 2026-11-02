@@ -49,12 +49,16 @@ class GetSubmissionListController @Inject() (
     authorisedAsIhtpUser(srnS) { _ =>
       val dateFrom = requiredQueryParam("dateFrom")
       val dateTo = requiredQueryParam("dateTo")
-      val status = request.getQueryString("status")
+      val ihtPaymentReference = request.getQueryString("ihtPaymentReference")
+      val ihtReference = request.getQueryString("ihtReference")
+      val nino = request.getQueryString("nino")
 
-      reportRetrievalService.getOverview(pstr, srnS, dateFrom, dateTo, status).map {
-        case Right(response) => Ok(Json.toJson(response))
-        case Left(error) => Status(error.statusCode)(Json.obj("message" -> error.message))
-      }
+      reportRetrievalService
+        .getOverview(pstr, srnS, dateFrom, dateTo, ihtPaymentReference, ihtReference, nino)
+        .map {
+          case Right(response) => Ok(Json.toJson(response))
+          case Left(error) => Status(error.statusCode)(Json.obj("message" -> error.message))
+        }
     }
   }
 
