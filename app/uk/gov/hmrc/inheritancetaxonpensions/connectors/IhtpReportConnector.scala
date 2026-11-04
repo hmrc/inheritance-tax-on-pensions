@@ -50,10 +50,15 @@ class IhtpReportConnector @Inject() (
     with Retries
     with Logging {
 
-  def getOverview(pstr: String, dateFrom: String, dateTo: String, status: Option[String])(implicit
-    hc: HeaderCarrier
-  ): Future[Either[ErrorResponse, IhtpOverviewResponse]] = {
-    val url: String = overviewUrl(pstr, dateFrom, dateTo, status)
+  def getOverview(
+    pstr: String,
+    dateFrom: String,
+    dateTo: String,
+    ihtPaymentReference: Option[String],
+    ihtReference: Option[String],
+    nino: Option[String]
+  )(implicit hc: HeaderCarrier): Future[Either[ErrorResponse, IhtpOverviewResponse]] = {
+    val url: String = overviewUrl(pstr, dateFrom, dateTo, ihtPaymentReference, ihtReference, nino)
 
     retryFor[Either[ErrorResponse, IhtpOverviewResponse]]("IHTP Report overview") {
       case UpstreamErrorResponse.WithStatusCode(status) if Constants.TransientErrorStatusCodes.contains(status) => true
@@ -260,9 +265,23 @@ class IhtpReportConnector @Inject() (
       )
     )
 
-  private def overviewUrl(pstr: String, dateFrom: String, dateTo: String, status: Option[String]): String = {
+  private def overviewUrl(
+    pstr: String,
+    dateFrom: String,
+    dateTo: String,
+    ihtPaymentReference: Option[String],
+    ihtReference: Option[String],
+    nino: Option[String]
+  ): String = {
     val queryParams =
-      Seq("pstr" -> pstr, "dateFrom" -> dateFrom, "dateTo" -> dateTo) ++ status.map("status" -> _)
+      Seq(
+        "pstr" -> pstr,
+        "dateFrom" -> dateFrom,
+        "dateTo" -> dateTo
+      ) ++
+        ihtPaymentReference.map("ihtPaymentReference" -> _).toSeq ++
+        ihtReference.map("ihtReference" -> _).toSeq ++
+        nino.map("nino" -> _).toSeq
 
     val queryString = queryParams
       .map { case (key, value) => s"$key=${URLEncoder.encode(value, StandardCharsets.UTF_8)}" }

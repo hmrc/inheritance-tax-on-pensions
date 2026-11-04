@@ -255,58 +255,10 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
           .willReturn(ok(response.toString))
       )
 
-      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", None)) { result =>
+      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", None, None, None)) { result =>
         WireMock.verify(
           getRequestedFor(
             urlEqualTo(s"$overviewUrl?pstr=24000001IN&dateFrom=2026-01-01&dateTo=2026-12-31")
-          )
-        )
-
-        result mustBe Right(IhtpOverviewResponse(IhtpOverviewSuccess(Seq())))
-      }
-    }
-
-    "include status when supplied" in {
-      val response = Json.obj(
-        "success" -> Json.obj(
-          "pstr" -> "24000001IN",
-          "ihtpOverview" -> Json.arr()
-        )
-      )
-
-      wireMockServer.stubFor(
-        get(urlEqualTo(s"$overviewUrl?pstr=24000001IN&dateFrom=2026-01-01&dateTo=2026-12-31&status=Submitted"))
-          .willReturn(ok(response.toString))
-      )
-
-      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", Some("Submitted"))) { result =>
-        WireMock.verify(
-          getRequestedFor(
-            urlEqualTo(s"$overviewUrl?pstr=24000001IN&dateFrom=2026-01-01&dateTo=2026-12-31&status=Submitted")
-          )
-        )
-
-        result mustBe Right(IhtpOverviewResponse(IhtpOverviewSuccess(Seq())))
-      }
-    }
-
-    "url encode status when supplied" in {
-      val response = Json.obj(
-        "success" -> Json.obj(
-          "pstr" -> "24000001IN",
-          "ihtpOverview" -> Json.arr()
-        )
-      )
-
-      wireMockServer.stubFor(
-        get(urlEqualTo(s"$overviewUrl?pstr=24000001IN&dateFrom=2026-01-01&dateTo=2026-12-31&status=In+Progress"))
-          .willReturn(ok(response.toString))
-      )
-
-      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", Some("In Progress"))) { result =>
-        WireMock.verify(
-          getRequestedFor(
-            urlEqualTo(s"$overviewUrl?pstr=24000001IN&dateFrom=2026-01-01&dateTo=2026-12-31&status=In+Progress")
           )
         )
 
@@ -320,7 +272,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
           .willReturn(badRequest())
       )
 
-      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", None)) { result =>
+      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", None, None, None)) { result =>
         result mustBe Left(ErrorCodes.badRequest)
       }
     }
@@ -331,7 +283,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
           .willReturn(notFound())
       )
 
-      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", None)) { result =>
+      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", None, None, None)) { result =>
         result mustBe Left(ErrorCodes.entityNotFound)
       }
     }
@@ -342,7 +294,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
           .willReturn(badRequestEntity())
       )
 
-      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", None)) { result =>
+      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", None, None, None)) { result =>
         result mustBe Left(ErrorCodes.unprocessableEntity)
       }
     }
@@ -353,7 +305,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
           .willReturn(aResponse().withStatus(418))
       )
 
-      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", None)) { result =>
+      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", None, None, None)) { result =>
         result mustBe Left(ErrorCodes.unexpectedResponse)
       }
     }
@@ -364,7 +316,7 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
           .willReturn(serverError())
       )
 
-      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", None)) { result =>
+      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", None, None, None)) { result =>
         WireMock.verify(
           6,
           getRequestedFor(

@@ -16,7 +16,9 @@
 
 package models
 
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.functional.syntax._
+import play.api.Logging
+import play.api.libs.json._
 
 import scala.annotation.tailrec
 
@@ -44,11 +46,11 @@ object IhtpOverviewSuccess {
         if (tail.isEmpty) {
           filterForHighestVersion(tail, acc :+ head)
         } else {
-          head.paymentReference match {
-            case Some(paymentReference) =>
-              val allVersions = curr.filter(item => item.paymentReference.contains(paymentReference))
+          head.ihtPaymentReference match {
+            case Some(ihtPaymentReference) =>
+              val allVersions = curr.filter(item => item.ihtPaymentReference.contains(ihtPaymentReference))
               val sorted = allVersions.sortWith(_.ihtVersion.toInt > _.ihtVersion.toInt)
-              val removeDuplicates = tail.filterNot(item => item.paymentReference.contains(paymentReference))
+              val removeDuplicates = tail.filterNot(item => item.ihtPaymentReference.contains(ihtPaymentReference))
 
               filterForHighestVersion(removeDuplicates, acc :+ sorted.head)
             case None =>
@@ -65,19 +67,81 @@ case class IhtpOverviewReport(
   paymentDueDate: Option[LocalDate],
   ihtVersion: String,
   inheritanceTaxReference: String,
-  paymentReference: Option[String],
-  title: Option[String],
+  ihtPaymentReference: Option[String],
   firstForename: Option[String],
-  secondForename: Option[String],
   surname: Option[String],
   nino: Option[String],
-  ihtpStatus: String
+  ihtStatus: String,
+  allocatedDate: Option[LocalDate]
 ) {
 
   val deceasedName: String =
-    Seq(title, firstForename, secondForename, surname).flatten.filter(_.nonEmpty).mkString(" ")
+    Seq(firstForename, surname).flatten.filter(_.nonEmpty).mkString(" ")
 }
 
-object IhtpOverviewReport {
-  implicit val formats: OFormat[IhtpOverviewReport] = Json.format[IhtpOverviewReport]
+object IhtpOverviewReport extends Logging {
+
+  implicit val reads: Reads[IhtpOverviewReport] =
+    (JsPath \ "uuid")
+      .readNullable[String]
+      .and((JsPath \ "fbNumber").readNullable[String])
+      .and((JsPath \ "submissionDate").readNullable[Instant])
+      .and((JsPath \ "paymentDueDate").readNullable[LocalDate])
+      .and((JsPath \ "ihtVersion").read[String])
+      .and((JsPath \ "ihtPaymentReference").readNullable[String])
+      .and((JsPath \ "firstForename").readNullable[String])
+      .and((JsPath \ "surname").readNullable[String])
+      .and((JsPath \ "nino").readNullable[String])
+      .and((JsPath \ "ihtStatus").read[String])
+      .and((JsPath \ "allocatedDate").readNullable[LocalDate])(
+        (
+          uuid,
+          fbNumber,
+          submissionDate,
+          paymentDueDate,
+          ihtVersion,
+          ihtPaymentReference,
+          firstForename,
+          surname,
+          nino,
+          ihtStatus,
+          allocatedDate
+        ) =>
+          IhtpOverviewReport(
+            uuid,
+            fbNumber,
+            submissionDate,
+            paymentDueDate,
+            ihtVersion,
+            getInheritanceTaxReference(ihtPaymentReference),
+            ihtPaymentReference,
+            firstForename,
+            surname,
+            nino,
+            ihtStatus,
+            allocatedDate
+          )
+      )
+
+  private def getInheritanceTaxReference(
+    ihtPaymentReference: Option[String]
+  ): String =
+    ihtPaymentReference match {
+      case Some(reference) if reference.length >= 11 =>
+        reference.take(11)
+
+      case Some(reference) =>
+        logger.warn(
+          s"[IhtpOverviewReport] ihtPaymentReference is shorter than 11 characters, ihtPaymentReference: ${reference}"
+        )
+        reference
+
+      case None =>
+        ""
+    }
+
+  implicit val writes: OWrites[IhtpOverviewReport] = Json.writes[IhtpOverviewReport]
+
+  implicit val formats: OFormat[IhtpOverviewReport] = OFormat(reads, writes)
+
 }

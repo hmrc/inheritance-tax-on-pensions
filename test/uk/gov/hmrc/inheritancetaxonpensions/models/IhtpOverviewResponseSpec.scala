@@ -28,6 +28,7 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
 
   private val submissionDate = Instant.parse("2026-04-10T16:12:49Z")
   private val paymentDueDate = LocalDate.of(2026, 2, 2)
+  private val allocatedDate = LocalDate.of(2027, 10, 31)
 
   private val report = IhtpOverviewReport(
     uuid = None,
@@ -36,13 +37,12 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
     paymentDueDate = Some(paymentDueDate),
     ihtVersion = "001",
     inheritanceTaxReference = testIhtReference,
-    paymentReference = Some(testIhtPaymentReference),
-    title = Some("Dr"),
+    ihtPaymentReference = Some(testIhtPaymentReference),
     firstForename = Some("Firstname"),
-    secondForename = Some("M"),
     surname = Some("Surname"),
     nino = Some(testNino),
-    ihtpStatus = "Not reconciled"
+    ihtStatus = "Not reconciled",
+    allocatedDate = Some(allocatedDate)
   )
 
   private val success = IhtpOverviewSuccess(
@@ -63,13 +63,14 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
               "paymentDueDate" -> "2026-02-02",
               "ihtVersion" -> "001",
               "inheritanceTaxReference" -> testIhtReference,
-              "paymentReference" -> testIhtPaymentReference,
+              "ihtPaymentReference" -> testIhtPaymentReference,
               "title" -> "Dr",
               "firstForename" -> "Firstname",
               "secondForename" -> "M",
               "surname" -> "Surname",
               "nino" -> testNino,
-              "ihtpStatus" -> "Not reconciled"
+              "ihtStatus" -> "Not reconciled",
+              "allocatedDate" -> "2027-10-31"
             )
           )
         )
@@ -86,13 +87,12 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
       (json \ "success" \ "ihtpOverview" \ 0 \ "paymentDueDate").as[String] mustBe "2026-02-02"
       (json \ "success" \ "ihtpOverview" \ 0 \ "ihtVersion").as[String] mustBe "001"
       (json \ "success" \ "ihtpOverview" \ 0 \ "inheritanceTaxReference").as[String] mustBe testIhtReference
-      (json \ "success" \ "ihtpOverview" \ 0 \ "paymentReference").as[String] mustBe testIhtPaymentReference
-      (json \ "success" \ "ihtpOverview" \ 0 \ "title").as[String] mustBe "Dr"
+      (json \ "success" \ "ihtpOverview" \ 0 \ "ihtPaymentReference").as[String] mustBe testIhtPaymentReference
       (json \ "success" \ "ihtpOverview" \ 0 \ "firstForename").as[String] mustBe "Firstname"
-      (json \ "success" \ "ihtpOverview" \ 0 \ "secondForename").as[String] mustBe "M"
       (json \ "success" \ "ihtpOverview" \ 0 \ "surname").as[String] mustBe "Surname"
       (json \ "success" \ "ihtpOverview" \ 0 \ "nino").as[String] mustBe testNino
-      (json \ "success" \ "ihtpOverview" \ 0 \ "ihtpStatus").as[String] mustBe "Not reconciled"
+      (json \ "success" \ "ihtpOverview" \ 0 \ "ihtStatus").as[String] mustBe "Not reconciled"
+      (json \ "success" \ "ihtpOverview" \ 0 \ "allocatedDate").as[String] mustBe "2027-10-31"
     }
 
     "must fail to read when success is missing" in {
@@ -150,7 +150,7 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
       val versionOne = report.copy(ihtVersion = "001")
       val versionTwo = report.copy(ihtVersion = "002", fbNumber = Some(secondFormBundleNumber))
       val otherReport = report.copy(
-        paymentReference = Some(secondIhtPaymentReference),
+        ihtPaymentReference = Some(secondIhtPaymentReference),
         inheritanceTaxReference = secondIhtReference
       )
 
@@ -163,8 +163,8 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
     }
 
     "must retain reports that do not have a payment reference" in {
-      val firstDraft = report.copy(uuid = Some("first-draft"), paymentReference = None, ihtVersion = "000")
-      val secondDraft = report.copy(uuid = Some("second-draft"), paymentReference = None, ihtVersion = "000")
+      val firstDraft = report.copy(uuid = Some("first-draft"), ihtPaymentReference = None, ihtVersion = "000")
+      val secondDraft = report.copy(uuid = Some("second-draft"), ihtPaymentReference = None, ihtVersion = "000")
 
       val result = IhtpOverviewSuccess.filterForHighestVersion(List(firstDraft, secondDraft), Nil)
 
@@ -181,13 +181,14 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
         "paymentDueDate" -> "2026-02-02",
         "ihtVersion" -> "001",
         "inheritanceTaxReference" -> testIhtReference,
-        "paymentReference" -> testIhtPaymentReference,
+        "ihtPaymentReference" -> testIhtPaymentReference,
         "title" -> "Dr",
         "firstForename" -> "Firstname",
         "secondForename" -> "M",
         "surname" -> "Surname",
         "nino" -> testNino,
-        "ihtpStatus" -> "Not reconciled"
+        "ihtStatus" -> "Not reconciled",
+        "allocatedDate" -> "2027-10-31"
       )
 
       json.validate[IhtpOverviewReport] mustBe JsSuccess(report)
@@ -202,8 +203,8 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
     "must handle missing optional fields when reading from json" in {
       val json = Json.obj(
         "ihtVersion" -> "000",
-        "inheritanceTaxReference" -> secondIhtReference,
-        "ihtpStatus" -> "In progress"
+        "ihtPaymentReference" -> secondIhtPaymentReference,
+        "ihtStatus" -> "In progress"
       )
 
       json.validate[IhtpOverviewReport] mustBe JsSuccess(
@@ -214,31 +215,30 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
           paymentDueDate = None,
           ihtVersion = "000",
           inheritanceTaxReference = secondIhtReference,
-          paymentReference = None,
-          title = None,
+          ihtPaymentReference = Some(secondIhtPaymentReference),
           firstForename = None,
-          secondForename = None,
           surname = None,
           nino = None,
-          ihtpStatus = "In progress"
+          ihtStatus = "In progress",
+          allocatedDate = None
         )
       )
     }
 
     "must write optional fields as null when they are not present" in {
       val report = this.report.copy(
-        paymentReference = None,
-        title = None,
-        secondForename = None,
-        nino = None
+        ihtPaymentReference = None,
+        nino = None,
+        allocatedDate = None
       )
 
       val json = Json.toJson(report)
 
-      (json \ "paymentReference").asOpt[String] mustBe None
+      (json \ "ihtPaymentReference").asOpt[String] mustBe None
       (json \ "title").asOpt[String] mustBe None
       (json \ "secondForename").asOpt[String] mustBe None
       (json \ "nino").asOpt[String] mustBe None
+      (json \ "allocatedDate").asOpt[String] mustBe None
     }
 
     "must fail to read when required fields are missing" in {
@@ -249,7 +249,7 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
           "inheritanceTaxReference" -> testIhtReference,
           "firstForename" -> "Firstname",
           "surname" -> "Surname",
-          "ihtpStatus" -> "Not reconciled"
+          "ihtStatus" -> "Not reconciled"
         )
         .validate[IhtpOverviewReport] mustBe a[JsError]
     }
@@ -264,7 +264,7 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
           "inheritanceTaxReference" -> testIhtReference,
           "firstForename" -> "Firstname",
           "surname" -> "Surname",
-          "ihtpStatus" -> "Not reconciled"
+          "ihtStatus" -> "Not reconciled"
         )
         .validate[IhtpOverviewReport] mustBe a[JsError]
     }
@@ -275,28 +275,25 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
       report.paymentDueDate mustBe Some(paymentDueDate)
       report.ihtVersion mustBe "001"
       report.inheritanceTaxReference mustBe testIhtReference
-      report.paymentReference mustBe Some(testIhtPaymentReference)
-      report.title mustBe Some("Dr")
+      report.ihtPaymentReference mustBe Some(testIhtPaymentReference)
       report.firstForename mustBe Some("Firstname")
-      report.secondForename mustBe Some("M")
       report.surname mustBe Some("Surname")
       report.nino mustBe Some(testNino)
-      report.ihtpStatus mustBe "Not reconciled"
+      report.ihtStatus mustBe "Not reconciled"
       report.copy(
         fbNumber = report.fbNumber,
         submissionDate = report.submissionDate,
         paymentDueDate = report.paymentDueDate,
         ihtVersion = report.ihtVersion,
         inheritanceTaxReference = report.inheritanceTaxReference,
-        paymentReference = report.paymentReference,
-        title = report.title,
+        ihtPaymentReference = report.ihtPaymentReference,
         firstForename = report.firstForename,
-        secondForename = report.secondForename,
         surname = report.surname,
         nino = report.nino,
-        ihtpStatus = report.ihtpStatus
+        ihtStatus = report.ihtStatus,
+        allocatedDate = report.allocatedDate
       ) mustBe report
-      report.productArity mustBe 13
+      report.productArity mustBe 12
       report.productPrefix mustBe "IhtpOverviewReport"
       (report.productIterator.toSeq must contain).allOf(
         Some(testFormBundleNumber),
@@ -307,24 +304,8 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
       report.toString must include("IhtpOverviewReport")
     }
 
-    "must format deceasedName with title and second forename" in {
-      report.deceasedName mustBe "Dr Firstname M Surname"
-    }
-
-    "must format deceasedName without title" in {
-      report.copy(title = None).deceasedName mustBe "Firstname M Surname"
-    }
-
-    "must format deceasedName without second forename" in {
-      report.copy(secondForename = None).deceasedName mustBe "Dr Firstname Surname"
-    }
-
-    "must format deceasedName with only required name fields" in {
-      report.copy(title = None, secondForename = None).deceasedName mustBe "Firstname Surname"
-    }
-
-    "must not add extra spaces when optional name fields are empty strings" in {
-      report.copy(title = Some(""), secondForename = Some("")).deceasedName mustBe "Firstname Surname"
+    "must format deceasedName" in {
+      report.deceasedName mustBe "Firstname Surname"
     }
   }
 }

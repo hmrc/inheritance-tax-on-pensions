@@ -175,10 +175,10 @@
         "paymentDueDate",
         "ihtpVersion",
         "inheritanceTaxReference",
-        "paymentReference",
+        "ihtPaymentReference",
         "firstForename",
         "surname",
-        "ihtpStatus"
+        "ihtStatus"
       ],
       "properties": {
         "fbNumber": {
@@ -210,7 +210,7 @@
         "inheritanceTaxReference": {
           "$ref": "#/definitions/ihtRefNumberType"
         },
-        "paymentReference": {
+        "ihtPaymentReference": {
           "$ref": "#/definitions/paymentReferenceType"
         },
         "deceasedFirstForename": {
@@ -222,7 +222,7 @@
         "deceasedNino": {
           "$ref": "#/definitions/ninoType"
         },
-        "ihtpStatus": {
+        "ihtStatus": {
           "$ref": "#/definitions/statusType"
         },
         "declarationSignatoryID": {

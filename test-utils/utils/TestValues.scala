@@ -314,12 +314,12 @@ trait TestValues extends Generators {
       "paymentDueDate" -> "2026-10-10",
       "ihtVersion" -> "001",
       "inheritanceTaxReference" -> testIhtReference,
-      "paymentReference" -> testIhtPaymentReference,
+      "ihtPaymentReference" -> testIhtPaymentReference,
       "title" -> "Dr",
       "firstForename" -> "Firstname",
       "secondForename" -> "E",
       "surname" -> "Surname",
-      "ihtpStatus" -> "Paid"
+      "ihtStatus" -> "Paid"
     ),
     Json.obj(
       "fbNumber" -> testFormBundleNumber,
@@ -327,12 +327,12 @@ trait TestValues extends Generators {
       "paymentDueDate" -> "2026-10-10",
       "ihtVersion" -> "002",
       "inheritanceTaxReference" -> testIhtReference,
-      "paymentReference" -> testIhtPaymentReference,
+      "ihtPaymentReference" -> testIhtPaymentReference,
       "title" -> "Dr",
       "firstForename" -> "Firstname",
       "secondForename" -> "E",
       "surname" -> "Surname",
-      "ihtpStatus" -> "Not reconciled"
+      "ihtStatus" -> "Not reconciled"
     ),
     Json.obj(
       "fbNumber" -> secondFormBundleNumber,
@@ -340,12 +340,12 @@ trait TestValues extends Generators {
       "paymentDueDate" -> "2026-10-10",
       "ihtVersion" -> "001",
       "inheritanceTaxReference" -> secondIhtReference,
-      "paymentReference" -> secondIhtPaymentReference,
+      "ihtPaymentReference" -> secondIhtPaymentReference,
       "title" -> "Ms",
       "firstForename" -> "Firstnametwo",
       "secondForename" -> "E",
       "surname" -> "Surname",
-      "ihtpStatus" -> "Not reconciled"
+      "ihtStatus" -> "Not reconciled"
     )
   )
 
