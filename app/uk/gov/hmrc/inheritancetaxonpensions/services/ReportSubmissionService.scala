@@ -21,7 +21,6 @@ import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 import uk.gov.hmrc.inheritancetaxonpensions.repositories.UserAnswersRepository
 import uk.gov.hmrc.inheritancetaxonpensions.utils.UserAnswersHelper
-import uk.gov.hmrc.inheritancetaxonpensions.models._
 import uk.gov.hmrc.inheritancetaxonpensions.models.etmp.{IndividualOrOrg, IndividualOrTrust, YesNo}
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.IhtpReportConnector
 import uk.gov.hmrc.inheritancetaxonpensions.validators.{JSONSchemaValidator, SchemaPaths}
@@ -29,6 +28,8 @@ import uk.gov.hmrc.inheritancetaxonpensions.config.Constants
 import com.google.inject.{Inject, Singleton}
 import play.api.Logging
 import play.api.libs.json.{JsObject, JsValue, Json}
+import uk.gov.hmrc.inheritancetaxonpensions.models.audit.ReportSubmittedAuditModel
+import uk.gov.hmrc.inheritancetaxonpensions.models._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -36,7 +37,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class ReportSubmissionService @Inject() (
   userAnswersRepository: UserAnswersRepository,
   jsonPayloadSchemaValidator: JSONSchemaValidator,
-  ihtpReportConnector: IhtpReportConnector
+  ihtpReportConnector: IhtpReportConnector,
+  auditService: AuditService
 )(implicit ec: ExecutionContext)
     extends Logging {
 
@@ -47,7 +49,9 @@ class ReportSubmissionService @Inject() (
       userAnswersOpt <- userAnswersRepository.get(userAnswersId)
       result <- userAnswersOpt match {
         case Some(userAnswers) =>
-          val submissionPayLoad = buildSubmissionPayload(userAnswers, pstr, ihtpAuthContext)
+          val submissionPayLoad: IhtpPaymentNoticeSubmission =
+            buildSubmissionPayload(userAnswers, pstr, ihtpAuthContext)
+          val version = (userAnswersOpt.get.data \ "ihtVersion").asOpt[String]
           val payloadAsJson = Json.toJson(submissionPayLoad)
           val schema = SchemaPaths.EPID1767_v1_0_0
           val validationResult = jsonPayloadSchemaValidator.validatePayload(schema, payloadAsJson)
@@ -57,7 +61,13 @@ class ReportSubmissionService @Inject() (
                 s"${validationResult.toString}"
             )
           } else {
-            ihtpReportConnector.submitReport(submissionPayLoad)
+            val submissionOutcome = ihtpReportConnector.submitReport(submissionPayLoad)
+            submissionOutcome.map {
+              case Right(submissionResponse) =>
+                auditService.audit(ReportSubmittedAuditModel.build(submissionPayLoad, version))
+              case _ => ()
+            }
+            submissionOutcome
           }
         case None =>
           logger.warn(s"[ReportSubmissionService][submitReport] User answers not found for id: $userAnswersId")
@@ -105,7 +115,7 @@ class ReportSubmissionService @Inject() (
     val prDetails = buildPrDetails(userAnswers)
 
     val beneficiaryList = buildBeneficiaryList(userAnswers)
-    val declarations = buildDeclarations(ihtpAuthContext)
+    val declarations = buildDeclarations(userAnswers, ihtpAuthContext)
 
     val reportDetails = ReportDetails(
       pstr = pstr,
@@ -330,7 +340,7 @@ class ReportSubmissionService @Inject() (
       )
     )
 
-  private def buildDeclarations(ihtpAuthContext: IhtpAuthContext[Any]): Declarations =
+  private def buildDeclarations(userAnswers: UserAnswers, ihtpAuthContext: IhtpAuthContext[Any]): Declarations =
     ihtpAuthContext.credentialRole match {
       case Constants.pspId =>
         Declarations(
@@ -341,7 +351,7 @@ class ReportSubmissionService @Inject() (
             PspDeclaration(
               pspDeclaration1 = true,
               pspDeclaration2 = true,
-              psaid = "A0000000" // TODO
+              psaid = (userAnswers.data \ "declarations" \ "pspDeclaration" \ "psaId").as[String]
             )
           )
         )

@@ -20,11 +20,18 @@ import play.api.libs.json._
 
 sealed trait IndividualOrTrust {
   def value: String
+  def name: String
 }
 
 object IndividualOrTrust {
-  case object Individual extends IndividualOrTrust { val value = "01" }
-  case object Trust extends IndividualOrTrust { val value = "02" }
+  case object Individual extends IndividualOrTrust {
+    val value = "01"
+    val name = "individual"
+  }
+  case object Trust extends IndividualOrTrust {
+    val value = "02"
+    val name = "trust"
+  }
 
   def apply(string: String): IndividualOrTrust = if (string.toLowerCase() == "individual") Individual else Trust
 

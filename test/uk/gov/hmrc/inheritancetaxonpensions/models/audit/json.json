@@ -1,0 +1,57 @@
+{
+  "submissionVersion": null,
+  "reportDetails": {
+    "pensionSchemeTaxReference": "24000001IN"
+  },
+  "deceased": {
+    "haveDeceasedDetailsChanged": false,
+    "deceasedPersonalDetails": {
+      "title": "Mr",
+      "forename": "Firstname",
+      "middleName": "Middlenametwo",
+      "surname": "Surname",
+      "ninoExist": true,
+      "nino": "AL340854D"
+    },
+    "deceasedDetails": {
+      "deceasedsDateOfBirth": "1950-01-01",
+      "deceasedsDateOfDeath": "2026-01-01",
+      "ihtReferenceNumber": "A769169/59E"
+    }
+  },
+  "personalRepresentativeDetails": {
+    "havePersonalRepresentativeDetailsChanged": false,
+    "typeOfPersonalRepresentative": "organisation",
+    "personalRepresentativeContactDetails": {
+      "organisationName": "Test Organisation",
+      "title": "Ms",
+      "forename": "Firstnametwo",
+      "middleName": "Middlenametwo",
+      "surname": "Surname",
+      "address": {
+        "addressLine1": "1 ABCDE Street",
+        "addressLine2": "FGHIJ Town",
+        "postCode": "ZZ99 1AA",
+        "countryCode": "GB",
+        "uprn": "UPRN"
+      }
+    }
+  },
+  "ihTaxInformation": {
+    "haveTaxInformationChanged": false,
+    "datePaymentNoticeReceived": "2026-03-27",
+    "paymentNoticeSubmittedByPersonalRepresentative": true,
+    "areBeneficiariesKnown": false,
+    "totalIhtPayable": 1000,
+    "totalInterestPayable": 50,
+    "totalAmountPayable": 1050
+  },
+  "declaration": {
+    "submittedBy": "PSA",
+    "submitterId": "A6323728",
+    "psaDeclaration": {
+      "psaDeclaration1": true,
+      "psaDeclaration2": true
+    }
+  }
+}

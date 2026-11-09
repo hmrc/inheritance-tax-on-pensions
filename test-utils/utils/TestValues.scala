@@ -189,8 +189,7 @@ trait TestValues extends Generators {
     submittedBy = "PSP",
     submitterId = pspId,
     psaDeclaration = None,
-    // The service still uses this placeholder until the authorising PSA is supplied by the frontend.
-    pspDeclaration = Some(PspDeclaration(true, true, "A0000000"))
+    pspDeclaration = Some(PspDeclaration(true, true, psaId))
   )
 
   val testReportSubmissionRequestBody: IhtpPaymentNoticeSubmission = IhtpPaymentNoticeSubmission(
