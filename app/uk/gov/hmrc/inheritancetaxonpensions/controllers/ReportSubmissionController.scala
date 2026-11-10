@@ -53,8 +53,7 @@ class ReportSubmissionController @Inject() (
     authorisedAsIhtpUser(srnS) { ihtpAuthContext =>
       reportSubmissionService.submitReport(userAnswersId, pstr, ihtpAuthContext).map {
         case Right(submissionResponse) =>
-          val deletedOptionF = userAnswersRepository.clear(userAnswersId)
-          deletedOptionF.map {
+          userAnswersRepository.clear(userAnswersId).map {
             case true =>
               logger.info(s"[ReportSubmissionController][submitReport] User answer $userAnswersId removed")
             case _ =>

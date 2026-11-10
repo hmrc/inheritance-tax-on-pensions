@@ -53,8 +53,14 @@ class ReportSubmissionServiceSpec
   private val mockUserAnswersRepository: UserAnswersRepository = mock[UserAnswersRepository]
   private val mockJSONSchemaValidator: JSONSchemaValidator = mock[JSONSchemaValidator]
   private val mockIhtpReportConnector: IhtpReportConnector = mock[IhtpReportConnector]
+  private val mockAuditService: AuditService = mock[AuditService]
   private val service =
-    new ReportSubmissionService(mockUserAnswersRepository, mockJSONSchemaValidator, mockIhtpReportConnector)
+    new ReportSubmissionService(
+      mockUserAnswersRepository,
+      mockJSONSchemaValidator,
+      mockIhtpReportConnector,
+      mockAuditService
+    )
 
   private val testAddress = Json.obj(
     "addressLine1" -> "1 ABCDE Street",
@@ -137,7 +143,7 @@ class ReportSubmissionServiceSpec
 
   private val declarationUaJson = Json.obj(
     "submittedBy" -> "PSA",
-    "submitterId" -> "TODO",
+    "submitterId" -> psaId,
     "psaDeclaration" -> Json.obj(
       "psaDeclaration1" -> true,
       "psaDeclaration2" -> true
@@ -145,7 +151,7 @@ class ReportSubmissionServiceSpec
     "pspDeclaration" -> Json.obj(
       "pspDeclaration1" -> true,
       "pspDeclaration2" -> true,
-      "psaid" -> "TODO"
+      "psaId" -> psaId
     )
   )
 
