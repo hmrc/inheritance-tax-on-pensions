@@ -166,13 +166,23 @@ case class ReportSubmittedAuditModel(submissionPayLoad: IhtpPaymentNoticeSubmiss
   val declaration: JsObject = Json.obj(
     "declaration" -> payload.declarations
   )
-  override val detail: JsValue = Json.obj(
-    "submissionVersion" -> maybeVersion,
-    "reportDetails" -> payload.reportDetails,
-    "deceased" -> payload.deceased,
-    "personalRepresentativeDetails" -> payload.personalRepresentativeDetails,
-    "ihTaxInformation" -> payload.ihTaxInformation
-  ) ++ beneficiaries ++ declaration
+  val version: JsObject =
+    maybeVersion match {
+      case Some(version) =>
+        Json.obj(
+          "submissionVersion" -> version
+        )
+      case None => Json.obj()
+    }
+
+  override val detail: JsValue =
+    version ++
+      Json.obj(
+        "reportDetails" -> payload.reportDetails,
+        "deceased" -> payload.deceased,
+        "personalRepresentativeDetails" -> payload.personalRepresentativeDetails,
+        "ihTaxInformation" -> payload.ihTaxInformation
+      ) ++ beneficiaries ++ declaration
 }
 
 object ReportSubmittedAuditModel {
