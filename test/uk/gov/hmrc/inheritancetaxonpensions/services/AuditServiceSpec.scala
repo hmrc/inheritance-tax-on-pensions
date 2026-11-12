@@ -16,31 +16,27 @@
 
 package uk.gov.hmrc.inheritancetaxonpensions.services
 
+import org.scalatest.matchers.must.Matchers
+import uk.gov.hmrc.inheritancetaxonpensions.config.AppConfig
+import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
+import org.scalatest.BeforeAndAfterEach
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.inheritancetaxonpensions.models.audit.ReportSubmittedAuditModel
 import org.mockito.ArgumentMatchers.any
+import utils.TestValues
+import org.scalatest.freespec.AnyFreeSpec
 import org.mockito.Mockito.{times, verify, when}
 import org.mockito.{ArgumentCaptor, Mockito}
-import org.scalatest.BeforeAndAfterEach
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.must.Matchers
 import org.scalatestplus.mockito.MockitoSugar
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.inheritancetaxonpensions.config.AppConfig
-import uk.gov.hmrc.inheritancetaxonpensions.models.audit.ReportSubmittedAuditModel
-import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
-import utils.TestValues
 
 import scala.concurrent.ExecutionContext
 
-class AuditServiceSpec extends AnyFreeSpec
-    with Matchers
-    with MockitoSugar
-    with BeforeAndAfterEach
-    with TestValues {
+class AuditServiceSpec extends AnyFreeSpec with Matchers with MockitoSugar with BeforeAndAfterEach with TestValues {
 
-  private val mockAuditConnector: AuditConnector    = mock[AuditConnector]
-  implicit private val headerCarrier: HeaderCarrier = HeaderCarrier()
-  private val appName                               = "audit-source"
+  private val mockAuditConnector: AuditConnector = mock[AuditConnector]
+  private implicit val headerCarrier: HeaderCarrier = HeaderCarrier()
+  private val appName = "audit-source"
   private val mockAppConfig = mock[AppConfig]
   when(mockAppConfig.appName).`thenReturn`(appName)
 
