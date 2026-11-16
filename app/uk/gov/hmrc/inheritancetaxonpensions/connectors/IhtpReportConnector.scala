@@ -82,6 +82,10 @@ class IhtpReportConnector @Inject() (
             logger.warn("[IhtpReportConnector][getOverview] Unprocessable entity returned for overview")
             Left(ErrorCodes.unprocessableEntity)
           case response if Constants.TransientErrorStatusCodes.contains(response.status) =>
+            val elapsedTime = java.time.Duration.between(startTime, Instant.now()).toMillis
+            logger.warn(
+              s"[IhtpReportConnector][getOverview] IHTP Report overview failed with status: ${response.status} and took: ${elapsedTime} milliseconds."
+            )
             throw UpstreamErrorResponse(
               s"Transient error: ${response.status}",
               response.status,
@@ -92,15 +96,6 @@ class IhtpReportConnector @Inject() (
               s"[IhtpReportConnector][getOverview] Unexpected status returned for overview: ${response.status}"
             )
             Left(ErrorCodes.unexpectedResponse)
-        }
-        .recoverWith {
-          case errorResponse @ UpstreamErrorResponse.WithStatusCode(statusCode)
-              if Constants.TransientErrorStatusCodes.contains(statusCode) =>
-            val elapsedTime = java.time.Duration.between(startTime, Instant.now()).toSeconds
-            logger.warn(
-              s"[IhtpReportConnector][getOverview] IHTP Report overview failed with status: $statusCode and took: ${elapsedTime}s. Error: ${errorResponse.getMessage}"
-            )
-            Future.failed(errorResponse)
         }
     }.recover {
       case UpstreamErrorResponse.WithStatusCode(statusCode)
@@ -131,16 +126,13 @@ class IhtpReportConnector @Inject() (
         .execute[HttpResponse]
         .map {
           case response if Constants.TransientErrorStatusCodes.contains(response.status) =>
+            val elapsedTime = java.time.Duration.between(startTime, Instant.now()).toMillis
+            logger.warn(
+              s"[IhtpReportConnector][getReport] IHTP Report retrieval failed with status: ${response.status} and took: ${elapsedTime} milliseconds."
+            )
             throw RetryableReportResponse(response)
           case response =>
             normaliseReportResponse(response, correlationId)
-        }
-        .recoverWith { case errorResponse @ RetryableReportResponse(response) =>
-          val elapsedTime = java.time.Duration.between(startTime, Instant.now()).toSeconds
-          logger.warn(
-            s"[IhtpReportConnector][getReport] IHTP Report retrieval failed with status: ${response.status} and took: ${elapsedTime}s. Error: ${errorResponse.getMessage}"
-          )
-          Future.failed(errorResponse)
         }
     }.recover { case RetryableReportResponse(response) =>
       normaliseReportResponse(response, correlationId)
@@ -192,20 +184,15 @@ class IhtpReportConnector @Inject() (
             )
             Future.successful(Left(ErrorCodes.unprocessableEntity))
           case response if Constants.TransientErrorStatusCodes.contains(response.status) =>
+            val elapsedTime = java.time.Duration.between(startTime, Instant.now()).toSeconds
+            logger.warn(
+              s"[IhtpReportConnector][submitReport] IHTP Report submission failed with status: ${response.status} and took: ${elapsedTime} millisecondss."
+            )
             throw UpstreamErrorResponse(
               s"Transient error: ${response.status}",
               response.status,
               response.status
             )
-        }
-        .recoverWith {
-          case errorResponse @ UpstreamErrorResponse.WithStatusCode(statusCode)
-              if Constants.TransientErrorStatusCodes.contains(statusCode) =>
-            val elapsedTime = java.time.Duration.between(startTime, Instant.now()).toSeconds
-            logger.warn(
-              s"[IhtpReportConnector][submitReport] IHTP Report submission failed with status: $statusCode and took: ${elapsedTime}s. Error: ${errorResponse.getMessage}"
-            )
-            Future.failed(errorResponse)
         }
     }.recover {
       case UpstreamErrorResponse.WithStatusCode(statusCode)
@@ -223,11 +210,11 @@ class IhtpReportConnector @Inject() (
             withCorrelationId(response, correlationId)
           case Failure(error) =>
             logger.warn(
-              s"[IhtpReportConnector][getReport] Invalid JSON returned for successful report retrieval: ${error.getMessage}"
+              s"[IhtpReportConnector][getReport] Invalid JSON returned for successful report retrieval"
             )
             unexpectedReportResponse(correlationId)
         }
-      // TODO compare this with EPID error messages and log all possible information that cannot be PII for all error responses
+      // TODO compare this with EPID error messages and log all possible information that is not PII for all error responses
       case status if documentedReportStatusCodes.contains(status) =>
         logger.warn(s"[IhtpReportConnector][getReport] Error status returned for report retrieval: $status")
         withCorrelationId(response, correlationId)
