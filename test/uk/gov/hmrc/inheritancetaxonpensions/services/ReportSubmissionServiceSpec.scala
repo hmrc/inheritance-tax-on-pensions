@@ -18,7 +18,7 @@ package uk.gov.hmrc.inheritancetaxonpensions.services
 
 import play.api.test.FakeRequest
 import play.api.mvc.AnyContentAsEmpty
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.inheritancetaxonpensions.repositories.UserAnswersRepository
 import uk.gov.hmrc.inheritancetaxonpensions.models._
 import utils.TestValues
@@ -45,7 +45,11 @@ class ReportSubmissionServiceSpec
     with BeforeAndAfterEach
     with TestValues {
 
-  override def beforeEach(): Unit = reset(mockUserAnswersRepository, mockIhtpReportConnector)
+  override def beforeEach(): Unit = {
+    reset(mockUserAnswersRepository, mockIhtpReportConnector, mockAmendmentService)
+    when(mockAmendmentService.applyChangeFlags(any[IhtpPaymentNoticeSubmission](), any(), any())(any()))
+      .thenAnswer(invocation => Future.successful(Right(invocation.getArgument[IhtpPaymentNoticeSubmission](0))))
+  }
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
@@ -54,12 +58,14 @@ class ReportSubmissionServiceSpec
   private val mockJSONSchemaValidator: JSONSchemaValidator = mock[JSONSchemaValidator]
   private val mockIhtpReportConnector: IhtpReportConnector = mock[IhtpReportConnector]
   private val mockAuditService: AuditService = mock[AuditService]
+  private val mockAmendmentService: AmendmentService = mock[AmendmentService]
   private val service =
     new ReportSubmissionService(
       mockUserAnswersRepository,
       mockJSONSchemaValidator,
       mockIhtpReportConnector,
-      mockAuditService
+      mockAuditService,
+      mockAmendmentService
     )
 
   private val testAddress = Json.obj(
@@ -231,222 +237,10 @@ class ReportSubmissionServiceSpec
       Json.toJson(payloadCaptor.getValue.ihtNoticeRequest.personalRep) mustBe individualPersonalRepResponseJson
     }
 
-    "submit deceasedChangeFlag as Yes when the deceased section differs from the previous version" in {
-      val previousVersion = (testIhtNoticeResponse \ "ihtNoticeResponse").get
-        .as[JsObject]
-        .deepMerge(
-          Json.obj("deceased" -> Json.obj("deceasedPersonalDetails" -> Json.obj("surname" -> "ChangedSurname")))
-        )
-      val testUserAnswers = validUserAnswers.copy(data =
-        validUserAnswers.data ++ Json.obj(
-          "ihtVersion" -> "002",
-          "ihtPaymentReference" -> testIhtPaymentReference
-        )
-      )
-      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
-      when(mockIhtpReportConnector.getReport(any(), any(), any(), any())(any()))
-        .thenReturn(
-          Future.successful(
-            HttpResponse(status = 200, body = Json.obj("ihtNoticeResponse" -> previousVersion).toString)
-          )
-        )
-      when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))
-        .thenReturn(Future.successful(Right(testSubmissionResponse)))
-      when(mockJSONSchemaValidator.validatePayload(any(), any()))
-        .thenReturn(SchemaValidationResult(Set.empty))
-
-      service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).futureValue.isRight mustBe true
-      val payloadCaptor: ArgumentCaptor[IhtpPaymentNoticeSubmission] =
-        ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
-      verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
-      payloadCaptor.getValue.ihtNoticeRequest.deceased.deceasedChangeFlag mustBe Some(Yes)
-      verify(mockIhtpReportConnector)
-        .getReport(
-          org.mockito.ArgumentMatchers.eq(testPstr),
-          org.mockito.ArgumentMatchers.eq(None),
-          org.mockito.ArgumentMatchers.eq(Some(testIhtPaymentReference)),
-          org.mockito.ArgumentMatchers.eq(Some("001"))
-        )(any())
-    }
-
-    "submit prChangeFlag as Yes when the personalRep section differs from the previous version" in {
-      val previousVersion = (testIhtNoticeResponse \ "ihtNoticeResponse").get
-        .as[JsObject]
-        .deepMerge(
-          Json.obj("personalRep" -> Json.obj("prContactDetails" -> Json.obj("surname" -> "ChangedSurname")))
-        )
-      val testUserAnswers = validUserAnswers.copy(data =
-        validUserAnswers.data ++ Json.obj(
-          "ihtVersion" -> "002",
-          "ihtPaymentReference" -> testIhtPaymentReference
-        )
-      )
-      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
-      when(mockIhtpReportConnector.getReport(any(), any(), any(), any())(any()))
-        .thenReturn(
-          Future.successful(
-            HttpResponse(status = 200, body = Json.obj("ihtNoticeResponse" -> previousVersion).toString)
-          )
-        )
-      when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))
-        .thenReturn(Future.successful(Right(testSubmissionResponse)))
-      when(mockJSONSchemaValidator.validatePayload(any(), any()))
-        .thenReturn(SchemaValidationResult(Set.empty))
-
-      service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).futureValue.isRight mustBe true
-      val payloadCaptor: ArgumentCaptor[IhtpPaymentNoticeSubmission] =
-        ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
-      verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
-      payloadCaptor.getValue.ihtNoticeRequest.personalRep.prChangeFlag mustBe Some(Yes)
-    }
-
-    "submit ihTaxChangeFlag as Yes when the ihTaxInformation section differs from the previous version" in {
-      val previousVersion = (testIhtNoticeResponse \ "ihtNoticeResponse").get
-        .as[JsObject]
-        .deepMerge(
-          Json.obj("ihTaxInformation" -> Json.obj("dateNoticeReceived" -> "2026-01-01"))
-        )
-      val testUserAnswers = validUserAnswers.copy(data =
-        validUserAnswers.data ++ Json.obj(
-          "ihtVersion" -> "002",
-          "ihtPaymentReference" -> testIhtPaymentReference
-        )
-      )
-      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
-      when(mockIhtpReportConnector.getReport(any(), any(), any(), any())(any()))
-        .thenReturn(
-          Future.successful(
-            HttpResponse(status = 200, body = Json.obj("ihtNoticeResponse" -> previousVersion).toString)
-          )
-        )
-      when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))
-        .thenReturn(Future.successful(Right(testSubmissionResponse)))
-      when(mockJSONSchemaValidator.validatePayload(any(), any()))
-        .thenReturn(SchemaValidationResult(Set.empty))
-
-      service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).futureValue.isRight mustBe true
-      val payloadCaptor: ArgumentCaptor[IhtpPaymentNoticeSubmission] =
-        ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
-      verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
-      payloadCaptor.getValue.ihtNoticeRequest.ihTaxInformation.ihTaxChangeFlag mustBe Some(Yes)
-    }
-
-    "submit beneficiariesChangeFlag as Yes when a beneficiary is added compared to the previous version" in {
-      val previousVersion = (testIhtNoticeResponse \ "ihtNoticeResponse").get
-      val testUserAnswers = validUserAnswers.copy(data =
-        validUserAnswers.data ++ Json.obj(
-          "ihtVersion" -> "002",
-          "ihtPaymentReference" -> testIhtPaymentReference,
-          "areBeneficiariesKnown" -> true,
-          "beneficiaries" -> Json.arr(
-            Json.obj(
-              "beneficiaryType" -> "individual",
-              "beneficiaryIhtPayable" -> 100.00,
-              "beneficiaryInterestPayable" -> 50.00,
-              "beneficiaryAddress" -> Json.toJson(beneficiaryAddressPayloadSection),
-              "beneficiaryDetails" -> Json.obj(
-                "individual" -> Json.obj(
-                  "title" -> "Mr",
-                  "firstForename" -> "Firstnamethree",
-                  "surname" -> "Surname"
-                )
-              ),
-              "hasNino" -> true,
-              "nino" -> testNino
-            )
-          )
-        )
-      )
-      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
-      when(mockIhtpReportConnector.getReport(any(), any(), any(), any())(any()))
-        .thenReturn(
-          Future.successful(
-            HttpResponse(status = 200, body = Json.obj("ihtNoticeResponse" -> previousVersion).toString)
-          )
-        )
-      when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))
-        .thenReturn(Future.successful(Right(testSubmissionResponse)))
-      when(mockJSONSchemaValidator.validatePayload(any(), any()))
-        .thenReturn(SchemaValidationResult(Set.empty))
-
-      service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).futureValue.isRight mustBe true
-      val payloadCaptor: ArgumentCaptor[IhtpPaymentNoticeSubmission] =
-        ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
-      verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
-      payloadCaptor.getValue.ihtNoticeRequest.beneficiary.get.beneficiariesChangeFlag mustBe Some(Yes)
-    }
-
-    "omit all change flags when no change from the previous version" in {
-      val previousVersion = (testIhtNoticeResponse \ "ihtNoticeResponse").get
-      val testUserAnswers = validUserAnswers.copy(data =
-        validUserAnswers.data ++ Json.obj(
-          "ihtVersion" -> "002",
-          "ihtPaymentReference" -> testIhtPaymentReference,
-          "ihtTaxInformation" -> Json.obj(
-            "dateThePensionSchemeReceivedNoticeToPay" -> "2026-03-27",
-            "totalIhtPayable" -> 100,
-            "totalInterestPayable" -> 10,
-            "total" -> 110
-          )
-        )
-      )
-      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
-      when(mockIhtpReportConnector.getReport(any(), any(), any(), any())(any()))
-        .thenReturn(
-          Future.successful(
-            HttpResponse(status = 200, body = Json.obj("ihtNoticeResponse" -> previousVersion).toString)
-          )
-        )
-      when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))
-        .thenReturn(Future.successful(Right(testSubmissionResponse)))
-      when(mockJSONSchemaValidator.validatePayload(any(), any()))
-        .thenReturn(SchemaValidationResult(Set.empty))
-
-      service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).futureValue.isRight mustBe true
-      val payloadCaptor: ArgumentCaptor[IhtpPaymentNoticeSubmission] =
-        ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
-      verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
-      val request = payloadCaptor.getValue.ihtNoticeRequest
-      request.deceased.deceasedChangeFlag mustBe None
-      request.personalRep.prChangeFlag mustBe None
-      request.ihTaxInformation.ihTaxChangeFlag mustBe None
-      request.beneficiary mustBe None
-    }
-
-    "do not fetch a previous version when the report version is 001" in {
-      val testUserAnswers = validUserAnswers.copy(data =
-        validUserAnswers.data ++ Json.obj(
-          "ihtVersion" -> "001",
-          "ihtPaymentReference" -> testIhtPaymentReference
-        )
-      )
-      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
-      when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))
-        .thenReturn(Future.successful(Right(testSubmissionResponse)))
-      when(mockJSONSchemaValidator.validatePayload(any(), any()))
-        .thenReturn(SchemaValidationResult(Set.empty))
-
-      service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).futureValue.isRight mustBe true
-      verify(mockIhtpReportConnector, never()).getReport(any(), any(), any(), any())(any())
-      val payloadCaptor: ArgumentCaptor[IhtpPaymentNoticeSubmission] =
-        ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
-      verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
-      val request = payloadCaptor.getValue.ihtNoticeRequest
-      request.deceased.deceasedChangeFlag mustBe None
-      request.personalRep.prChangeFlag mustBe None
-      request.ihTaxInformation.ihTaxChangeFlag mustBe None
-    }
-
     "fails the submission when the previous version cannot be retrieved" in {
-      val testUserAnswers = validUserAnswers.copy(data =
-        validUserAnswers.data ++ Json.obj(
-          "ihtVersion" -> "002",
-          "ihtPaymentReference" -> testIhtPaymentReference
-        )
-      )
-      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
-      when(mockIhtpReportConnector.getReport(any(), any(), any(), any())(any()))
-        .thenReturn(Future.successful(HttpResponse(status = 500, body = "")))
+      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(validUserAnswers)))
+      when(mockAmendmentService.applyChangeFlags(any[IhtpPaymentNoticeSubmission](), any(), any())(any()))
+        .thenReturn(Future.successful(Left(ErrorCodes.unexpectedResponse)))
 
       service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).futureValue.isLeft mustBe true
       verify(mockIhtpReportConnector, never()).submitReport(any[IhtpPaymentNoticeSubmission]())(any())

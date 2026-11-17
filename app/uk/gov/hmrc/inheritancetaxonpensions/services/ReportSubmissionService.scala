@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.inheritancetaxonpensions.services
 
-import play.api.http.Status
 import uk.gov.hmrc.inheritancetaxonpensions.auth.IhtpAuthContext
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
@@ -39,7 +38,8 @@ class ReportSubmissionService @Inject() (
   userAnswersRepository: UserAnswersRepository,
   jsonPayloadSchemaValidator: JSONSchemaValidator,
   ihtpReportConnector: IhtpReportConnector,
-  auditService: AuditService
+  auditService: AuditService,
+  amendmentService: AmendmentService
 )(implicit ec: ExecutionContext)
     extends Logging {
 
@@ -51,111 +51,35 @@ class ReportSubmissionService @Inject() (
       result <- userAnswersOpt match {
         case Some(userAnswers) =>
           val version = (userAnswers.data \ Constants.ihtVersionPath).asOpt[String]
-          fetchPreviousVersion(pstr, userAnswers).flatMap {
-            case Left(errorResponse) =>
-              Future.successful(Left(errorResponse))
-            case Right(previousVersion) =>
-              val submissionPayLoad: IhtpPaymentNoticeSubmission =
-                applyChangeFlags(buildSubmissionPayload(userAnswers, pstr, ihtpAuthContext), previousVersion)
-              val payloadAsJson = Json.toJson(submissionPayLoad)
-              val schema = SchemaPaths.EPID1767_v1_0_0
-              val validationResult = jsonPayloadSchemaValidator.validatePayload(schema, payloadAsJson)
-              if (validationResult.hasErrors) {
-                throw SchemaValidationFailureException(
-                  s"Invalid payload - validationErrors:" +
-                    s"${validationResult.toString}"
-                )
-              } else {
-                val submissionOutcome = ihtpReportConnector.submitReport(submissionPayLoad)
-                submissionOutcome.map {
-                  case Right(submissionResponse) =>
-                    auditService.audit(ReportSubmittedAuditModel.build(submissionPayLoad, version))
-                  case _ => ()
+          amendmentService
+            .applyChangeFlags(buildSubmissionPayload(userAnswers, pstr, ihtpAuthContext), pstr, userAnswers)
+            .flatMap {
+              case Left(errorResponse) =>
+                Future.successful(Left(errorResponse))
+              case Right(submissionPayLoad) =>
+                val payloadAsJson = Json.toJson(submissionPayLoad)
+                val schema = SchemaPaths.EPID1767_v1_0_0
+                val validationResult = jsonPayloadSchemaValidator.validatePayload(schema, payloadAsJson)
+                if (validationResult.hasErrors) {
+                  throw SchemaValidationFailureException(
+                    s"Invalid payload - validationErrors:" +
+                      s"${validationResult.toString}"
+                  )
+                } else {
+                  val submissionOutcome = ihtpReportConnector.submitReport(submissionPayLoad)
+                  submissionOutcome.map {
+                    case Right(submissionResponse) =>
+                      auditService.audit(ReportSubmittedAuditModel.build(submissionPayLoad, version))
+                    case _ => ()
+                  }
+                  submissionOutcome
                 }
-                submissionOutcome
-              }
-          }
+            }
         case None =>
           logger.warn(s"[ReportSubmissionService][submitReport] User answers not found for id: $userAnswersId")
           Future.successful(Left(ErrorCodes.entityNotFound))
       }
     } yield result
-
-  private def fetchPreviousVersion(pstr: String, userAnswers: UserAnswers)(implicit
-    hc: HeaderCarrier
-  ): Future[Either[ErrorResponse, Option[IhtNoticeResponse]]] =
-    (
-      (userAnswers.data \ Constants.ihtVersionPath).asOpt[String],
-      (userAnswers.data \ Constants.ihtPaymentReferencePath).asOpt[String]
-    ) match {
-      case (Some(version), Some(ihtPaymentReference)) if version.toIntOption.exists(_ > 1) =>
-        val previousVersionNumber = f"${version.toInt - 1}%03d"
-        ihtpReportConnector
-          .getReport(pstr, None, Some(ihtPaymentReference), Some(previousVersionNumber))
-          .map { response =>
-            if (response.status == Status.OK) {
-              (response.json \ "ihtNoticeResponse").asOpt[IhtNoticeResponse] match {
-                case Some(previous) => Right(Some(previous))
-                case None => Left(ErrorCodes.unexpectedResponse)
-              }
-            } else {
-              logger.warn(
-                s"[ReportSubmissionService][fetchPreviousVersion] Previous report version fetch failed, status: ${response.status}"
-              )
-              Left(ErrorCodes.unexpectedResponse)
-            }
-          }
-      case _ => Future.successful(Right(None))
-    }
-
-  private def applyChangeFlags(
-    submission: IhtpPaymentNoticeSubmission,
-    previousVersion: Option[IhtNoticeResponse]
-  ): IhtpPaymentNoticeSubmission =
-    previousVersion match {
-      case Some(previous) =>
-        val request = submission.ihtNoticeRequest
-        val deceasedChangeFlag =
-          if (request.deceased.copy(deceasedChangeFlag = None) != previous.deceased.copy(deceasedChangeFlag = None))
-            Some(YesNo.Yes)
-          else None
-        val prChangeFlag =
-          if (request.personalRep.copy(prChangeFlag = None) != previous.personalRep.copy(prChangeFlag = None))
-            Some(YesNo.Yes)
-          else None
-        val ihTaxChangeFlag =
-          if (
-            request.ihTaxInformation.copy(ihTaxChangeFlag = None, total = None) != previous.ihTaxInformation
-              .copy(ihTaxChangeFlag = None, total = None)
-          )
-            Some(YesNo.Yes)
-          else None
-        val beneficiariesChangeFlag =
-          if (beneficiariesForComparison(request.beneficiary) != beneficiariesForComparison(previous.beneficiary))
-            Some(YesNo.Yes)
-          else None
-        submission.copy(
-          ihtNoticeRequest = request.copy(
-            deceased = request.deceased.copy(deceasedChangeFlag = deceasedChangeFlag),
-            personalRep = request.personalRep.copy(prChangeFlag = prChangeFlag),
-            ihTaxInformation = request.ihTaxInformation.copy(ihTaxChangeFlag = ihTaxChangeFlag),
-            beneficiary = request.beneficiary.map(_.copy(beneficiariesChangeFlag = beneficiariesChangeFlag))
-          )
-        )
-      case None => submission
-    }
-
-  private def beneficiariesForComparison(beneficiaries: Option[Beneficiaries]): Option[Beneficiaries] =
-    beneficiaries.map(block =>
-      block.copy(
-        beneficiariesChangeFlag = None,
-        beneficiaryDetails = block.beneficiaryDetails.map(detail =>
-          detail.copy(
-            beneficiaryPaymentDetails = detail.beneficiaryPaymentDetails.copy(beneficiaryTotal = 0)
-          )
-        )
-      )
-    )
 
   private def buildSubmissionPayload(
     userAnswers: UserAnswers,
