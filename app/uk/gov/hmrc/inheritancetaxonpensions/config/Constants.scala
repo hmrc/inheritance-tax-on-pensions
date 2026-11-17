@@ -45,10 +45,11 @@ object Constants {
   val deceasedFirstForename = "firstForename"
   val deceasedSecondForename = "secondForename"
   val deceasedSurname = "surname"
-  val deceasedChangeFlag = s"deceasedChangeFlag" // not yet implemented
 
   val ihtTaxInformationPath = "ihtTaxInformation"
   val noticeToPayDatePath = "dateThePensionSchemeReceivedNoticeToPay"
+  val ihtVersionPath = "ihtVersion"
+  val ihtPaymentReferencePath = "ihtPaymentReference"
 
   val dueDateDifferenceInDays = 35
 

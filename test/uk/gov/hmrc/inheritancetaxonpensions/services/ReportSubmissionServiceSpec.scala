@@ -45,7 +45,11 @@ class ReportSubmissionServiceSpec
     with BeforeAndAfterEach
     with TestValues {
 
-  override def beforeEach(): Unit = reset(mockUserAnswersRepository, mockIhtpReportConnector)
+  override def beforeEach(): Unit = {
+    reset(mockUserAnswersRepository, mockIhtpReportConnector, mockAmendmentService)
+    when(mockAmendmentService.applyChangeFlags(any[IhtpPaymentNoticeSubmission](), any(), any())(any()))
+      .thenAnswer(invocation => Future.successful(Right(invocation.getArgument[IhtpPaymentNoticeSubmission](0))))
+  }
 
   implicit val hc: HeaderCarrier = HeaderCarrier()
   implicit val ec: scala.concurrent.ExecutionContext = scala.concurrent.ExecutionContext.global
@@ -54,12 +58,14 @@ class ReportSubmissionServiceSpec
   private val mockJSONSchemaValidator: JSONSchemaValidator = mock[JSONSchemaValidator]
   private val mockIhtpReportConnector: IhtpReportConnector = mock[IhtpReportConnector]
   private val mockAuditService: AuditService = mock[AuditService]
+  private val mockAmendmentService: AmendmentService = mock[AmendmentService]
   private val service =
     new ReportSubmissionService(
       mockUserAnswersRepository,
       mockJSONSchemaValidator,
       mockIhtpReportConnector,
-      mockAuditService
+      mockAuditService,
+      mockAmendmentService
     )
 
   private val testAddress = Json.obj(
@@ -229,6 +235,46 @@ class ReportSubmissionServiceSpec
         )
       )
       Json.toJson(payloadCaptor.getValue.ihtNoticeRequest.personalRep) mustBe individualPersonalRepResponseJson
+    }
+
+    "fails the submission when the previous version cannot be retrieved" in {
+      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(validUserAnswers)))
+      when(mockAmendmentService.applyChangeFlags(any[IhtpPaymentNoticeSubmission](), any(), any())(any()))
+        .thenReturn(Future.successful(Left(ErrorCodes.unexpectedResponse)))
+
+      service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).futureValue.isLeft mustBe true
+      verify(mockIhtpReportConnector, never()).submitReport(any[IhtpPaymentNoticeSubmission]())(any())
+    }
+
+    "populate reportDetails.ihtPaymentReference from user answers when present" in {
+      val testUserAnswers = validUserAnswers.copy(data =
+        validUserAnswers.data ++ Json.obj("ihtPaymentReference" -> testIhtPaymentReference)
+      )
+      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(testUserAnswers)))
+      when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Right(testSubmissionResponse)))
+      when(mockJSONSchemaValidator.validatePayload(any(), any()))
+        .thenReturn(SchemaValidationResult(Set.empty))
+
+      service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).futureValue.isRight mustBe true
+      val payloadCaptor: ArgumentCaptor[IhtpPaymentNoticeSubmission] =
+        ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
+      verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
+      payloadCaptor.getValue.ihtNoticeRequest.reportDetails.ihtPaymentReference mustBe Some(testIhtPaymentReference)
+    }
+
+    "do not populate reportDetails.ihtPaymentReference for a new report" in {
+      when(mockUserAnswersRepository.get(testUserAnswersId)).thenReturn(Future.successful(Some(validUserAnswers)))
+      when(mockIhtpReportConnector.submitReport(any[IhtpPaymentNoticeSubmission]())(any[HeaderCarrier]()))
+        .thenReturn(Future.successful(Right(testSubmissionResponse)))
+      when(mockJSONSchemaValidator.validatePayload(any(), any()))
+        .thenReturn(SchemaValidationResult(Set.empty))
+
+      service.submitReport(testUserAnswersId, testPstr, testIhtpAuthContext(rq)).futureValue.isRight mustBe true
+      val payloadCaptor: ArgumentCaptor[IhtpPaymentNoticeSubmission] =
+        ArgumentCaptor.forClass(classOf[IhtpPaymentNoticeSubmission])
+      verify(mockIhtpReportConnector).submitReport(payloadCaptor.capture())(any[HeaderCarrier]())
+      payloadCaptor.getValue.ihtNoticeRequest.reportDetails.ihtPaymentReference mustBe None
     }
 
     "return Right when submission is successful when PSP fills in the declaration" in {

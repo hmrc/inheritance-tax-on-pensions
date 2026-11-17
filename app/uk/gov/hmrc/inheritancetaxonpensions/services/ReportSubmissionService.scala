@@ -38,7 +38,8 @@ class ReportSubmissionService @Inject() (
   userAnswersRepository: UserAnswersRepository,
   jsonPayloadSchemaValidator: JSONSchemaValidator,
   ihtpReportConnector: IhtpReportConnector,
-  auditService: AuditService
+  auditService: AuditService,
+  amendmentService: AmendmentService
 )(implicit ec: ExecutionContext)
     extends Logging {
 
@@ -49,26 +50,31 @@ class ReportSubmissionService @Inject() (
       userAnswersOpt <- userAnswersRepository.get(userAnswersId)
       result <- userAnswersOpt match {
         case Some(userAnswers) =>
-          val submissionPayLoad: IhtpPaymentNoticeSubmission =
-            buildSubmissionPayload(userAnswers, pstr, ihtpAuthContext)
-          val version = (userAnswersOpt.get.data \ "ihtVersion").asOpt[String]
-          val payloadAsJson = Json.toJson(submissionPayLoad)
-          val schema = SchemaPaths.EPID1767_v1_0_0
-          val validationResult = jsonPayloadSchemaValidator.validatePayload(schema, payloadAsJson)
-          if (validationResult.hasErrors) {
-            throw SchemaValidationFailureException(
-              s"Invalid payload - validationErrors:" +
-                s"${validationResult.toString}"
-            )
-          } else {
-            val submissionOutcome = ihtpReportConnector.submitReport(submissionPayLoad)
-            submissionOutcome.map {
-              case Right(submissionResponse) =>
-                auditService.audit(ReportSubmittedAuditModel.build(submissionPayLoad, version))
-              case _ => ()
+          val version = (userAnswers.data \ Constants.ihtVersionPath).asOpt[String]
+          amendmentService
+            .applyChangeFlags(buildSubmissionPayload(userAnswers, pstr, ihtpAuthContext), pstr, userAnswers)
+            .flatMap {
+              case Left(errorResponse) =>
+                Future.successful(Left(errorResponse))
+              case Right(submissionPayLoad) =>
+                val payloadAsJson = Json.toJson(submissionPayLoad)
+                val schema = SchemaPaths.EPID1767_v1_0_0
+                val validationResult = jsonPayloadSchemaValidator.validatePayload(schema, payloadAsJson)
+                if (validationResult.hasErrors) {
+                  throw SchemaValidationFailureException(
+                    s"Invalid payload - validationErrors:" +
+                      s"${validationResult.toString}"
+                  )
+                } else {
+                  val submissionOutcome = ihtpReportConnector.submitReport(submissionPayLoad)
+                  submissionOutcome.map {
+                    case Right(submissionResponse) =>
+                      auditService.audit(ReportSubmittedAuditModel.build(submissionPayLoad, version))
+                    case _ => ()
+                  }
+                  submissionOutcome
+                }
             }
-            submissionOutcome
-          }
         case None =>
           logger.warn(s"[ReportSubmissionService][submitReport] User answers not found for id: $userAnswersId")
           Future.successful(Left(ErrorCodes.entityNotFound))
@@ -82,7 +88,6 @@ class ReportSubmissionService @Inject() (
   ): IhtpPaymentNoticeSubmission = {
     val inheritanceTaxReferenceNumber =
       UserAnswersHelper.getMandatory(userAnswers, Constants.inheritanceTaxReferenceNumberPath)
-    val deceasedChangeFlag = UserAnswersHelper.getOptionalAs[YesNo](userAnswers, Constants.deceasedChangeFlag)
     val deceasedTitle = UserAnswersHelper.getOptional(
       userAnswers,
       s"${Constants.nameOfDeceasedPath}.${Constants.deceasedTitle}"
@@ -119,14 +124,11 @@ class ReportSubmissionService @Inject() (
 
     val reportDetails = ReportDetails(
       pstr = pstr,
-      ihtPaymentReference = None
+      ihtPaymentReference = UserAnswersHelper.getOptionalAs[String](userAnswers, Constants.ihtPaymentReferencePath)
     )
 
     val deceased = Deceased(
-      deceasedChangeFlag = deceasedChangeFlag match {
-        case Some(changeFlag) => Some(changeFlag)
-        case _ => None
-      },
+      deceasedChangeFlag = None,
       deceasedPersonalDetails = DeceasedPersonalDetails(
         title = deceasedTitle,
         firstForename = deceasedFirstForename,
@@ -162,7 +164,6 @@ class ReportSubmissionService @Inject() (
   }
 
   private def buildPrDetails(userAnswers: UserAnswers): PrDetails =
-    val prChangeFlag = UserAnswersHelper.getOptionalAs[YesNo](userAnswers, "prDetails.prChangeFlag")
     val prType = UserAnswersHelper.getMandatory(userAnswers, "prType")
     val prContactDetails = prType match {
       case "organisation" =>
@@ -191,7 +192,7 @@ class ReportSubmissionService @Inject() (
         )
     }
 
-    PrDetails(prChangeFlag, IndividualOrOrg(prType), prContactDetails)
+    PrDetails(None, IndividualOrOrg(prType), prContactDetails)
 
   private def buildIhTaxInformation(
     userAnswers: UserAnswers,
