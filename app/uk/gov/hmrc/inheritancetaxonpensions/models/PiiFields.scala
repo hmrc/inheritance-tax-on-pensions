@@ -44,7 +44,22 @@ object PiiFields {
     "prDetails.organisation.addressLine3",
     "prDetails.organisation.addressLine4",
     "prDetails.organisation.postCode",
-    "prDetails.organisation.country"
+    "prDetails.organisation.country",
+    "beneficiaries.beneficiaryDetails.individual.firstForename",
+    "beneficiaries.beneficiaryDetails.individual.secondForename",
+    "beneficiaries.beneficiaryDetails.individual.surname",
+    "beneficiaries.beneficiaryDetails.trust.beneficiaryTrustName",
+    "beneficiaries.beneficiaryDetails.trust.firstForename",
+    "beneficiaries.beneficiaryDetails.trust.secondForename",
+    "beneficiaries.beneficiaryDetails.trust.surname",
+    "beneficiaries.nino",
+    "beneficiaries.beneficiaryAddress.addressLine1",
+    "beneficiaries.beneficiaryAddress.addressLine2",
+    "beneficiaries.beneficiaryAddress.addressLine3",
+    "beneficiaries.beneficiaryAddress.addressLine4",
+    "beneficiaries.beneficiaryAddress.addressLine5",
+    "beneficiaries.beneficiaryAddress.postCode",
+    "beneficiaries.beneficiaryAddress.country"
   )
 
   def isPiiField(fieldName: String): Boolean = piiFields.contains(fieldName)
