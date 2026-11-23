@@ -30,6 +30,7 @@ object PiiFields {
     "prDetails.individual.firstForename",
     "prDetails.individual.secondForename",
     "prDetails.individual.surname",
+    "prDetails.organisation.organisationName",
     "prDetails.organisation.firstForename",
     "prDetails.organisation.secondForename",
     "prDetails.organisation.surname",

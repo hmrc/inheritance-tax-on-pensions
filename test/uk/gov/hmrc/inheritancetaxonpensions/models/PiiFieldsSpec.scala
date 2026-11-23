@@ -36,6 +36,7 @@ class PiiFieldsSpec extends AnyFreeSpec with Matchers {
         "prDetails.individual.firstForename",
         "prDetails.individual.secondForename",
         "prDetails.individual.surname",
+        "prDetails.organisation.organisationName",
         "prDetails.organisation.firstForename",
         "prDetails.organisation.secondForename",
         "prDetails.organisation.surname",
@@ -80,8 +81,7 @@ class PiiFieldsSpec extends AnyFreeSpec with Matchers {
         "randomUserAnswers",
         "userAnswers.id",
         "lastUpdated",
-        "data.someField",
-        "prDetails.organisation.organisationName"
+        "data.someField"
       )
 
       nonPiiFields.foreach { field =>
