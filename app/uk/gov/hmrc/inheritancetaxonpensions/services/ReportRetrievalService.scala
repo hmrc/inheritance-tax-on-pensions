@@ -204,7 +204,9 @@ class ReportRetrievalService @Inject() (
           didPrSubmit = Some(response.ihTaxInformation.noticeSubmittedByPr == Yes),
           ihtTaxInformation = Some(
             IhTaxInformationAnswers(
-              dateThePensionSchemeReceivedNoticeToPay = response.ihTaxInformation.dateNoticeReceived
+              dateThePensionSchemeReceivedNoticeToPay = response.ihTaxInformation.dateNoticeReceived,
+              totalIhtPayable = response.ihTaxInformation.totalIhtPayable,
+              totalInterestPayable = response.ihTaxInformation.totalInterestPayable
             )
           ),
           areBeneficiariesKnown = response.ihTaxInformation.knownBeneficiaries.map(_ == Yes),
