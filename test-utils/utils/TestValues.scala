@@ -74,7 +74,8 @@ trait TestValues extends Generators {
   val testPaymentNoticeDate = "2026-03-27"
   val testProcessingDate: Instant = Instant.parse("2026-08-31T09:26:17Z")
   val testAddressLine1 = "1 ABCDE Street"
-  val testAddressLine2 = "FGHIJ Town"
+  val testAddressLine2 = "Other place"
+  val testAddressLine4 = "Anytown"
   val testUkPostcode = "ZZ99 1AA"
   val testCountry = "GB"
   val testUserAnswersId = "testUserAnswersId"
@@ -124,6 +125,7 @@ trait TestValues extends Generators {
     prAddress = AddressDetails(
       addressLine1 = testAddressLine1,
       addressLine2 = Some(testAddressLine2),
+      addressLine4 = testAddressLine4,
       postCode = Some(testUkPostcode),
       country = testCountry
     )
@@ -138,6 +140,7 @@ trait TestValues extends Generators {
     prAddress = AddressDetails(
       addressLine1 = testAddressLine1,
       addressLine2 = Some(testAddressLine2),
+      addressLine4 = testAddressLine4,
       postCode = Some(testUkPostcode),
       country = testCountry
     )
@@ -168,6 +171,7 @@ trait TestValues extends Generators {
   val beneficiaryAddressPayloadSection: AddressDetails = AddressDetails(
     addressLine1 = testAddressLine1,
     addressLine2 = Some(testAddressLine2),
+    addressLine4 = testAddressLine4,
     postCode = Some(testUkPostcode),
     country = testCountry
   )
@@ -293,7 +297,8 @@ trait TestValues extends Generators {
         "secondForename" -> "Middlenametwo",
         "surname" -> "Surname",
         "addressLine1" -> "1 ABCDE Street",
-        "addressLine2" -> "FGHIJ Town",
+        "addressLine2" -> "Other place",
+        "addressLine4" -> "Anytown",
         "postCode" -> "ZZ99 1AA",
         "country" -> "GB"
       )
@@ -386,7 +391,8 @@ trait TestValues extends Generators {
           "surname" -> "Surname",
           "prAddress" -> Json.obj(
             "addressLine1" -> "1 ABCDE Street",
-            "addressLine2" -> "FGHIJ Town",
+            "addressLine2" -> "Other place",
+            "addressLine4" -> "Anytown",
             "postCode" -> "ZZ99 1AA",
             "country" -> "GB"
           )
