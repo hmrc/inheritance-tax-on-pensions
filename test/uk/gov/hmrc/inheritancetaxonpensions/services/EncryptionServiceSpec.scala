@@ -78,6 +78,14 @@ class EncryptionServiceSpec extends AnyFreeSpec with Matchers with TestValues {
         result mustBe original
       }
 
+      "must handle non-JsString values when decrypting" in {
+        val service = new EncryptionService(crypto)
+
+        val original = play.api.libs.json.Json.obj("key" -> "value")
+        val result = service.decryptField("nameOfDeceased.firstForename", original)
+        result mustBe original
+      }
+
       "must handle decryption errors gracefully" in {
         val service = new EncryptionService(crypto)
 

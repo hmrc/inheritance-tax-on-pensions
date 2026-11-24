@@ -102,6 +102,22 @@ class ReportSubmissionControllerSpec extends BaseSpec with TestValues:
       verify(mockUserAnswersRepository, times(1)).clear(any())
     }
 
+    "return OK (200) when report submission is successful but the user answers clear fails" in {
+      authoriseUser()
+      when(mockReportSubmissionService.submitReport(any(), any(), any())(any()))
+        .thenReturn(Future.successful(Right(testSubmissionResponse)))
+      when(mockUserAnswersRepository.clear(any()))
+        .thenReturn(Future.successful(false))
+
+      val result = controller.submitReport(testPstr, testUserAnswersId)(
+        requestWithRequiredHeaders
+      )
+
+      status(result) mustEqual Status.OK
+      contentAsJson(result) mustBe Json.toJson(testSubmissionResponse)
+      verify(mockUserAnswersRepository, times(1)).clear(any())
+    }
+
     "return error response when service returns Left" in {
       authoriseUser()
       when(mockReportSubmissionService.submitReport(any(), any(), any())(any()))

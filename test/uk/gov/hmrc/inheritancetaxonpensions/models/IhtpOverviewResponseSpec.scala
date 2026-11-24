@@ -17,7 +17,7 @@
 package uk.gov.hmrc.inheritancetaxonpensions.models
 
 import org.scalatest.matchers.must.Matchers
-import play.api.libs.json.{JsError, JsSuccess, Json}
+import play.api.libs.json._
 import models.{IhtpOverviewReport, IhtpOverviewResponse, IhtpOverviewSuccess}
 import utils.TestValues
 import org.scalatest.freespec.AnyFreeSpec
@@ -99,6 +99,10 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
       Json.obj().validate[IhtpOverviewResponse] mustBe a[JsError]
     }
 
+    "must fail to read when the json is not an object" in {
+      JsString("not-an-object").validate[IhtpOverviewResponse] mustBe a[JsError]
+    }
+
     "must expose its case class values" in {
       response.success mustBe success
       response.copy(success = success) mustBe response
@@ -135,6 +139,10 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
 
     "must fail to read when required fields are missing" in {
       Json.obj().validate[IhtpOverviewSuccess] mustBe a[JsError]
+    }
+
+    "must fail to read when the json is not an object" in {
+      JsString("not-an-object").validate[IhtpOverviewSuccess] mustBe a[JsError]
     }
 
     "must expose its case class values" in {
@@ -223,6 +231,25 @@ class IhtpOverviewResponseSpec extends AnyFreeSpec with Matchers with TestValues
           allocatedDate = None
         )
       )
+    }
+
+    "must use the full payment reference as the inheritance tax reference when it is shorter than 11 characters" in {
+      val json = Json.obj(
+        "ihtVersion" -> "001",
+        "ihtPaymentReference" -> "SHORT",
+        "ihtStatus" -> "Not reconciled"
+      )
+
+      json.as[IhtpOverviewReport].inheritanceTaxReference mustBe "SHORT"
+    }
+
+    "must default the inheritance tax reference to empty when there is no payment reference" in {
+      val json = Json.obj(
+        "ihtVersion" -> "000",
+        "ihtStatus" -> "In progress"
+      )
+
+      json.as[IhtpOverviewReport].inheritanceTaxReference mustBe ""
     }
 
     "must write optional fields as null when they are not present" in {

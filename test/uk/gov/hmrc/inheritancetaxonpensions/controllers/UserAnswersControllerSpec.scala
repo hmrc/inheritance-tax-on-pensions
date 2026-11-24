@@ -142,6 +142,21 @@ class UserAnswersControllerSpec extends BaseSpec with TestValues:
       verify(mockSchemeDetailsConnector, never).checkAssociation(any(), any(), any())(any(), any())
     }
 
+    "return NOT_FOUND (404) when the cache key is invalid" in {
+      val result = controller.fetch("invalid-id")(
+        fakeRequest.withHeaders(
+          newHeaders = HEADER_KEY_SRN -> srn,
+          HEADER_KEY_SCHEME_NAME -> schemeName,
+          HEADER_KEY_USER_NAME -> userName,
+          HEADER_KEY_REQUEST_ROLE -> HEADER_VALUE_PSA
+        )
+      )
+
+      status(result) mustEqual Status.NOT_FOUND
+      verify(mockAuthConnector, never).authorise(any(), any())(any(), any())
+      verify(mockUserAnswersRepository, never).get(any())
+    }
+
     "return NOT_FOUND (404) when cache key SRN does not match header SRN" in {
       when(mockAuthConnector.authorise[Option[String] ~ Enrolments](any(), any())(any(), any()))
         .thenReturn(Future.successful(new ~(Some(externalId), enrolments)))
