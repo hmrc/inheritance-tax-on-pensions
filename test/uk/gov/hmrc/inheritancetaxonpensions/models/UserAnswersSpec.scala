@@ -159,6 +159,73 @@ class UserAnswersSpec extends AnyFreeSpec with Matchers with TestValues {
         decryptedName mustBe Some("Forename")
       }
 
+      "must encrypt and decrypt PR organisation name" in {
+        val service = new EncryptionService(crypto)
+
+        val format = UserAnswers.encryptedFormat(service)
+
+        val originalData = Json.obj(
+          "prDetails" -> Json.obj(
+            "organisation" -> Json.obj(
+              "organisationName" -> "Test Organisation"
+            )
+          )
+        )
+
+        val userAnswers = UserAnswers(s"$srn-$uuid", srn, uuid, originalData, Instant.now())
+        val json = format.writes(userAnswers)
+        val result = format.reads(json)
+
+        result.isSuccess mustBe true
+
+        val encryptedName = (json \ "data" \ "prDetails" \ "organisation" \ "organisationName").as[String]
+        encryptedName must not be "Test Organisation"
+
+        val decryptedName = (result.get.data \ "prDetails" \ "organisation" \ "organisationName").as[String]
+        decryptedName mustBe "Test Organisation"
+      }
+
+      "must encrypt and decrypt beneficiary PII inside arrays" in {
+        val service = new EncryptionService(crypto)
+        val format = UserAnswers.encryptedFormat(service)
+
+        val originalData = Json.obj(
+          "beneficiaries" -> Json.arr(
+            Json.obj(
+              "beneficiaryDetails" -> Json.obj(
+                "individual" -> Json.obj(
+                  "firstForename" -> "Jane",
+                  "surname" -> "Smith"
+                )
+              ),
+              "beneficiaryAddress" -> Json.obj(
+                "addressLine1" -> "10 Test Street"
+              ),
+              "beneficiaryType" -> "Individual"
+            )
+          )
+        )
+
+        val userAnswers = UserAnswers(s"$srn-$uuid", srn, uuid, originalData, Instant.now())
+        val json = format.writes(userAnswers)
+        val result = format.reads(json)
+
+        result.isSuccess mustBe true
+
+        val storedBeneficiary = (json \ "data" \ "beneficiaries")(0)
+
+        (storedBeneficiary \ "beneficiaryDetails" \ "individual" \ "firstForename")
+          .as[String] must not be "Jane"
+
+        (storedBeneficiary \ "beneficiaryAddress" \ "addressLine1")
+          .as[String] must not be "10 Test Street"
+
+        (storedBeneficiary \ "beneficiaryType")
+          .as[String] mustBe "Individual"
+
+        result.get.data mustBe originalData
+      }
+
       "must work with encryption disabled" in {
         val service = new EncryptionService(noopCrypto)
         val format = UserAnswers.encryptedFormat(service)
