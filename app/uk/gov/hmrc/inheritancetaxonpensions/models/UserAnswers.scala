@@ -62,12 +62,6 @@ object UserAnswers {
             key -> encryptionService.encryptField(fullPath, JsString(str))
           case JsObject(nested) =>
             key -> encryptObject(JsObject(nested), fullPath)
-
-          case JsArray(values) =>
-            key -> JsArray(values.map {
-              case nested: JsObject => encryptObject(nested, fullPath)
-              case other => other
-            })
           case _ =>
             key -> value
         }
@@ -81,13 +75,6 @@ object UserAnswers {
             key -> encryptionService.decryptField(fullPath, JsString(str))
           case JsObject(nested) =>
             key -> decryptObject(JsObject(nested), fullPath)
-
-          case JsArray(values) =>
-            key -> JsArray(values.map {
-              case nested: JsObject => decryptObject(nested, fullPath)
-              case other => other
-            })
-
           case _ =>
             key -> value
         }
