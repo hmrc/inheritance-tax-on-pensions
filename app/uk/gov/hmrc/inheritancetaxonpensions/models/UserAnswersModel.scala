@@ -59,7 +59,9 @@ object BirthDeathDatesAnswers {
 }
 
 case class IhTaxInformationAnswers(
-  dateThePensionSchemeReceivedNoticeToPay: String
+  dateThePensionSchemeReceivedNoticeToPay: String,
+  totalIhtPayable: Option[Double],
+  totalInterestPayable: Option[Double]
 )
 
 object IhTaxInformationAnswers {
