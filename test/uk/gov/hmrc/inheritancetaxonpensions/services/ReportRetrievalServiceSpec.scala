@@ -358,7 +358,8 @@ class ReportRetrievalServiceSpec
                 ),
                 "beneficiaryAddress" -> Json.obj(
                   "addressLine1" -> "21 RB Road",
-                  "addressLine2" -> "RBtown",
+                  "addressLine2" -> "Other place",
+                  "addressLine4" -> "Anytown",
                   "postCode" -> "LL1 4LL",
                   "country" -> "GB"
                 ),
@@ -378,6 +379,7 @@ class ReportRetrievalServiceSpec
                 ),
                 "beneficiaryAddress" -> Json.obj(
                   "addressLine1" -> "21 RB Road",
+                  "addressLine4" -> "Anytown",
                   "postCode" -> "LL1 4LL",
                   "country" -> "GB"
                 ),
@@ -429,7 +431,8 @@ class ReportRetrievalServiceSpec
 //          (beneficiary \ "nino").as[String] mustBe testNino
           (beneficiary \ "reasonNoNino").asOpt[String] mustBe empty
           (beneficiary \ "beneficiaryAddress" \ "addressLine1").as[String] mustBe "21 RB Road"
-          (beneficiary \ "beneficiaryAddress" \ "addressLine2").as[String] mustBe "RBtown"
+          (beneficiary \ "beneficiaryAddress" \ "addressLine2").as[String] mustBe "Other place"
+          (beneficiary \ "beneficiaryAddress" \ "addressLine4").as[String] mustBe "Anytown"
           (beneficiary \ "beneficiaryAddress" \ "postCode").as[String] mustBe "LL1 4LL"
           (beneficiary \ "beneficiaryAddress" \ "country").as[String] mustBe "GB"
           (beneficiary \ "beneficiaryIhtPayable").as[Double] mustBe 60.0

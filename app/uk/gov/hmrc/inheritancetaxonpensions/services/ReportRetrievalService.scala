@@ -280,7 +280,7 @@ class ReportRetrievalService @Inject() (
               addressLine1 = Some(response.personalRep.prContactDetails.prAddress.addressLine1),
               addressLine2 = response.personalRep.prContactDetails.prAddress.addressLine2,
               addressLine3 = response.personalRep.prContactDetails.prAddress.addressLine3,
-              addressLine4 = response.personalRep.prContactDetails.prAddress.addressLine4,
+              addressLine4 = Some(response.personalRep.prContactDetails.prAddress.addressLine4),
               postCode = response.personalRep.prContactDetails.prAddress.postCode,
               country = Some(response.personalRep.prContactDetails.prAddress.country)
             )
@@ -300,7 +300,7 @@ class ReportRetrievalService @Inject() (
               addressLine1 = Some(response.personalRep.prContactDetails.prAddress.addressLine1),
               addressLine2 = response.personalRep.prContactDetails.prAddress.addressLine2,
               addressLine3 = response.personalRep.prContactDetails.prAddress.addressLine3,
-              addressLine4 = response.personalRep.prContactDetails.prAddress.addressLine4,
+              addressLine4 = Some(response.personalRep.prContactDetails.prAddress.addressLine4),
               postCode = response.personalRep.prContactDetails.prAddress.postCode,
               country = Some(response.personalRep.prContactDetails.prAddress.country)
             )

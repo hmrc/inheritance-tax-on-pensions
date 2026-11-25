@@ -280,7 +280,7 @@ case class AddressDetails(
   addressLine1: String,
   addressLine2: Option[String] = None,
   addressLine3: Option[String] = None,
-  addressLine4: Option[String] = None,
+  addressLine4: String,
   addressLine5: Option[String] = None,
   postCode: Option[String] = None,
   countryCode: String,
