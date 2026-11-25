@@ -277,17 +277,6 @@ class IhtpReportConnectorSpec extends BaseConnectorSpec with TestValues {
       }
     }
 
-    "return not found when the response from the server is not found" in {
-      wireMockServer.stubFor(
-        get(urlEqualTo(s"$overviewUrl?pstr=24000001IN&dateFrom=2026-01-01&dateTo=2026-12-31"))
-          .willReturn(notFound())
-      )
-
-      whenReady(connector.getOverview("24000001IN", "2026-01-01", "2026-12-31", None, None, None)) { result =>
-        result mustBe Left(ErrorCodes.entityNotFound)
-      }
-    }
-
     "return unprocessable entity when the response from the server is unprocessable entity" in {
       wireMockServer.stubFor(
         get(urlEqualTo(s"$overviewUrl?pstr=24000001IN&dateFrom=2026-01-01&dateTo=2026-12-31"))

@@ -205,6 +205,106 @@ class ReportRetrievalServiceSpec
           value.success.ihtpOverview.map(_.ihtStatus) mustBe Seq("Paid")
       }
     }
+    "filters based on optional ihtPaymentReference parameter" in {
+      when(mockIhtpReportConnector.getOverview(any(), any(), any(), any(), any(), any())(any()))
+        .thenReturn(
+          Future.successful(
+            Right(
+              IhtpOverviewResponse(IhtpOverviewSuccess(testOverviewResponse.as[Seq[IhtpOverviewReport]]))
+            )
+          )
+        )
+
+      when(mockUserAnswersRepository.findBySrn(any()))
+        .thenReturn(
+          Future.successful(
+            Seq(
+              emptyUserAnswers.copy(data =
+                Json.obj(
+                  "inheritanceTaxReference" -> testIhtReference,
+                  "ihtPaymentReference" -> testIhtPaymentReference
+                )
+              )
+            )
+          )
+        )
+
+      val result = service
+        .getOverview(testPstr, srn, testDateFrom, testDateTo, Some(testIhtPaymentReference), None, None)
+        .futureValue
+
+      result match {
+        case Left(value) => fail("unexpected")
+        case Right(value) =>
+          value.success.ihtpOverview must have size 2
+      }
+    }
+    "filters out based on optional ihtReference parameter" in {
+      when(mockIhtpReportConnector.getOverview(any(), any(), any(), any(), any(), any())(any()))
+        .thenReturn(
+          Future.successful(
+            Right(
+              IhtpOverviewResponse(IhtpOverviewSuccess(testOverviewResponse.as[Seq[IhtpOverviewReport]]))
+            )
+          )
+        )
+
+      when(mockUserAnswersRepository.findBySrn(any()))
+        .thenReturn(
+          Future.successful(
+            Seq(
+              emptyUserAnswers.copy(data =
+                Json.obj(
+                  "inheritanceTaxReference" -> secondIhtReference
+                )
+              )
+            )
+          )
+        )
+
+      val result =
+        service.getOverview(testPstr, srn, testDateFrom, testDateTo, None, Some(secondIhtReference), None).futureValue
+
+      result match {
+        case Left(value) => fail("unexpected")
+        case Right(value) =>
+          value.success.ihtpOverview must have size 2
+      }
+    }
+
+    "filters out based on optional nino parameter" in {
+      when(mockIhtpReportConnector.getOverview(any(), any(), any(), any(), any(), any())(any()))
+        .thenReturn(
+          Future.successful(
+            Right(
+              IhtpOverviewResponse(IhtpOverviewSuccess(testOverviewResponse.as[Seq[IhtpOverviewReport]]))
+            )
+          )
+        )
+
+      when(mockUserAnswersRepository.findBySrn(any()))
+        .thenReturn(
+          Future.successful(
+            Seq(
+              emptyUserAnswers.copy(data =
+                Json.obj(
+                  "inheritanceTaxReference" -> testIhtReference,
+                  "nino" -> testNino
+                )
+              )
+            )
+          )
+        )
+
+      val result = service.getOverview(testPstr, srn, testDateFrom, testDateTo, None, None, Some(testNino)).futureValue
+
+      result match {
+        case Left(value) => fail("unexpected")
+        case Right(value) =>
+          value.success.ihtpOverview must have size 1
+      }
+    }
+
     "errors out when connector errors out" in {
 
       when(mockIhtpReportConnector.getOverview(any(), any(), any(), any(), any(), any())(any()))
