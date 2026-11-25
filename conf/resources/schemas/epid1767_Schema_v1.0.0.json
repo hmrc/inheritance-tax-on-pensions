@@ -437,8 +437,8 @@
           "description": "Type of representative of the deceased's estate",
           "type": "string",
           "enum": [
-            "pr",
-            "ppr"
+            "01",
+            "02"
           ]
         }
       },

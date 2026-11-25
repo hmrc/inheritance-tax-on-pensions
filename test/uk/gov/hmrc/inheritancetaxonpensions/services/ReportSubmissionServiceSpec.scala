@@ -191,7 +191,7 @@ class ReportSubmissionServiceSpec
         "dateOfBirth" -> testDateOfBirth,
         "dateOfDeath" -> testDateOfDeath
       ),
-      "estateRepresentative" -> "pr",
+      "estateRepresentative" -> "02",
       "prType" -> "individual",
       "didPrSubmit" -> true,
       "prDetails" -> individualPrDetailsUaJson,
@@ -334,7 +334,7 @@ class ReportSubmissionServiceSpec
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
           ),
-          "estateRepresentative" -> "pr",
+          "estateRepresentative" -> "02",
           "prType" -> "organisation",
           "prDetails" -> Json.obj(
             "organisation" -> Json.obj(
@@ -421,7 +421,7 @@ class ReportSubmissionServiceSpec
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
           ),
-          "estateRepresentative" -> "pr",
+          "estateRepresentative" -> "02",
           "prType" -> "organisation",
           "didPrSubmit" -> true,
           "prDetails" -> Json.obj(
@@ -470,7 +470,7 @@ class ReportSubmissionServiceSpec
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
           ),
-          "estateRepresentative" -> "pr",
+          "estateRepresentative" -> "02",
           "prType" -> "individual",
           "didPrSubmit" -> true,
           "prDetails" -> Json.obj(
@@ -511,7 +511,7 @@ class ReportSubmissionServiceSpec
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
           ),
-          "estateRepresentative" -> "pr",
+          "estateRepresentative" -> "02",
           "prType" -> "individual",
           "didPrSubmit" -> true,
           "areBeneficiariesKnown" -> false,
@@ -548,7 +548,7 @@ class ReportSubmissionServiceSpec
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
           ),
-          "estateRepresentative" -> "pr",
+          "estateRepresentative" -> "02",
           "prType" -> "individual",
           "prDetails" -> individualPrDetailsUaJson,
           "didPrSubmit" -> true,
@@ -614,7 +614,7 @@ class ReportSubmissionServiceSpec
             "dateOfBirth" -> testDateOfBirth,
             "dateOfDeath" -> testDateOfDeath
           ),
-          "estateRepresentative" -> "pr",
+          "estateRepresentative" -> "02",
           "prType" -> "organisation",
           "didPrSubmit" -> true,
           "prDetails" -> organisationPrDetailsUaJson,

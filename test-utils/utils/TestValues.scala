@@ -115,7 +115,7 @@ trait TestValues extends Generators {
   val deceasedPayloadSection: Deceased = Deceased(
     deceasedPersonalDetails = deceasedPersonalDetailsPayloadSection,
     deceasedDetails = deceasedDetailsPayloadSection,
-    estateRepresentative = "pr"
+    estateRepresentative = "02"
   )
 
   private val prContactDetailsIndividualPayloadSection = PrContactDetails(
@@ -290,7 +290,7 @@ trait TestValues extends Generators {
       "dateOfBirth" -> "1950-01-01",
       "dateOfDeath" -> "2026-01-01"
     ),
-    "estateRepresentative" -> "pr",
+    "estateRepresentative" -> "02",
     "prType" -> "individual",
     "prDetails" -> Json.obj(
       "individual" -> Json.obj(
@@ -385,7 +385,7 @@ trait TestValues extends Generators {
           "deceasedsDod" -> "2026-01-01",
           "ihtRefNumber" -> testIhtReference
         ),
-        "estateRepresentative" -> "pr"
+        "estateRepresentative" -> "02"
       ),
       "personalRep" -> Json.obj(
         "typeOfPr" -> "01",
