@@ -49,15 +49,15 @@ class ReportRetrievalService @Inject() (
     srn: String,
     dateFrom: String,
     dateTo: String,
-    ihtPaymentReference: Option[String],
-    ihtReference: Option[String],
-    nino: Option[String]
+    optionalIhtPaymentReference: Option[String],
+    optionalIhtReference: Option[String],
+    optionalNino: Option[String]
   )(implicit
     hc: HeaderCarrier,
     ec: ExecutionContext
   ): Future[Either[ErrorResponse, IhtpOverviewResponse]] =
     val downstreamEitherF: Future[Either[ErrorResponse, IhtpOverviewResponse]] =
-      ihtpReportConnector.getOverview(pstr, dateFrom, dateTo, ihtPaymentReference, ihtReference, nino)
+      ihtpReportConnector.getOverview(pstr, dateFrom, dateTo, optionalIhtPaymentReference, optionalIhtReference, optionalNino)
 
     val inProgressF: Future[Seq[UserAnswers]] =
       userAnswersRepository.findBySrn(srn).recover { case e =>
@@ -87,28 +87,40 @@ class ReportRetrievalService @Inject() (
             IhtpOverviewReport(
               uuid = Some(ua.uuid),
               fbNumber = None,
-              submissionDate = None,
+              submissionDate = None, // TODO get submissionDate from ua reportDetails.submissionDate if present
               paymentDueDate = Some(
                 UserAnswersHelper
                   .getOptionalAs[LocalDate](ua, s"${ihtTaxInformationPath}.${noticeToPayDatePath}")
                   .getOrElse(LocalDate.now())
                   .plusDays(dueDateDifferenceInDays)
               ),
-              ihtVersion = "000", // fixed value
+              ihtVersion = UserAnswersHelper
+                .getOptional(ua, s"${ihtVersionPath}")
+                .getOrElse("000"), // default value
               inheritanceTaxReference = UserAnswersHelper.getMandatoryAs[String](ua, inheritanceTaxReferenceNumberPath),
-              ihtPaymentReference = None,
+              ihtPaymentReference = UserAnswersHelper.getOptionalAs[String](ua, inheritanceTaxPaymentReferencePath),
               firstForename = UserAnswersHelper.getOptional(ua, s"${nameOfDeceasedPath}.${deceasedFirstForename}"),
               surname = Some(
                 UserAnswersHelper
                   .getOptional(ua, s"${nameOfDeceasedPath}.${deceasedSurname}")
                   .getOrElse("Enter name") // fallback if only the first page of the journey was saved
               ),
-              nino = None,
+              nino = UserAnswersHelper.getOptionalAs[String](ua, ninoPath),
               ihtStatus = "In progress", // fixed value
               allocatedDate = None
             )
           )
-        Right(IhtpOverviewResponse(IhtpOverviewSuccess(mappedInProgress ++ latestSubmittedReports)))
+        val all = mappedInProgress ++ latestSubmittedReports
+        val allFiltered = all
+          .filter(item =>
+            if (optionalIhtPaymentReference.isEmpty) true
+            else optionalIhtPaymentReference.contains(item.ihtPaymentReference.getOrElse("nomatch"))
+          )
+          .filter(item =>
+            if (optionalIhtReference.isEmpty) true else optionalIhtReference.contains(item.inheritanceTaxReference)
+          )
+          .filter(item => if (optionalNino.isEmpty) true else optionalNino.contains(item.nino.getOrElse("nomatch")))
+        Right(IhtpOverviewResponse(IhtpOverviewSuccess(allFiltered)))
       case Left(e) =>
         Left(e)
     }

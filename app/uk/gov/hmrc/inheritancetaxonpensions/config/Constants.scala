@@ -34,6 +34,7 @@ object Constants {
   val HEADER_VALUE_PSP = "PSP"
 
   val inheritanceTaxReferenceNumberPath = "inheritanceTaxReference"
+  val inheritanceTaxPaymentReferencePath = "ihtPaymentReference"
   val hasNinoPath = "hasNino"
   val ninoPath = "nino"
   val reasonNoNinoPath = "reasonNoNino"
