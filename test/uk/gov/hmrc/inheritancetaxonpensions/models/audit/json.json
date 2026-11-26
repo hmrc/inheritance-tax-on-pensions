@@ -30,7 +30,8 @@
       "surname": "Surname",
       "address": {
         "addressLine1": "1 ABCDE Street",
-        "addressLine2": "FGHIJ Town",
+        "addressLine2": "Other place",
+        "addressLine4": "Anytown",
         "postCode": "ZZ99 1AA",
         "countryCode": "GB",
         "uprn": "UPRN"

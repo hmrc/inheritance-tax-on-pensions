@@ -371,7 +371,7 @@
       "type": "object",
       "required": [
         "addressline1",
-        "addressline2",
+        "addressline4",
         "country"
       ],
       "properties": {
@@ -531,7 +531,7 @@
       "type": "object",
       "required": [
         "addressline1",
-        "addressline2",
+        "addressline4",
         "country"
       ],
       "properties": {

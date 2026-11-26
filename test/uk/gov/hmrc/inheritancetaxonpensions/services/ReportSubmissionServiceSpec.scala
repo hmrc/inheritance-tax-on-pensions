@@ -70,7 +70,8 @@ class ReportSubmissionServiceSpec
 
   private val testAddress = Json.obj(
     "addressLine1" -> "1 ABCDE Street",
-    "addressLine2" -> "FGHIJ Town",
+    "addressLine2" -> "Other place",
+    "addressLine4" -> "Anytown",
     "postCode" -> "ZZ99 1AA",
     "country" -> "GB"
   )
@@ -108,7 +109,8 @@ class ReportSubmissionServiceSpec
       "secondForename" -> "Middlenametwo",
       "surname" -> "Surname",
       "addressLine1" -> "1 ABCDE Street",
-      "addressLine2" -> "FGHIJ Town",
+      "addressLine2" -> "Other place",
+      "addressLine4" -> "Anytown",
       "postCode" -> "ZZ99 1AA",
       "country" -> "GB"
     )
@@ -134,7 +136,8 @@ class ReportSubmissionServiceSpec
       "secondForename" -> "Middlenametwo",
       "surname" -> "Surname",
       "addressLine1" -> "1 ABCDE Street",
-      "addressLine2" -> "FGHIJ Town",
+      "addressLine2" -> "Other place",
+      "addressLine4" -> "Anytown",
       "postCode" -> "ZZ99 1AA",
       "country" -> "GB"
     )
@@ -339,7 +342,8 @@ class ReportSubmissionServiceSpec
               "secondForename" -> "Middlenametwo",
               "surname" -> "Surname",
               "addressLine1" -> "1 ABCDE Street",
-              "addressLine2" -> "FGHIJ Town",
+              "addressLine2" -> "Other place",
+              "addressLine4" -> "Anytown",
               "postCode" -> "ZZ99 1AA",
               "country" -> "GB"
             )
@@ -424,7 +428,8 @@ class ReportSubmissionServiceSpec
               "secondForename" -> "Middlenametwo",
               "surname" -> "Surname",
               "addressLine1" -> "1 ABCDE Street",
-              "addressLine2" -> "FGHIJ Town",
+              "addressLine2" -> "Other place",
+              "addressLine4" -> "Anytown",
               "postCode" -> "ZZ99 1AA",
               "country" -> "GB"
             )
@@ -470,7 +475,8 @@ class ReportSubmissionServiceSpec
               "firstForename" -> "Firstname",
               "secondForename" -> "Middlenametwo",
               "surname" -> "Surname",
-              "addressLine2" -> "FGHIJ Town",
+              "addressLine2" -> "Other place",
+              "addressLine4" -> "Anytown",
               "postCode" -> "ZZ99 1AA",
               "country" -> "GB"
             )
