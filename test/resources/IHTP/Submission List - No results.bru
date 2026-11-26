@@ -1,0 +1,34 @@
+meta {
+  name: Submission List - No results
+  type: http
+  seq: 21
+}
+
+get {
+  url: {{ihtp_url}}/24000001IN/submission-list?dateFrom=2027-01-01&dateTo=2027-01-01&nino=CC111111C
+  body: none
+  auth: bearer
+}
+
+params:query {
+  dateFrom: 2027-01-01
+  dateTo: 2027-01-01
+  nino: CC111111C
+}
+
+headers {
+  srn: S2400000001
+  userName: TestUser
+  schemeName: TestScheme
+  requestRole: PSA
+}
+
+auth:bearer {
+  token: {{bearer_token}}
+}
+
+tests {
+  test("Status code is 200", function () {
+      expect(res.getStatus()).to.equal(200);
+  });
+}

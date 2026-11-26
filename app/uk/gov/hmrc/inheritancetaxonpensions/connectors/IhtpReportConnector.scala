@@ -21,7 +21,7 @@ import uk.gov.hmrc.inheritancetaxonpensions.config.{AppConfig, Constants}
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.IhtpReportConnector.RetryableReportResponse
 import uk.gov.hmrc.inheritancetaxonpensions.connectors.helpers.HIPHeaders
 import org.apache.pekko.actor.ActorSystem
-import models.IhtpOverviewResponse
+import models.{IhtpOverviewResponse, IhtpOverviewSuccess}
 import uk.gov.hmrc.play.bootstrap.http.ErrorResponse
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.inheritancetaxonpensions.models._
@@ -77,7 +77,12 @@ class IhtpReportConnector @Inject() (
             Left(ErrorCodes.badRequest)
           case response if response.status == NOT_FOUND =>
             logger.warn("[IhtpReportConnector][getOverview] Not found returned for overview")
-            Left(ErrorCodes.entityNotFound)
+            Left(ErrorCodes.badRequest)
+          case response if response.status == UNPROCESSABLE_ENTITY && response.body.contains("\"code\":\"087\"") =>
+            logger.warn(
+              "[IhtpReportConnector][getOverview] Unprocessable entity and body with code 087 returned for overview"
+            )
+            Right(IhtpOverviewResponse(IhtpOverviewSuccess(Seq())))
           case response if response.status == UNPROCESSABLE_ENTITY =>
             logger.warn("[IhtpReportConnector][getOverview] Unprocessable entity returned for overview")
             Left(ErrorCodes.unprocessableEntity)
