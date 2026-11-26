@@ -432,11 +432,20 @@
         },
         "deceasedDetails": {
           "$ref": "#/definitions/deceasedDetails"
+        },
+        "estateRepresentative": {
+          "description": "Type of representative of the deceased's estate",
+          "type": "string",
+          "enum": [
+            "pr",
+            "ppr"
+          ]
         }
       },
       "required": [
         "deceasedPersonalDetails",
-        "deceasedDetails"
+        "deceasedDetails",
+        "estateRepresentative"
       ],
       "additionalProperties": false
     },

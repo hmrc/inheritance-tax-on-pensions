@@ -213,6 +213,7 @@ class ReportRetrievalService @Inject() (
               dateOfDeath = response.deceased.deceasedDetails.deceasedsDod
             )
           ),
+          estateRepresentative = Some(response.deceased.estateRepresentative),
           didPrSubmit = Some(response.ihTaxInformation.noticeSubmittedByPr == Yes),
           ihtTaxInformation = Some(
             IhTaxInformationAnswers(

@@ -117,6 +117,9 @@ class ReportSubmissionService @Inject() (
       userAnswers,
       Constants.birthDeathDatesPath
     )
+
+    val estateRepresentative = UserAnswersHelper.getMandatory(userAnswers, "estateRepresentative")
+
     val prDetails = buildPrDetails(userAnswers)
 
     val beneficiaryList = buildBeneficiaryList(userAnswers)
@@ -148,7 +151,8 @@ class ReportSubmissionService @Inject() (
         deceasedsDob = birthDeathDates.dateOfBirth,
         deceasedsDod = birthDeathDates.dateOfDeath,
         ihtRefNumber = inheritanceTaxReferenceNumber
-      )
+      ),
+      estateRepresentative = estateRepresentative
     )
 
     IhtpPaymentNoticeSubmission(
