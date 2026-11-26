@@ -57,7 +57,14 @@ class ReportRetrievalService @Inject() (
     ec: ExecutionContext
   ): Future[Either[ErrorResponse, IhtpOverviewResponse]] =
     val downstreamEitherF: Future[Either[ErrorResponse, IhtpOverviewResponse]] =
-      ihtpReportConnector.getOverview(pstr, dateFrom, dateTo, optionalIhtPaymentReference, optionalIhtReference, optionalNino)
+      ihtpReportConnector.getOverview(
+        pstr,
+        dateFrom,
+        dateTo,
+        optionalIhtPaymentReference,
+        optionalIhtReference,
+        optionalNino
+      )
 
     val inProgressF: Future[Seq[UserAnswers]] =
       userAnswersRepository.findBySrn(srn).recover { case e =>
