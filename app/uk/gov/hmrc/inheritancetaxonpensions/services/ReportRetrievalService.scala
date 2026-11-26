@@ -49,15 +49,15 @@ class ReportRetrievalService @Inject() (
     srn: String,
     dateFrom: String,
     dateTo: String,
-    maybeIhtPaymentReference: Option[String],
-    maybeIhtReference: Option[String],
-    maybeNino: Option[String]
+    optionalIhtPaymentReference: Option[String],
+    optionalIhtReference: Option[String],
+    optionalNino: Option[String]
   )(implicit
     hc: HeaderCarrier,
     ec: ExecutionContext
   ): Future[Either[ErrorResponse, IhtpOverviewResponse]] =
     val downstreamEitherF: Future[Either[ErrorResponse, IhtpOverviewResponse]] =
-      ihtpReportConnector.getOverview(pstr, dateFrom, dateTo, maybeIhtPaymentReference, maybeIhtReference, maybeNino)
+      ihtpReportConnector.getOverview(pstr, dateFrom, dateTo, optionalIhtPaymentReference, optionalIhtReference, optionalNino)
 
     val inProgressF: Future[Seq[UserAnswers]] =
       userAnswersRepository.findBySrn(srn).recover { case e =>
@@ -113,13 +113,13 @@ class ReportRetrievalService @Inject() (
         val all = mappedInProgress ++ latestSubmittedReports
         val allFiltered = all
           .filter(item =>
-            if (maybeIhtPaymentReference.isEmpty) true
-            else maybeIhtPaymentReference.contains(item.ihtPaymentReference.getOrElse("nomatch"))
+            if (optionalIhtPaymentReference.isEmpty) true
+            else optionalIhtPaymentReference.contains(item.ihtPaymentReference.getOrElse("nomatch"))
           )
           .filter(item =>
-            if (maybeIhtReference.isEmpty) true else maybeIhtReference.contains(item.inheritanceTaxReference)
+            if (optionalIhtReference.isEmpty) true else optionalIhtReference.contains(item.inheritanceTaxReference)
           )
-          .filter(item => if (maybeNino.isEmpty) true else maybeNino.contains(item.nino.getOrElse("nomatch")))
+          .filter(item => if (optionalNino.isEmpty) true else optionalNino.contains(item.nino.getOrElse("nomatch")))
         Right(IhtpOverviewResponse(IhtpOverviewSuccess(allFiltered)))
       case Left(e) =>
         Left(e)
