@@ -44,6 +44,15 @@ class UserAnswersHelperSpec extends AnyFreeSpec with Matchers with TestValues {
     data = Json.obj()
   )
 
+  val userAnswersWithNonStringField: UserAnswers = UserAnswers(
+    id = s"$srn-$uuid",
+    srn = srn,
+    uuid = uuid,
+    data = Json.obj(
+      "nonStringField" -> Json.obj("nested" -> "value")
+    )
+  )
+
   "UserAnswersHelper" - {
     "getMandatory" - {
       "return the mandatory field value" in {
@@ -55,6 +64,13 @@ class UserAnswersHelperSpec extends AnyFreeSpec with Matchers with TestValues {
         an[IllegalArgumentException] must be thrownBy UserAnswersHelper.getMandatory(
           userAnswersWithoutFields,
           "mandatoryField"
+        )
+      }
+
+      "Throw an IllegalArgumentException when the mandatory field is not a string" - {
+        an[IllegalArgumentException] must be thrownBy UserAnswersHelper.getMandatory(
+          userAnswersWithNonStringField,
+          "nonStringField"
         )
       }
     }

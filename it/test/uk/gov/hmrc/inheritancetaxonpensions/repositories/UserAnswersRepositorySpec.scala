@@ -155,6 +155,28 @@ class UserAnswersRepositorySpec
     mustPreserveMdc(repository.keepAlive(userAnswers.id))
   }
 
+  ".getByPaymentReference" - {
+
+    "must return the user answers with the given payment reference" in {
+
+      val answersWithReference =
+        userAnswers.copy(data = Json.obj("ihtPaymentReference" -> testIhtPaymentReference))
+
+      insert(answersWithReference).futureValue
+
+      val result = repository.getByPaymentReference(testIhtPaymentReference).futureValue
+
+      result.value.mustEqual(answersWithReference)
+    }
+
+    "must return None when no user answers have the given payment reference" in {
+
+      repository.getByPaymentReference("payment reference that does not exist").futureValue must not be defined
+    }
+
+    mustPreserveMdc(repository.getByPaymentReference(testIhtPaymentReference))
+  }
+
   ".findBySrn" - {
 
     "must return all user answers for a given SRN" in {

@@ -544,5 +544,67 @@ class ReportRetrievalServiceSpec
           (secondBeneficiary \ "beneficiaryInterestPayable").as[Double] mustBe 4.0
       }
     }
+
+    "maps organisation personal rep details from the response into user answers" in {
+
+      val organisationBlock = Json.obj(
+        "ihtNoticeResponse" -> Json.obj(
+          "personalRep" -> Json.obj(
+            "typeOfPr" -> "02",
+            "prContactDetails" -> Json.obj(
+              "orgName" -> "Organisation Name"
+            )
+          )
+        )
+      )
+
+      when(mockIhtpReportConnector.getReport(any(), any(), any(), any())(any()))
+        .thenReturn(
+          Future.successful(
+            HttpResponse(
+              status = 200,
+              body = testIhtNoticeResponse.deepMerge(organisationBlock).toString,
+              headers = Map("correlationid" -> Seq("testCorrelationId"))
+            )
+          )
+        )
+
+      when(mockUserAnswersRepository.getByPaymentReference(any()))
+        .thenReturn(Future.successful(None))
+      when(mockUserAnswersRepository.set(any()))
+        .thenReturn(Future.successful(true))
+
+      val result = service.getReport(testPstr, srn, None, Some(testIhtPaymentReference), Some(testIhtVersion))
+
+      result.futureValue match {
+        case Left(_) => fail("unexpected")
+        case Right((_, _, userAnswers)) =>
+          val data = (userAnswers \ "data").as[JsObject]
+          (data \ "prType").as[String] mustBe "organisation"
+          (data \ "prDetails" \ "organisation" \ "organisationName").as[String] mustBe "Organisation Name"
+          (data \ "prDetails" \ "organisation" \ "firstForename").as[String] mustBe "Firstname"
+          (data \ "prDetails" \ "individual").asOpt[JsObject] mustBe empty
+      }
+    }
+
+    "returns Left when the connector responds with an error status" in {
+
+      when(mockIhtpReportConnector.getReport(any(), any(), any(), any())(any()))
+        .thenReturn(
+          Future.successful(
+            HttpResponse(
+              status = 500,
+              body = "downstream error"
+            )
+          )
+        )
+
+      val result = service.getReport(testPstr, srn, None, Some(testIhtPaymentReference), Some(testIhtVersion))
+
+      result.futureValue match {
+        case Left(value) => value.status mustBe 500
+        case Right(_) => fail("unexpected")
+      }
+    }
   }
 }
