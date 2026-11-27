@@ -58,7 +58,8 @@ object ReportDetails {
 case class Deceased(
   deceasedChangeFlag: Option[YesNo] = None,
   deceasedPersonalDetails: DeceasedPersonalDetails,
-  deceasedDetails: DeceasedDetails
+  deceasedDetails: DeceasedDetails,
+  estateRepresentative: String
 )
 
 object Deceased {

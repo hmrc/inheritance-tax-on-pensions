@@ -80,8 +80,7 @@ class PiiFieldsSpec extends AnyFreeSpec with Matchers {
         "random.data",
         "randomUserAnswers",
         "userAnswers.id",
-        "lastUpdated",
-        "data.someField"
+        "lastUpdated"
       )
 
       nonPiiFields.foreach { field =>

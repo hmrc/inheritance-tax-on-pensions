@@ -25,6 +25,7 @@ case class UserAnswersModel(
   nino: Option[String],
   reasonNoNino: Option[String],
   birthDeathDates: Option[BirthDeathDatesAnswers],
+  estateRepresentative: Option[String],
   prType: Option[String],
   prDetails: Option[PrDetailsAnswers],
   didPrSubmit: Option[Boolean],
